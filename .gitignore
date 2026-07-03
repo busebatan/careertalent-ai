@@ -1,0 +1,44 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.codex
+/.cursor/
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+Thumbs.db
+.superpowers/
+
+# Python
+backend/.venv/
+backend/**/__pycache__/
+backend/.pytest_cache/
+backend/*.db
+uploads/
+
+# Laravel (frontend/)
+frontend/node_modules/
+frontend/vendor/
+frontend/public/build
+frontend/public/hot
+frontend/public/storage
+frontend/storage/*.key
+frontend/storage/pail
+frontend/.phpunit.result.cache
+frontend/database/database.sqlite
+
+# Legacy root Laravel artifacts (if any)
+/node_modules
+/vendor
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail

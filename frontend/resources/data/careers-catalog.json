@@ -1,0 +1,175 @@
+{
+  "salary_ranges": [
+    { "id": "25-40", "label": { "tr": "25.000 – 40.000 ₺", "en": "25,000 – 40,000 TRY" } },
+    { "id": "40-60", "label": { "tr": "40.000 – 60.000 ₺", "en": "40,000 – 60,000 TRY" } },
+    { "id": "60-85", "label": { "tr": "60.000 – 85.000 ₺", "en": "60,000 – 85,000 TRY" } },
+    { "id": "85-120", "label": { "tr": "85.000 – 120.000 ₺", "en": "85,000 – 120,000 TRY" } },
+    { "id": "120-plus", "label": { "tr": "120.000 ₺ ve üzeri", "en": "120,000 TRY and above" } }
+  ],
+  "careers": [
+    {
+      "id": "computer-engineering",
+      "label": { "tr": "Bilgisayar Mühendisi", "en": "Computer Engineer" },
+      "sub_roles": [
+        { "id": "junior-fe", "label": { "tr": "Junior Front-end Geliştirici", "en": "Junior Front-end Developer" }, "target_role_ids": ["senior-fe", "tech-lead"] },
+        { "id": "junior-be", "label": { "tr": "Junior Back-end Geliştirici", "en": "Junior Back-end Developer" }, "target_role_ids": ["senior-be", "tech-lead"] },
+        { "id": "junior-fs", "label": { "tr": "Junior Full-stack Geliştirici", "en": "Junior Full-stack Developer" }, "target_role_ids": ["senior-fe", "senior-be", "tech-lead"] },
+        { "id": "mid-fe", "label": { "tr": "Mid-level Front-end Geliştirici", "en": "Mid-level Front-end Developer" }, "target_role_ids": ["senior-fe", "tech-lead", "engineering-manager"] },
+        { "id": "mid-be", "label": { "tr": "Mid-level Back-end Geliştirici", "en": "Mid-level Back-end Developer" }, "target_role_ids": ["senior-be", "tech-lead", "engineering-manager"] },
+        { "id": "mid-devops", "label": { "tr": "Mid-level DevOps Mühendisi", "en": "Mid-level DevOps Engineer" }, "target_role_ids": ["senior-be", "tech-lead"] }
+      ],
+      "target_roles": [
+        {
+          "id": "senior-fe",
+          "label": { "tr": "Senior Front-end Mühendisi", "en": "Senior Front-end Engineer" },
+          "skills": [
+            { "key": "react", "label": { "tr": "React / UI", "en": "React / UI" }, "level": 92 },
+            { "key": "ts", "label": { "tr": "TypeScript", "en": "TypeScript" }, "level": 88 },
+            { "key": "a11y", "label": { "tr": "Erişilebilirlik", "en": "Accessibility" }, "level": 75 },
+            { "key": "perf", "label": { "tr": "Web performans", "en": "Web performance" }, "level": 82 },
+            { "key": "testing", "label": { "tr": "Test (unit/E2E)", "en": "Testing (unit/E2E)" }, "level": 78 },
+            { "key": "design", "label": { "tr": "Design systems", "en": "Design systems" }, "level": 70 },
+            { "key": "english", "label": { "tr": "İngilizce", "en": "English" }, "level": 80 },
+            { "key": "mentoring", "label": { "tr": "Mentorluk", "en": "Mentoring" }, "level": 65 }
+          ]
+        },
+        {
+          "id": "senior-be",
+          "label": { "tr": "Senior Back-end Mühendisi", "en": "Senior Back-end Engineer" },
+          "skills": [
+            { "key": "api", "label": { "tr": "API tasarımı", "en": "API design" }, "level": 90 },
+            { "key": "db", "label": { "tr": "Veritabanı", "en": "Databases" }, "level": 88 },
+            { "key": "security", "label": { "tr": "Güvenlik", "en": "Security" }, "level": 80 },
+            { "key": "scalability", "label": { "tr": "Ölçeklenebilirlik", "en": "Scalability" }, "level": 85 },
+            { "key": "cloud", "label": { "tr": "Bulut (AWS/GCP)", "en": "Cloud (AWS/GCP)" }, "level": 78 },
+            { "key": "cicd", "label": { "tr": "CI/CD", "en": "CI/CD" }, "level": 72 },
+            { "key": "english", "label": { "tr": "İngilizce", "en": "English" }, "level": 82 },
+            { "key": "system-design", "label": { "tr": "Sistem tasarımı", "en": "System design" }, "level": 88 }
+          ]
+        },
+        {
+          "id": "tech-lead",
+          "label": { "tr": "Teknik Lider (Tech Lead)", "en": "Technical Lead" },
+          "skills": [
+            { "key": "architecture", "label": { "tr": "Mimari", "en": "Architecture" }, "level": 90 },
+            { "key": "code-review", "label": { "tr": "Code review", "en": "Code review" }, "level": 88 },
+            { "key": "planning", "label": { "tr": "Sprint planlama", "en": "Sprint planning" }, "level": 85 },
+            { "key": "stakeholder", "label": { "tr": "Paydaş iletişimi", "en": "Stakeholder comms" }, "level": 80 },
+            { "key": "hiring", "label": { "tr": "Teknik mülakat", "en": "Technical hiring" }, "level": 70 },
+            { "key": "fullstack", "label": { "tr": "Full-stack derinlik", "en": "Full-stack depth" }, "level": 82 },
+            { "key": "english", "label": { "tr": "İngilizce", "en": "English" }, "level": 85 },
+            { "key": "mentoring", "label": { "tr": "Ekip mentorluğu", "en": "Team mentoring" }, "level": 88 }
+          ]
+        },
+        {
+          "id": "engineering-manager",
+          "label": { "tr": "Engineering Manager", "en": "Engineering Manager" },
+          "skills": [
+            { "key": "people", "label": { "tr": "People management", "en": "People management" }, "level": 90 },
+            { "key": "strategy", "label": { "tr": "Ürün stratejisi", "en": "Product strategy" }, "level": 82 },
+            { "key": "budget", "label": { "tr": "Bütçe / kaynak", "en": "Budget / resources" }, "level": 75 },
+            { "key": "hiring", "label": { "tr": "İşe alım", "en": "Hiring" }, "level": 85 },
+            { "key": "delivery", "label": { "tr": "Teslimat yönetimi", "en": "Delivery management" }, "level": 88 },
+            { "key": "conflict", "label": { "tr": "Çatışma çözümü", "en": "Conflict resolution" }, "level": 80 },
+            { "key": "english", "label": { "tr": "İngilizce", "en": "English" }, "level": 88 },
+            { "key": "tech-vision", "label": { "tr": "Teknik vizyon", "en": "Technical vision" }, "level": 78 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data-analyst",
+      "label": { "tr": "Veri Analisti", "en": "Data Analyst" },
+      "sub_roles": [
+        { "id": "junior-da", "label": { "tr": "Junior Veri Analisti", "en": "Junior Data Analyst" }, "target_role_ids": ["senior-da", "product-analyst"] },
+        { "id": "excel-analyst", "label": { "tr": "Excel / Raporlama Analisti", "en": "Excel / Reporting Analyst" }, "target_role_ids": ["senior-da", "product-analyst"] },
+        { "id": "mid-da", "label": { "tr": "Mid-level Veri Analisti", "en": "Mid-level Data Analyst" }, "target_role_ids": ["senior-da", "analytics-engineer", "product-analyst"] },
+        { "id": "bi-junior", "label": { "tr": "Junior BI Geliştirici", "en": "Junior BI Developer" }, "target_role_ids": ["analytics-engineer", "senior-da"] }
+      ],
+      "target_roles": [
+        {
+          "id": "senior-da",
+          "label": { "tr": "Senior Veri Analisti", "en": "Senior Data Analyst" },
+          "skills": [
+            { "key": "sql", "label": { "tr": "SQL", "en": "SQL" }, "level": 95 },
+            { "key": "python", "label": { "tr": "Python", "en": "Python" }, "level": 85 },
+            { "key": "stats", "label": { "tr": "İstatistik", "en": "Statistics" }, "level": 88 },
+            { "key": "viz", "label": { "tr": "Görselleştirme", "en": "Visualization" }, "level": 90 },
+            { "key": "storytelling", "label": { "tr": "Veri hikayesi", "en": "Data storytelling" }, "level": 85 },
+            { "key": "ab-test", "label": { "tr": "A/B test", "en": "A/B testing" }, "level": 78 },
+            { "key": "english", "label": { "tr": "İngilizce", "en": "English" }, "level": 82 },
+            { "key": "domain", "label": { "tr": "İş alanı bilgisi", "en": "Domain knowledge" }, "level": 80 }
+          ]
+        },
+        {
+          "id": "analytics-engineer",
+          "label": { "tr": "Analytics Engineer", "en": "Analytics Engineer" },
+          "skills": [
+            { "key": "dbt", "label": { "tr": "dbt / ELT", "en": "dbt / ELT" }, "level": 88 },
+            { "key": "sql", "label": { "tr": "SQL (ileri)", "en": "SQL (advanced)" }, "level": 95 },
+            { "key": "pipeline", "label": { "tr": "Veri pipeline", "en": "Data pipelines" }, "level": 85 },
+            { "key": "modeling", "label": { "tr": "Veri modelleme", "en": "Data modeling" }, "level": 90 },
+            { "key": "python", "label": { "tr": "Python", "en": "Python" }, "level": 80 },
+            { "key": "cloud", "label": { "tr": "Bulut warehouse", "en": "Cloud warehouse" }, "level": 78 },
+            { "key": "english", "label": { "tr": "İngilizce", "en": "English" }, "level": 85 },
+            { "key": "git", "label": { "tr": "Git / versiyonlama", "en": "Git / versioning" }, "level": 75 }
+          ]
+        },
+        {
+          "id": "product-analyst",
+          "label": { "tr": "Product Analyst", "en": "Product Analyst" },
+          "skills": [
+            { "key": "metrics", "label": { "tr": "Ürün metrikleri", "en": "Product metrics" }, "level": 90 },
+            { "key": "sql", "label": { "tr": "SQL", "en": "SQL" }, "level": 85 },
+            { "key": "experiment", "label": { "tr": "Deney tasarımı", "en": "Experiment design" }, "level": 82 },
+            { "key": "funnel", "label": { "tr": "Funnel analizi", "en": "Funnel analysis" }, "level": 88 },
+            { "key": "stakeholder", "label": { "tr": "Paydaş iletişimi", "en": "Stakeholder comms" }, "level": 85 },
+            { "key": "viz", "label": { "tr": "Dashboard", "en": "Dashboards" }, "level": 80 },
+            { "key": "english", "label": { "tr": "İngilizce", "en": "English" }, "level": 80 },
+            { "key": "roadmap", "label": { "tr": "Ürün yol haritası", "en": "Product roadmap" }, "level": 75 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "digital-marketing",
+      "label": { "tr": "Dijital Pazarlama Uzmanı", "en": "Digital Marketing Specialist" },
+      "sub_roles": [
+        { "id": "junior-seo", "label": { "tr": "Junior SEO Uzmanı", "en": "Junior SEO Specialist" }, "target_role_ids": ["growth-marketer", "marketing-manager"] },
+        { "id": "junior-ppc", "label": { "tr": "Junior Performance Pazarlama", "en": "Junior Performance Marketing" }, "target_role_ids": ["growth-marketer", "marketing-manager"] },
+        { "id": "content-creator", "label": { "tr": "İçerik Üreticisi", "en": "Content Creator" }, "target_role_ids": ["growth-marketer", "marketing-manager"] },
+        { "id": "mid-social", "label": { "tr": "Mid-level Sosyal Medya", "en": "Mid-level Social Media" }, "target_role_ids": ["growth-marketer", "marketing-manager"] }
+      ],
+      "target_roles": [
+        {
+          "id": "growth-marketer",
+          "label": { "tr": "Growth Marketer", "en": "Growth Marketer" },
+          "skills": [
+            { "key": "analytics", "label": { "tr": "GA4 / analitik", "en": "GA4 / analytics" }, "level": 90 },
+            { "key": "experiment", "label": { "tr": "Growth deneyleri", "en": "Growth experiments" }, "level": 88 },
+            { "key": "funnel", "label": { "tr": "Dönüşüm hunisi", "en": "Conversion funnel" }, "level": 85 },
+            { "key": "paid", "label": { "tr": "Ücretli kanallar", "en": "Paid channels" }, "level": 82 },
+            { "key": "copy", "label": { "tr": "Metin / kreatif", "en": "Copy / creative" }, "level": 78 },
+            { "key": "automation", "label": { "tr": "Otomasyon", "en": "Automation" }, "level": 75 },
+            { "key": "english", "label": { "tr": "İngilizce", "en": "English" }, "level": 80 },
+            { "key": "sql-basic", "label": { "tr": "SQL (temel)", "en": "SQL (basic)" }, "level": 65 }
+          ]
+        },
+        {
+          "id": "marketing-manager",
+          "label": { "tr": "Pazarlama Müdürü", "en": "Marketing Manager" },
+          "skills": [
+            { "key": "strategy", "label": { "tr": "Pazarlama stratejisi", "en": "Marketing strategy" }, "level": 90 },
+            { "key": "budget", "label": { "tr": "Bütçe yönetimi", "en": "Budget management" }, "level": 88 },
+            { "key": "team", "label": { "tr": "Ekip yönetimi", "en": "Team leadership" }, "level": 85 },
+            { "key": "brand", "label": { "tr": "Marka konumlandırma", "en": "Brand positioning" }, "level": 82 },
+            { "key": "reporting", "label": { "tr": "Raporlama", "en": "Reporting" }, "level": 85 },
+            { "key": "vendor", "label": { "tr": "Ajans yönetimi", "en": "Agency management" }, "level": 78 },
+            { "key": "english", "label": { "tr": "İngilizce", "en": "English" }, "level": 85 },
+            { "key": "cross-func", "label": { "tr": "Çapraz fonksiyon", "en": "Cross-functional" }, "level": 80 }
+          ]
+        }
+      ]
+    }
+  ]
+}

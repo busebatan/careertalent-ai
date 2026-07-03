@@ -1,0 +1,6 @@
+# landing/ — scripts/build-landing.sh çıktısı (Blade'den üretilir)
+# Elle düzenleme YASAK; kaynak: frontend/resources/views/marketing/
+
+*
+!.gitignore
+!README.md

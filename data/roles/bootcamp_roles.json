@@ -1,0 +1,78 @@
+{
+  "roles": [
+    {
+      "id": "data-analyst",
+      "title": "Veri Analisti",
+      "description": "Veriyi toplar, temizler, analiz eder ve iş kararlarına dönüştürür.",
+      "required_skills": [
+        {"name": "Excel", "level": "orta", "priority": "zorunlu"},
+        {"name": "SQL", "level": "orta", "priority": "zorunlu"},
+        {"name": "Python", "level": "temel", "priority": "zorunlu"},
+        {"name": "Pandas", "level": "temel", "priority": "zorunlu"},
+        {"name": "Veri Görselleştirme", "level": "temel", "priority": "zorunlu"},
+        {"name": "İstatistik", "level": "temel", "priority": "tercih"},
+        {"name": "Power BI", "level": "temel", "priority": "tercih"},
+        {"name": "İletişim", "level": "orta", "priority": "zorunlu"}
+      ],
+      "weeks_template": 12
+    },
+    {
+      "id": "ml-engineer",
+      "title": "Makine Öğrenmesi Mühendisi",
+      "description": "ML modelleri geliştirir, eğitir ve üretime alır.",
+      "required_skills": [
+        {"name": "Python", "level": "ileri", "priority": "zorunlu"},
+        {"name": "Scikit-learn", "level": "orta", "priority": "zorunlu"},
+        {"name": "SQL", "level": "orta", "priority": "zorunlu"},
+        {"name": "Pandas", "level": "orta", "priority": "zorunlu"},
+        {"name": "Matematik / İstatistik", "level": "orta", "priority": "zorunlu"},
+        {"name": "Git", "level": "temel", "priority": "zorunlu"},
+        {"name": "TensorFlow veya PyTorch", "level": "temel", "priority": "tercih"}
+      ],
+      "weeks_template": 16
+    },
+    {
+      "id": "backend-dev",
+      "title": "Backend Geliştirici",
+      "description": "Sunucu tarafı API ve veritabanı sistemleri geliştirir.",
+      "required_skills": [
+        {"name": "Python", "level": "orta", "priority": "zorunlu"},
+        {"name": "FastAPI veya Django", "level": "temel", "priority": "zorunlu"},
+        {"name": "SQL", "level": "orta", "priority": "zorunlu"},
+        {"name": "REST API", "level": "orta", "priority": "zorunlu"},
+        {"name": "Git", "level": "temel", "priority": "zorunlu"},
+        {"name": "Docker", "level": "temel", "priority": "tercih"},
+        {"name": "PostgreSQL", "level": "temel", "priority": "tercih"}
+      ],
+      "weeks_template": 14
+    },
+    {
+      "id": "frontend-dev",
+      "title": "Frontend Geliştirici",
+      "description": "Kullanıcı arayüzlerini web ve mobil için geliştirir.",
+      "required_skills": [
+        {"name": "HTML / CSS", "level": "orta", "priority": "zorunlu"},
+        {"name": "JavaScript", "level": "orta", "priority": "zorunlu"},
+        {"name": "React", "level": "temel", "priority": "zorunlu"},
+        {"name": "Git", "level": "temel", "priority": "zorunlu"},
+        {"name": "Responsive Tasarım", "level": "temel", "priority": "zorunlu"},
+        {"name": "TypeScript", "level": "temel", "priority": "tercih"}
+      ],
+      "weeks_template": 14
+    },
+    {
+      "id": "business-analyst",
+      "title": "İş Analisti",
+      "description": "İş ihtiyaçlarını analiz eder, süreçleri iyileştirir.",
+      "required_skills": [
+        {"name": "Excel", "level": "orta", "priority": "zorunlu"},
+        {"name": "SQL", "level": "temel", "priority": "zorunlu"},
+        {"name": "İş Süreci Modelleme", "level": "temel", "priority": "zorunlu"},
+        {"name": "İletişim", "level": "ileri", "priority": "zorunlu"},
+        {"name": "Power BI", "level": "temel", "priority": "tercih"},
+        {"name": "Agile / Scrum", "level": "temel", "priority": "tercih"}
+      ],
+      "weeks_template": 10
+    }
+  ]
+}
