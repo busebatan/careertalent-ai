@@ -2,7 +2,7 @@
 
 > **Proje:** CareerTalent AI — Grup 92  
 > **Mimari:** Plan A (FastAPI + Laravel) ile başlanır; Sprint 1 veya 2 sonrası Plan B değerlendirilebilir.  
-> **Son güncelleme:** 2026-06-29
+> **Son güncelleme:** 2026-07-05
 
 ---
 
@@ -11,8 +11,8 @@
 | Faz | Tarih aralığı | Rapor dosyası | Durum |
 |-----|---------------|---------------|-------|
 | Takımların açıklanması | 12 Haziran 2026 | [sprint-0-takim-kurulumu.md](sprintler/sprint-0-takim-kurulumu.md) | Tamamlandı |
-| **1. Sprint** | 19 Haziran – 5 Temmuz 2026 | [sprint-1-ilk-sprint.md](sprintler/sprint-1-ilk-sprint.md) | **Aktif** |
-| **2. Sprint** | 6 Temmuz – 19 Temmuz 2026 | [sprint-2-ikinci-sprint.md](sprintler/sprint-2-ikinci-sprint.md) | Planlandı |
+| **1. Sprint** | 19 Haziran – 5 Temmuz 2026 | [sprint-1-ilk-sprint.md](sprintler/sprint-1-ilk-sprint.md) | Tamamlandı |
+| **2. Sprint** | 6 Temmuz – 19 Temmuz 2026 | [sprint-2-ikinci-sprint.md](sprintler/sprint-2-ikinci-sprint.md) | **Aktif** |
 | Soru-cevap dönemi | 6 Temmuz 20:00 – 20 Temmuz 20:00 | [soru-cevap-donemi.md](sprintler/soru-cevap-donemi.md) | Planlandı |
 | **Son Sprint** | 20 Temmuz – 2 Ağustos 2026 | [sprint-3-son-sprint.md](sprintler/sprint-3-son-sprint.md) | Planlandı |
 | Değerlendirme süreci | 3 Ağustos – 13 Ağustos 2026 | [degerlendirme-sureci.md](sprintler/degerlendirme-sureci.md) | Planlandı |
