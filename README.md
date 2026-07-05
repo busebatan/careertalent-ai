@@ -4,6 +4,10 @@
 
 Repo: https://github.com/busebatan/careertalent-ai
 
+**Canlı ortam:**
+- Tanıtım: https://careertalent.ygtlabs.ai/
+- Panel: https://careertalent.ygtlabs.ai/panel
+
 ---
 
 ## 1. Ürün Fikri ve Roller
@@ -157,6 +161,8 @@ Detay: [sprint-0-takim-kurulumu.md](docs/sprintler/sprint-0-takim-kurulumu.md)
 #### Sprint Review (5 Temmuz)
 
 **Gösterilebilen:**
+- Canlı tanıtım: https://careertalent.ygtlabs.ai/
+- Canlı panel: https://careertalent.ygtlabs.ai/panel
 - Tanıtım iskeleti: ana sayfa, özellikler, nasıl çalışır, bootcamp, meslek sihirbazı
 - Panel: kariyer merdiveni, CV oluştur, ilan eşleştirme (demo)
 - API health ve CV analyze (senkron, auth'suz demo)
@@ -230,6 +236,13 @@ Detay: [sprint-3-son-sprint.md](docs/sprintler/sprint-3-son-sprint.md)
 
 Laravel tanıtım sitesi ve öğrenci panelini sunar. İş mantığı, veritabanı ve yapay zeka **FastAPI** tarafındadır.
 
+### Canlı ortam (demo)
+
+| Yüzey | URL |
+|-------|-----|
+| Tanıtım (landing) | https://careertalent.ygtlabs.ai/ |
+| Öğrenci paneli | https://careertalent.ygtlabs.ai/panel |
+
 ### Kurulum (lokal)
 
 ```bash
@@ -263,8 +276,8 @@ npm install && npm run build
 php artisan serve --port=8080
 ```
 
-- Tanıtım: http://localhost:8080
-- Panel: http://localhost:8080/panel
+- Tanıtım (lokal): http://localhost:8080
+- Panel (lokal): http://localhost:8080/panel
 
 `frontend/.env` içinde `CAREERTALENT_API_URL=http://localhost:8000` olmalı.
 

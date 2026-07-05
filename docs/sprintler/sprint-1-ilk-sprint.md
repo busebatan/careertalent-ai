@@ -210,7 +210,8 @@ Sprint 1'de Plan A mimarisi kuruldu: FastAPI backend ve Laravel frontend ayrı r
 
 ### Ekran görüntüsü / video
 
-- Demo URL: http://localhost:8080 (lokal) / _(staging varsa ekleyin)_
+- Demo URL (canlı): https://careertalent.ygtlabs.ai/ · https://careertalent.ygtlabs.ai/panel
+- Demo URL (lokal): http://localhost:8080 · http://localhost:8080/panel
 - Video linki (varsa): _
 
 ---
