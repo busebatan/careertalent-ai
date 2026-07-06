@@ -148,7 +148,7 @@ class MarketingPagesTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Welcome');
-        $response->assertSee('Skill radar analysis');
+        $response->assertSee('No CV analysis yet');
         $response->assertSee('Learning resources');
         $response->assertSee('Build CV');
         $response->assertSee('API connected', false);

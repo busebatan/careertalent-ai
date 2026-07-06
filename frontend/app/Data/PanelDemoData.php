@@ -375,4 +375,110 @@ class PanelDemoData
             'optional' => [],
         ];
     }
+
+    /**
+     * @return array{score:int, verified:int, total:int, items:list<array<string,mixed>>, gaps:list<string>}
+     */
+    public static function skillPassport(): array
+    {
+        return [
+            'score' => 68,
+            'verified' => 5,
+            'total' => 8,
+            'items' => [
+                ['skill' => 'SQL', 'level' => 'İleri', 'evidence' => 'E-ticaret satış analizi GitHub projesi', 'type' => 'GitHub', 'status' => 'verified', 'impact' => '10K+ sipariş üzerinde cohort/RFM analizi'],
+                ['skill' => 'Python', 'level' => 'Orta', 'evidence' => 'Pandas notebook ve veri temizleme scriptleri', 'type' => 'Proje', 'status' => 'verified', 'impact' => 'Eksik veri temizleme + görselleştirme'],
+                ['skill' => 'Dashboard', 'level' => 'Başlangıç', 'evidence' => 'Tableau satış panosu taslağı', 'type' => 'Portfolio', 'status' => 'review', 'impact' => '3 KPI, 2 segment grafiği'],
+                ['skill' => 'İngilizce', 'level' => 'B2', 'evidence' => 'Sunum videosu ve teknik özet', 'type' => 'Video', 'status' => 'missing', 'impact' => 'Kanıt linki eklenmeli'],
+            ],
+            'gaps' => ['Power BI dashboard linki', 'Canlı proje demosu', 'İngilizce teknik sunum kaydı'],
+        ];
+    }
+
+    /**
+     * @return array{questions:list<array<string,mixed>>, rubric:list<string>}
+     */
+    public static function interviewSimulator(): array
+    {
+        return [
+            'questions' => [
+                ['role' => 'Junior Veri Analisti', 'type' => 'Teknik', 'question' => 'Bir satış tablosunda tekrar eden müşteri kayıtlarını nasıl temizler ve raporlarsın?', 'score' => 82, 'feedback' => 'SQL DISTINCT/JOIN, Pandas drop_duplicates ve kalite kontrol adımlarını söylediğinde güçlü cevap olur.'],
+                ['role' => 'Junior Veri Analisti', 'type' => 'Davranışsal', 'question' => 'Eksik veri yüzünden teslim tarihi riskli olduğunda ekibe nasıl bilgi verirsin?', 'score' => 76, 'feedback' => 'Risk, seçenek ve net sonraki adım formatında cevap ver. STAR tekniği ekle.'],
+                ['role' => 'BI Analisti', 'type' => 'Vaka', 'question' => 'Yönetim düşen dönüşüm oranını soruyor. İlk bakacağın 3 metrik nedir?', 'score' => 71, 'feedback' => 'Funnel kırılımı, trafik kaynağı ve segment bazlı dönüşüm analizi iyi başlangıç.'],
+            ],
+            'rubric' => ['Problem çerçevesi', 'Teknik doğruluk', 'Ölçülebilir etki', 'İletişim netliği'],
+        ];
+    }
+
+    /**
+     * @return array{columns:list<array<string,mixed>>, metrics:array<string,int>}
+     */
+    public static function applicationTracker(): array
+    {
+        return [
+            'metrics' => ['active' => 6, 'interviews' => 2, 'offers' => 1],
+            'columns' => [
+                ['id' => 'saved', 'label' => 'Kaydedildi', 'items' => [
+                    ['company' => 'Trendyol', 'role' => 'Junior Data Analyst', 'date' => '7 Tem', 'next' => 'CV uyumunu kontrol et'],
+                    ['company' => 'Getir', 'role' => 'Product Data Intern', 'date' => '8 Tem', 'next' => 'Portfolio linki ekle'],
+                ]],
+                ['id' => 'applied', 'label' => 'Başvuruldu', 'items' => [
+                    ['company' => 'Hepsiburada', 'role' => 'BI Analyst Intern', 'date' => '3 Tem', 'next' => 'Takip maili: 10 Tem'],
+                ]],
+                ['id' => 'interview', 'label' => 'Mülakat', 'items' => [
+                    ['company' => 'Logo Yazılım', 'role' => 'Data Analyst', 'date' => '11 Tem', 'next' => 'SQL case pratiği'],
+                ]],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{alerts:list<array<string,mixed>>, roles:list<string>, sources:list<string>}
+     */
+    public static function jobRadar(): array
+    {
+        return [
+            'roles' => ['Junior Veri Analisti', 'BI Analisti', 'Product Analyst'],
+            'sources' => ['LinkedIn', 'Kariyer.net', 'Remote'],
+            'alerts' => [
+                ['role' => 'Junior Veri Analisti', 'company' => 'Trendyol', 'source' => 'LinkedIn', 'match' => 84, 'salary' => '35-45K', 'gaps' => ['Tableau'], 'action' => 'Başvuruya hazır; Tableau projesini CV’ye ekle.'],
+                ['role' => 'BI Analisti', 'company' => 'Logo Yazılım', 'source' => 'Kariyer.net', 'match' => 67, 'salary' => '30-40K', 'gaps' => ['Power BI', 'DAX'], 'action' => '2 haftalık Power BI mini proje sonrası başvur.'],
+                ['role' => 'Product Analyst', 'company' => 'Remote EU Startup', 'source' => 'Remote', 'match' => 58, 'salary' => '€1.8-2.5K', 'gaps' => ['A/B test', 'İngilizce sunum'], 'action' => 'Önce vaka çalışması ve İngilizce pitch hazırla.'],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{experts:list<array<string,mixed>>, packages:list<array<string,string>>}
+     */
+    public static function mentorMarketplace(): array
+    {
+        return [
+            'packages' => [
+                ['name' => 'CV hızlı kontrol', 'price' => '₺299', 'delivery' => '24 saat'],
+                ['name' => 'Portfolio review', 'price' => '₺499', 'delivery' => '48 saat'],
+                ['name' => 'Mülakat provası', 'price' => '₺699', 'delivery' => 'Canlı 45 dk'],
+            ],
+            'experts' => [
+                ['name' => 'Ece Kara', 'title' => 'Senior Data Analyst', 'company' => 'Fintech', 'rating' => 4.9, 'focus' => 'CV + SQL case', 'slots' => 'Salı 20:00'],
+                ['name' => 'Mert Aydın', 'title' => 'BI Lead', 'company' => 'E-commerce', 'rating' => 4.8, 'focus' => 'Power BI portfolio', 'slots' => 'Perşembe 19:30'],
+                ['name' => 'Selin Demir', 'title' => 'Talent Partner', 'company' => 'SaaS', 'rating' => 4.7, 'focus' => 'HR mülakat', 'slots' => 'Cumartesi 11:00'],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{prompts:list<array<string,string>>}
+     */
+    public static function chatAssistant(): array
+    {
+        return [
+            'prompts' => [
+                ['q' => 'Bu hafta hangi göreve odaklanmalıyım?', 'a' => 'Önce SQL mini projesini bitir. Çünkü Junior Veri Analisti için en yüksek gap Tableau değil, kanıtlanmış proje çıktısı.'],
+                ['q' => 'Trendyol ilanına başvurmalı mıyım?', 'a' => 'Evet, %84 uyum var. Başvurmadan önce CV’ye satış analizi projesinin GitHub linkini ve Tableau ekran görüntüsünü ekle.'],
+                ['q' => 'Mülakatta zayıf yanımı nasıl anlatayım?', 'a' => 'Power BI deneyiminin temel seviyede olduğunu söyle; bunu 2 haftalık dashboard projesiyle kapattığını somut örnekle bağla.'],
+            ],
+        ];
+    }
+
 }

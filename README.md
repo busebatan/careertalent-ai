@@ -4,6 +4,8 @@
 
 Repo: https://github.com/busebatan/careertalent-ai
 
+Önceki repo: https://github.com/donesakizz/TalentCareerAI
+
 **Canlı ortam:**
 - Tanıtım: https://careertalent.ygtlabs.ai/
 - Panel: https://careertalent.ygtlabs.ai/panel
@@ -52,6 +54,11 @@ YZTA bootcamp ve benzeri programlardan mezun olan veya mezun olmaya hazırlanan 
 | SWOT (kanıtlı) | CV'den S/W, pazardan O/T | Sprint 2 | Planlı |
 | Haftalık yol haritası | Gap → görev → skor güncelleme | Sprint 2 | Demo |
 | Eğitim / sertifika önerisi | Ücretsiz/ücretli filtre, harici link | Sprint 2-3 | Demo seed |
+| Yetenek pasaportu | Proje/GitHub/sertifika kanıtlarıyla skill proof | Sprint 2 | Demo panel |
+| AI mülakat simülasyonu | Teknik/HR/vaka sorusu + demo skor/geri bildirim | Sprint 2 | Demo panel |
+| Başvuru takip CRM'i | Kaydedildi/başvuruldu/mülakat aşamaları | Sprint 2 | Demo panel |
+| İş radarı ve gap uyarısı | Hedef role göre ilan sinyali, maaş, eksik yetenek | Sprint 2 | Demo panel |
+| Mentor değerlendirme pazarı | CV/portfolio/mülakat review paketleri | Sprint 3 | Demo panel |
 | İlan eşleştirme | Semantic uyum skoru | Faz 2 | Panel iskeleti |
 | Kariyer sohbet ajanı | Bağlamlı LangChain asistan | Sprint 3 | «Yakında» |
 | Mentör / cohort paneli | Kim takıldı, hazırlık özeti | Sprint 3 | Planlı |
@@ -84,6 +91,11 @@ YZTA bootcamp ve benzeri programlardan mezun olan veya mezun olmaya hazırlanan 
 | US-11 | Bağlamlı kariyer sohbeti kullanabilmeliyim | Could | 3 | Planlı |
 | US-12 | Mentör cohort özetini görebilmeliyim | Could | 3 | Planlı |
 | US-13 | Gerçek iş ilanına uyum skoru alabilmeliyim | Could | Faz 2 | İskelet |
+| US-14 | Yeteneklerimi kanıt linkleriyle pasaport halinde gösterebilmeliyim | Should | 2 | Demo panel |
+| US-15 | Rol bazlı mülakat sorusu çözüp demo geri bildirim alabilmeliyim | Should | 2 | Demo panel |
+| US-16 | Başvurularımı aşama bazlı takip edebilmeliyim | Should | 2 | Demo panel |
+| US-17 | Hedef rol ilanlarını uyum ve gap uyarısıyla görebilmeliyim | Should | 2 | Demo panel |
+| US-18 | Mentor review paketi seçip demo talep oluşturabilmeliyim | Could | 3 | Demo panel |
 
 Detaylı sprint görevleri: [Sprint 1](docs/sprintler/sprint-1-ilk-sprint.md) · [Sprint 2](docs/sprintler/sprint-2-ikinci-sprint.md) · [Sprint 3](docs/sprintler/sprint-3-son-sprint.md)
 
@@ -200,7 +212,9 @@ Detay: [sprint-1-ilk-sprint.md](docs/sprintler/sprint-1-ilk-sprint.md)
 
 **Sprint hedefi:** Öğrenci hedef mesleğini seçsin; eksik yetenekler ve haftalık yol haritasını görsün; hazırlık % panelde görünsün.
 
-_(Sprint 2 başında Daily Scrum, Board Updates, Review ve Retro buraya eklenecek.)_
+**Sprint 2 demo modu:** FastAPI entegrasyonu şimdilik kapalı; öğrenci panelindeki CV analizi ve yeni gelir odaklı sayfalar demo veriyle çalışır. Yeni öğrenci sayfaları: `/panel/is-radari`, `/panel/basvuru-takibi`, `/panel/yetenek-pasaportu`, `/panel/mulakat-simulasyonu`, `/panel/mentor-degerlendirme`, `/panel/sohbet`.
+
+_(Sprint 2 Daily Scrum, Board Updates, Review ve Retro ilerledikçe buraya eklenecek.)_
 
 Detay: [sprint-2-ikinci-sprint.md](docs/sprintler/sprint-2-ikinci-sprint.md)
 
