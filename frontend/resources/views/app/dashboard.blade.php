@@ -17,7 +17,8 @@
             'tasks_delete' => __('panel.dashboard.tasks_delete'),
             'tasks_empty' => __('panel.dashboard.tasks_empty'),
             'tasks_all_done' => __('panel.dashboard.tasks_all_done'),
-        ]) }}
+        ]) }},
+        @js($tasksStorageKey ?? 'panel-weekly-tasks-default')
     )">
 
     <header class="mb-8">

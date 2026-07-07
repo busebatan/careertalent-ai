@@ -2,9 +2,9 @@ export const PANEL_WEEKLY_TASKS_KEY = 'panel-weekly-tasks';
 
 const PREVIEW_TASK_LIMIT = 3;
 
-function readRaw() {
+function readRaw(storageKey = PANEL_WEEKLY_TASKS_KEY) {
     try {
-        const raw = localStorage.getItem(PANEL_WEEKLY_TASKS_KEY);
+        const raw = localStorage.getItem(storageKey);
         return raw ? JSON.parse(raw) : null;
     } catch {
         return null;
@@ -23,8 +23,8 @@ function normalizeTask(task, fallbackSource = 'roadmap') {
 }
 
 export const WeeklyTasksStore = {
-    load(seedTasks) {
-        const stored = readRaw();
+    load(seedTasks, storageKey = PANEL_WEEKLY_TASKS_KEY) {
+        const stored = readRaw(storageKey);
         if (Array.isArray(stored) && stored.length) {
             return stored.map((task) => normalizeTask(task));
         }
@@ -32,7 +32,7 @@ export const WeeklyTasksStore = {
         return seedTasks.map((task) => normalizeTask(task, 'roadmap'));
     },
 
-    save(tasks) {
+    save(tasks, storageKey = PANEL_WEEKLY_TASKS_KEY) {
         const payload = tasks.map(({ id, title, done, note, source }) => ({
             id,
             title,
@@ -40,11 +40,11 @@ export const WeeklyTasksStore = {
             note,
             source,
         }));
-        localStorage.setItem(PANEL_WEEKLY_TASKS_KEY, JSON.stringify(payload));
+        localStorage.setItem(storageKey, JSON.stringify(payload));
     },
 };
 
-export function dashboardWeeklyPlan(seedTasks, career, labels) {
+export function dashboardWeeklyPlan(seedTasks, career, labels, storageKey = PANEL_WEEKLY_TASKS_KEY) {
     return {
         tasks: [],
         career,
@@ -52,7 +52,7 @@ export function dashboardWeeklyPlan(seedTasks, career, labels) {
         newTaskTitle: '',
 
         init() {
-            this.tasks = WeeklyTasksStore.load(seedTasks);
+            this.tasks = WeeklyTasksStore.load(seedTasks, storageKey);
         },
 
         get doneCount() {
@@ -90,7 +90,7 @@ export function dashboardWeeklyPlan(seedTasks, career, labels) {
         },
 
         persist() {
-            WeeklyTasksStore.save(this.tasks);
+            WeeklyTasksStore.save(this.tasks, storageKey);
         },
 
         reorderTasks() {

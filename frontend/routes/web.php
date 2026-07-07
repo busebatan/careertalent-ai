@@ -63,6 +63,7 @@ Route::prefix('panel')->name('panel.')->middleware('panel.locale')->group(functi
     Route::post('/cv/analiz-olusturucu', [CvUploadController::class, 'analyzeBuilder'])->name('cv.analyze-builder');
     Route::post('/cv/temizle', [CvUploadController::class, 'clear'])->name('cv.clear');
     Route::get('/kariyer-merdiveni', [CareerLadderController::class, 'show'])->name('career-ladder');
+    Route::post('/kariyer-merdiveni/hedef', [CareerLadderController::class, 'select'])->name('career-ladder.select');
     Route::get('/cv-olustur', [CvBuilderController::class, 'show'])->name('cv-builder');
     Route::get('/yol-haritasi', [RoadmapController::class, 'show'])->name('roadmap');
     Route::get('/egitim-onerileri', [LearningController::class, 'show'])->name('learning');

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\App;
 
 use App\Data\PanelDemoData;
+use App\Services\PanelRoadmapPlanner;
+use App\Services\PanelTargetRoleStore;
 
 class RoadmapController extends PanelController
 {
@@ -13,9 +15,13 @@ class RoadmapController extends PanelController
             'weekly_tasks' => PanelDemoData::weeklyTasks(),
         ]);
 
+        $plan = PanelRoadmapPlanner::plan($data['stats'], $data['weekly_tasks'], PanelTargetRoleStore::get());
+
         return $this->panelView('app.roadmap', [
-            'stats' => $data['stats'],
-            'roadmapTasks' => $data['weekly_tasks'],
+            'stats' => $plan['stats'],
+            'roadmapTasks' => $plan['tasks'],
+            'selectedTarget' => $plan['target'],
+            'tasksStorageKey' => PanelTargetRoleStore::storageKey(),
         ]);
     }
 }

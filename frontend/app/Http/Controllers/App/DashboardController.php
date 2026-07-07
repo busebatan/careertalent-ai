@@ -4,6 +4,8 @@ namespace App\Http\Controllers\App;
 
 use App\Data\PanelDemoData;
 use App\Services\PanelCvAnalysisStore;
+use App\Services\PanelRoadmapPlanner;
+use App\Services\PanelTargetRoleStore;
 
 class DashboardController extends PanelController
 {
@@ -25,13 +27,17 @@ class DashboardController extends PanelController
             $stats['readiness'] = (int) ($ladder[0]['readiness'] ?? $stats['readiness']);
         }
 
+        $plan = PanelRoadmapPlanner::plan($stats, $data['weekly_tasks'], PanelTargetRoleStore::get());
+
         return $this->panelView('app.dashboard', [
-            'stats' => $stats,
-            'weeklyTasks' => $data['weekly_tasks'],
+            'stats' => $plan['stats'],
+            'weeklyTasks' => $plan['tasks'],
             'learningResources' => $data['learning_resources'],
             'skillRadar' => $skillRadar,
             'hasCvAnalysis' => $hasCvAnalysis,
             'cvFileName' => $cvFileName,
+            'selectedTarget' => $plan['target'],
+            'tasksStorageKey' => PanelTargetRoleStore::storageKey(),
         ]);
     }
 }

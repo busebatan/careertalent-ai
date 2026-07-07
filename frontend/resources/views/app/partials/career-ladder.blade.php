@@ -45,9 +45,19 @@
                                             <p class="mt-1 text-xs text-slate-500">{{ __('panel.career_ladder.estimate') }}: {{ $role['weeks_estimate'] }}</p>
                                         @endif
                                     </div>
-                                    <button type="button" @click="open = !open" class="panel-outline-btn">
-                                        <span x-text="open ? swotHide : swotShow"></span>
-                                    </button>
+                                    <div class="flex shrink-0 flex-wrap gap-2">
+                                        <form method="POST" action="{{ route('panel.career-ladder.select') }}">
+                                            @csrf
+                                            <input type="hidden" name="mode" value="role">
+                                            <input type="hidden" name="role_id" value="{{ $role['id'] }}">
+                                            <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500">
+                                                {{ __('panel.career_ladder.select_role') }}
+                                            </button>
+                                        </form>
+                                        <button type="button" @click="open = !open" class="panel-outline-btn">
+                                            <span x-text="open ? swotHide : swotShow"></span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div x-show="open" x-cloak class="mt-4 grid gap-2 sm:grid-cols-2">
                                     <div class="panel-swot-cell">

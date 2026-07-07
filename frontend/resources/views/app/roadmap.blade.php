@@ -9,6 +9,16 @@
         <p class="text-slate-600 dark:text-slate-400">{{ __('panel.roadmap.subtitle') }}</p>
     </header>
 
+    @if (! empty($selectedTarget))
+        <div class="panel-card mb-4 border-emerald-500/30 bg-emerald-500/10 p-4">
+            <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{{ __('panel.roadmap.selected_target') }}</p>
+            <p class="mt-1 font-semibold text-slate-900 dark:text-slate-100">{{ $selectedTarget['title'] }}</p>
+            @if (! empty($selectedTarget['job_url']))
+                <a href="{{ $selectedTarget['job_url'] }}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex text-xs text-emerald-700 hover:underline dark:text-emerald-300">{{ __('panel.roadmap.open_job') }}</a>
+            @endif
+        </div>
+    @endif
+
     <div class="panel-card mb-6 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <p class="panel-muted text-sm">{{ __('panel.dashboard.target_career') }}</p>
