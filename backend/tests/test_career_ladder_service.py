@@ -41,3 +41,21 @@ def test_build_skill_radar_uses_role_targets():
     assert radar["overall_match"] == ladder[0]["readiness"]
     labels = {item["label"] for item in radar["skills"]}
     assert "SQL" in labels or "Excel" in labels
+
+
+def test_career_ladder_swot_is_derived_from_cv_skills_and_gaps():
+    skills = [
+        {"name": "SQL", "score": 90},
+        {"name": "Excel", "score": 85},
+    ]
+
+    ladder = build_career_ladder(skills)
+    data_role = next(item for item in ladder if item["id"] == "data-analyst")
+    swot = data_role["swot"]
+
+    assert data_role["swot_source"] == "cv_skills"
+    assert "SQL" in swot["strengths"]
+    assert "Python" in swot["weaknesses"]
+    assert any("Python" in item for item in swot["opportunities"])
+    assert any("Python" in item for item in swot["threats"])
+    assert "Yoğun aday rekabeti" not in swot["threats"]

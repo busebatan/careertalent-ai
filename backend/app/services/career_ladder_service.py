@@ -62,6 +62,32 @@ def _weeks_estimate(tier: str, gap_count: int) -> str | None:
     return "~6 ay" if gap_count > 8 else "3–6 ay"
 
 
+def _cv_based_opportunities(role_title: str, strengths: list[str], weaknesses: list[str]) -> list[str]:
+    if weaknesses:
+        return [
+            f"CV'deki {', '.join(strengths[:2]) or 'mevcut'} güçlü yönünü {weaknesses[0]} eksiğiyle tamamlayınca {role_title} için uyum artar",
+            f"{weaknesses[0]} kanıtı eklenirse CV bu role daha net hizalanır",
+        ]
+
+    return [
+        f"CV'deki {', '.join(strengths[:2]) or 'mevcut'} kanıtlar {role_title} rolüne başvuru için kullanılabilir",
+        "Mevcut güçlü yetenekleri proje/sertifika linkleriyle görünür yapmak uyumu artırır",
+    ]
+
+
+def _cv_based_threats(weaknesses: list[str], readiness: int) -> list[str]:
+    if weaknesses:
+        return [
+            f"CV'de {weaknesses[0]} kanıtı eksik kalırsa kısa listeye girme riski artar",
+            f"Eksik görünen alanlar: {', '.join(weaknesses[:3])}",
+        ]
+
+    if readiness < 85:
+        return ["CV'de güçlü sinyal var; yine de proje etkisi ve ölçülebilir sonuçlar net yazılmazsa uyum düşük algılanabilir"]
+
+    return ["Belirgin yetenek eksiği yok; risk, CV kanıtlarının başvuru metninde yeterince görünür olmaması"]
+
+
 def build_career_ladder(cv_skills: list[dict[str, Any]]) -> list[dict[str, Any]]:
     user_skills = _skill_map(cv_skills)
     ladder: list[dict[str, Any]] = []
@@ -88,21 +114,26 @@ def build_career_ladder(cv_skills: list[dict[str, Any]]) -> list[dict[str, Any]]
         gap_count = len(weaknesses)
         gaps_summary = ", ".join(weaknesses[:4]) if weaknesses else "—"
 
+        role_title = str(role.get("title", "Rol"))
+        visible_strengths = strengths[:4] or ["CV'de ilgili sinyal zayıf"]
+        visible_weaknesses = weaknesses[:4] or ["Belirgin eksik yok"]
+
         ladder.append({
             "id": role.get("id", ""),
             "tier": tier,
             "tier_label": _TIER_LABELS[tier],
-            "title": role.get("title", ""),
+            "title": role_title,
             "readiness": readiness,
             "gap_count": gap_count,
             "gaps_summary": gaps_summary,
             "weeks_estimate": _weeks_estimate(tier, gap_count),
             "swot": {
-                "strengths": strengths[:4] or ["CV'de ilgili sinyal zayıf"],
-                "weaknesses": weaknesses[:4] or ["Belirgin eksik yok"],
-                "opportunities": [f"{role.get('title', 'Rol')} için bootcamp kaynakları"],
-                "threats": ["Yoğun aday rekabeti"],
+                "strengths": visible_strengths,
+                "weaknesses": visible_weaknesses,
+                "opportunities": _cv_based_opportunities(role_title, strengths, weaknesses),
+                "threats": _cv_based_threats(weaknesses, readiness),
             },
+            "swot_source": "cv_skills",
         })
 
     tier_order = {"ready": 0, "near": 1, "reachable": 2}

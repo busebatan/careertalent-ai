@@ -13,13 +13,13 @@ class CareerLadderController extends PanelController
             'career_ladder' => PanelDemoData::careerLadder(),
             'career_tier_meta' => PanelDemoData::careerTierMeta(),
         ]);
-        $ladder = PanelCvAnalysisStore::careerLadder() ?? $data['career_ladder'];
-        $fromApi = PanelCvAnalysisStore::has();
+        $cvLadder = PanelCvAnalysisStore::careerLadder();
+        $ladder = $cvLadder ?? $data['career_ladder'];
 
         return $this->panelView('app.career-ladder', [
             'careerLadder' => $ladder,
             'careerTierMeta' => $data['career_tier_meta'],
-            'fromApi' => $fromApi,
+            'fromApi' => $cvLadder !== null,
         ]);
     }
 }
