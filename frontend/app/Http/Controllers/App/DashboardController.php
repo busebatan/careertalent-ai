@@ -4,6 +4,7 @@ namespace App\Http\Controllers\App;
 
 use App\Data\PanelDemoData;
 use App\Services\PanelCvAnalysisStore;
+use App\Services\PanelLearningPlanner;
 use App\Services\PanelRoadmapPlanner;
 use App\Services\PanelTargetRoleStore;
 
@@ -32,7 +33,7 @@ class DashboardController extends PanelController
         return $this->panelView('app.dashboard', [
             'stats' => $plan['stats'],
             'weeklyTasks' => $plan['tasks'],
-            'learningResources' => $data['learning_resources'],
+            'learningResources' => PanelLearningPlanner::resources($data['learning_resources'], $plan['target']),
             'skillRadar' => $skillRadar,
             'hasCvAnalysis' => $hasCvAnalysis,
             'cvFileName' => $cvFileName,

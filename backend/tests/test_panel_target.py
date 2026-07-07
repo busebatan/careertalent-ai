@@ -65,3 +65,58 @@ def test_job_listing_parse_falls_back_to_url(monkeypatch):
     body = response.json()
     assert body["title"] == "senior data analyst"
     assert body["parsed_from"] == "url"
+
+
+def test_job_listing_parse_extracts_skills_from_html_body(monkeypatch):
+    class DummyResponse:
+        status_code = 200
+        text = """
+        <html><head><title>Product Analyst</title><meta name='description' content='Own funnel and retention metrics'></head>
+        <body>We need SQL, Python, Power BI, A/B testing, cohort analysis and stakeholder communication.</body></html>
+        """
+
+    monkeypatch.setattr("app.services.job_listing_parser.httpx.get", lambda *args, **kwargs: DummyResponse())
+    monkeypatch.setattr("app.services.job_listing_parser.ai_configured", lambda: False)
+
+    response = client.post(
+        "/api/v1/panel/job-listings/parse",
+        json={"url": "https://jobs.example.com/product-analyst"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["title"] == "Product Analyst"
+    assert body["parsed_from"] == "html"
+    assert "SQL" in body["required_skills"]
+    assert "Power BI" in body["required_skills"]
+    assert "A/B Test" in body["required_skills"]
+    assert "Product Analytics" in body["required_skills"]
+
+
+def test_job_listing_parse_extracts_json_ld_job_posting(monkeypatch):
+    class DummyResponse:
+        status_code = 200
+        text = """
+        <html><head><title>Backend Developer</title></head>
+        <body>
+        <script type="application/ld+json">
+        {"@type":"JobPosting","title":"Backend Developer","description":"FastAPI, Docker, REST API and PostgreSQL required."}
+        </script>
+        </body></html>
+        """
+
+    monkeypatch.setattr("app.services.job_listing_parser.httpx.get", lambda *args, **kwargs: DummyResponse())
+    monkeypatch.setattr("app.services.job_listing_parser.ai_configured", lambda: False)
+
+    response = client.post(
+        "/api/v1/panel/job-listings/parse",
+        json={"url": "https://jobs.example.com/backend-developer"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["title"] == "Backend Developer"
+    assert body["parsed_from"] == "html"
+    assert "FastAPI" in body["required_skills"]
+    assert "Docker" in body["required_skills"]
+    assert "REST API" in body["required_skills"]

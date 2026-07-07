@@ -39,7 +39,10 @@ try {
   await page.goto(`${baseURL}/panel`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   const dashboardText = await page.locator('body').innerText({ timeout: 10_000 });
   assert(dashboardText.includes('API bağlı'), 'Dashboard API bağlı rozeti göstermiyor');
-  assert(dashboardText.includes('Google Data Analytics Certificate'), 'Dashboard FastAPI eğitim verisini göstermiyor');
+  assert(
+    dashboardText.includes('Google Data Analytics Certificate') || dashboardText.includes('SQLBolt Interactive SQL'),
+    'Dashboard FastAPI/hedefe özel eğitim verisini göstermiyor',
+  );
   assert.deepEqual(pageErrors, [], `Browser runtime error: ${pageErrors.join(' | ')}`);
 
   console.log(`panel-navigation-smoke ok: ${panelPages.length} page, base=${baseURL}`);

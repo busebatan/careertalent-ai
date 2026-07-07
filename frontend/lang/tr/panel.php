@@ -85,7 +85,8 @@ return [
     ],
     'learning_page' => [
         'title' => 'Eğitim Önerileri',
-        'subtitle' => 'Gap analizine göre harici eğitim ve sertifika kaynakları.',
+        'subtitle' => 'Gap analizine ve seçili hedef mesleğe göre harici eğitim ve sertifika kaynakları.',
+        'selected_target' => 'Seçili hedef',
     ],
     'job_matches' => [
         'title' => 'İlan Eşleştirme',

@@ -63,13 +63,13 @@ class PanelCareerTargetTest extends TestCase
         $this->get(route('panel.roadmap'))
             ->assertOk()
             ->assertSee('Veri Analisti', false)
-            ->assertSee('Python kanıtı oluştur', false)
-            ->assertSee('Power BI kanıtı oluştur', false);
+            ->assertSee('Python mini proje üret', false)
+            ->assertSee('Power BI dashboard taslağı hazırla', false);
 
         $this->get(route('panel.tasks'))
             ->assertOk()
             ->assertSee('Veri Analisti', false)
-            ->assertSee('Python kanıtı oluştur', false);
+            ->assertSee('Python mini proje üret', false);
     }
 
     public function test_custom_role_name_shapes_roadmap(): void
@@ -97,8 +97,8 @@ class PanelCareerTargetTest extends TestCase
             ->assertOk()
             ->assertSee('İlan hedefi: Junior Product Analyst', false)
             ->assertSee('İlan gereksinimlerini çıkar', false)
-            ->assertSee('SQL kanıtı oluştur', false)
-            ->assertSee('Product Analytics kanıtı oluştur', false)
+            ->assertSee('SQL case pratiği yap', false)
+            ->assertSee('Product analytics funnel case çöz', false)
             ->assertSee('İlanı aç', false);
 
         Http::assertSent(fn ($request) => $request->method() === 'POST'
@@ -108,4 +108,33 @@ class PanelCareerTargetTest extends TestCase
             && $request['source'] === 'job_url'
             && $request['title'] === 'İlan hedefi: Junior Product Analyst');
     }
+
+    public function test_learning_resources_are_specific_to_selected_role(): void
+    {
+        session([
+            'panel_target_role' => [
+                'source' => 'job_url',
+                'role_id' => 'job-product-analyst',
+                'title' => 'İlan hedefi: Product Analyst',
+                'readiness' => 30,
+                'gap_count' => 2,
+                'gaps_summary' => 'SQL, Product Analytics',
+                'weeks_estimate' => '2–4 hafta',
+                'required_skills' => ['SQL', 'Product Analytics'],
+            ],
+        ]);
+
+        Http::fake([
+            'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
+            'http://localhost:8000/api/v1/panel/target' => Http::response(['target' => session('panel_target_role')], 200),
+            'http://localhost:8000/*' => Http::response([], 200),
+        ]);
+
+        $this->get(route('panel.learning'))
+            ->assertOk()
+            ->assertSee('İlan hedefi: Product Analyst', false)
+            ->assertSee('SQLBolt Interactive SQL', false)
+            ->assertSee('Product Analytics Micro-Course', false);
+    }
+
 }

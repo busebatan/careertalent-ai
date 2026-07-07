@@ -85,7 +85,8 @@ return [
     ],
     'learning_page' => [
         'title' => 'Learning Resources',
-        'subtitle' => 'External courses and certificates based on your gap analysis.',
+        'subtitle' => 'External courses and certificates based on your gap analysis and selected target role.',
+        'selected_target' => 'Selected target',
     ],
     'job_matches' => [
         'title' => 'Job Matching',
