@@ -45,3 +45,17 @@ def test_panel_job_match_analyze_endpoint():
     body = response.json()
     assert body["job"]["match_score"] >= 50
     assert body["job"]["matched_skills"]
+
+
+def test_panel_openapi_exports_response_models():
+    response = client.get("/openapi.json")
+
+    assert response.status_code == 200
+    schema = response.json()
+    dashboard_schema = schema["paths"]["/api/v1/panel/dashboard"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+    analyze_schema = schema["paths"]["/api/v1/panel/job-matches/analyze"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]
+
+    assert dashboard_schema["$ref"].endswith("/DashboardResponse")
+    assert analyze_schema["$ref"].endswith("/JobMatchAnalyzeResponse")
+    assert "JobMatch" in schema["components"]["schemas"]
+    assert schema["components"]["schemas"]["PanelStats"]["properties"]["readiness"]["maximum"] == 100

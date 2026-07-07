@@ -12,6 +12,22 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.schemas.panel import (
+    ApplicationsResponse,
+    CareerLadderResponse,
+    ChatResponse,
+    DashboardResponse,
+    InterviewResponse,
+    JobMatchAnalyzeResponse,
+    JobMatchesResponse,
+    JobRadarResponse,
+    LearningResponse,
+    MentorsResponse,
+    RoadmapResponse,
+    SkillPassportResponse,
+    TasksResponse,
+)
+
 router = APIRouter()
 
 
@@ -302,63 +318,63 @@ def _analyze_job(url: str) -> dict:
     }
 
 
-@router.get("/dashboard")
-def dashboard():
+@router.get("/dashboard", response_model=DashboardResponse)
+def dashboard() -> DashboardResponse:
     return {"stats": _stats(), "weekly_tasks": _weekly_tasks(), "learning_resources": _learning_resources()}
 
 
-@router.get("/roadmap")
-def roadmap():
+@router.get("/roadmap", response_model=RoadmapResponse)
+def roadmap() -> RoadmapResponse:
     return {"stats": _stats(), "weekly_tasks": _weekly_tasks()}
 
 
-@router.get("/tasks")
-def tasks():
+@router.get("/tasks", response_model=TasksResponse)
+def tasks() -> TasksResponse:
     return {"stats": _stats(), "weekly_tasks": _weekly_tasks()}
 
 
-@router.get("/learning")
-def learning():
+@router.get("/learning", response_model=LearningResponse)
+def learning() -> LearningResponse:
     return {"learning_resources": _learning_resources()}
 
 
-@router.get("/career-ladder")
-def career_ladder():
+@router.get("/career-ladder", response_model=CareerLadderResponse)
+def career_ladder() -> CareerLadderResponse:
     return {"career_ladder": _career_ladder(), "career_tier_meta": _career_tier_meta()}
 
 
-@router.get("/skill-passport")
-def skill_passport():
+@router.get("/skill-passport", response_model=SkillPassportResponse)
+def skill_passport() -> SkillPassportResponse:
     return {"passport": _skill_passport()}
 
 
-@router.get("/interview")
-def interview():
+@router.get("/interview", response_model=InterviewResponse)
+def interview() -> InterviewResponse:
     return {"interview": _interview()}
 
 
-@router.get("/applications")
-def applications():
+@router.get("/applications", response_model=ApplicationsResponse)
+def applications() -> ApplicationsResponse:
     return {"applications": _applications()}
 
 
-@router.get("/job-radar")
-def job_radar():
+@router.get("/job-radar", response_model=JobRadarResponse)
+def job_radar() -> JobRadarResponse:
     return {"radar": _job_radar()}
 
 
-@router.get("/mentors")
-def mentors():
+@router.get("/mentors", response_model=MentorsResponse)
+def mentors() -> MentorsResponse:
     return {"mentors": _mentors()}
 
 
-@router.get("/chat")
-def chat():
+@router.get("/chat", response_model=ChatResponse)
+def chat() -> ChatResponse:
     return {"assistant": _chat_assistant()}
 
 
-@router.get("/job-matches")
-def job_matches():
+@router.get("/job-matches", response_model=JobMatchesResponse)
+def job_matches() -> JobMatchesResponse:
     seed_urls = [
         "https://www.kariyer.net/is-ilani/junior-veri-analisti-fintech",
         "https://www.linkedin.com/jobs/view/data-analyst-remote-123456",
@@ -366,6 +382,6 @@ def job_matches():
     return {"seed_jobs": [_analyze_job(url) for url in seed_urls], "user_skills": _user_skills(), "readiness": _stats()["readiness"]}
 
 
-@router.post("/job-matches/analyze")
-def analyze_job_match(body: JobMatchRequest):
+@router.post("/job-matches/analyze", response_model=JobMatchAnalyzeResponse)
+def analyze_job_match(body: JobMatchRequest) -> JobMatchAnalyzeResponse:
     return {"job": _analyze_job(body.url)}
