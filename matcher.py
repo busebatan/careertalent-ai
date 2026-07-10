@@ -49,12 +49,13 @@ def calculate_role_matching(user_skills_list, json_path='data/roles/bootcamp_rol
         else:
             status_bucket = "C - ULAŞILABİLİR"
             
-        results.append({
-            "title": role_title,
-            "match_percentage": round(match_percentage, 1),
-            "status_bucket": status_bucket,
-            "strengths": matched_skills[:3] if matched_skills else ["Temel Bilgiler"],
-            "weaknesses": missing_skills[:3] if missing_skills else ["Eksik yok"]
+            results.append({
+                "title": role_title,
+                "match_percentage": round(match_percentage, 1),
+                "status_bucket": status_bucket,
+                # Dilimlemeyi [:3] kaldırarak tüm kırılımları arayüze eksiksiz gönderiyoruz
+                "strengths": matched_skills if matched_skills else ["Temel Bilgiler"],
+                "weaknesses": missing_skills if missing_skills else ["Eksik yok"]
         })
         
     return sorted(results, key=lambda x: x['match_percentage'], reverse=True)
