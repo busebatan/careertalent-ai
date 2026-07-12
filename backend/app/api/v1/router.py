@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 
-from app.api.v1 import cv, panel
+from app.api.v1 import career_roles,cv, panel, auth
 
 api_router = APIRouter()
 api_router.include_router(cv.router, prefix="/cv", tags=["CV"])
 api_router.include_router(panel.router, prefix="/panel", tags=["Panel"])
+api_router.include_router(career_roles.router,prefix="/career-roles",tags=["Career Roles"],)
+api_router.include_router( auth.router, prefix="/auth",tags=["Authentication"],)
