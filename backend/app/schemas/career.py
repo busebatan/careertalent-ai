@@ -150,3 +150,48 @@ class EvidenceResponse(BaseModel):
 class CareerResetRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     scope: Literal["analysis", "plan", "all"]
+
+
+class JobCvSuggestionAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    action: Literal["rewrite", "add", "develop"]
+    section: Literal["summary", "skills", "experience", "projects", "education"]
+    title: str = Field(min_length=2, max_length=200)
+    reason: str = Field(min_length=2, max_length=1000)
+    suggested_text: str = Field(default="", max_length=2000)
+    safe_to_apply: bool
+    related_skills: list[str] = Field(default_factory=list, max_length=12)
+
+
+class JobOpportunityAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    title: str = Field(min_length=2, max_length=200)
+    company: str = Field(default="", max_length=160)
+    source: str = Field(default="", max_length=120)
+    required_skills: list[str] = Field(min_length=1, max_length=40)
+    matched_skills: list[str] = Field(max_length=40)
+    missing_skills: list[str] = Field(max_length=40)
+    match_score: int = Field(ge=0, le=100)
+    cv_suggestions: list[JobCvSuggestionAI] = Field(min_length=1, max_length=20)
+
+
+class CvRewriteAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    revised_cv_text: str = Field(min_length=40, max_length=30000)
+
+
+class JobAnalyzeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    source_url: str | None = Field(default=None, max_length=2048)
+    job_text: str | None = Field(default=None, max_length=30000)
+
+    @model_validator(mode="after")
+    def require_source(self) -> "JobAnalyzeRequest":
+        if not (self.source_url and self.source_url.strip()) and not (self.job_text and len(self.job_text.strip()) >= 40):
+            raise ValueError("İlan URL'si veya en az 40 karakter ilan metni gerekli")
+        return self
+
+
+class JobApplyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    suggestion_ids: list[str] = Field(min_length=1, max_length=20)

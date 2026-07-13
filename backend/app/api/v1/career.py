@@ -7,13 +7,13 @@ from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence
+from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence, JobOpportunity
 from app.models.user import User
 from app.schemas.career import (
     CareerAnalysisResponse,
@@ -23,6 +23,8 @@ from app.schemas.career import (
     CareerResetRequest,
     EvidenceCreateRequest,
     EvidenceResponse,
+    JobAnalyzeRequest,
+    JobApplyRequest,
 )
 from app.services.career_engine import (
     create_analysis,
@@ -33,7 +35,8 @@ from app.services.career_engine import (
     submit_evidence,
     reset_career_state,
 )
-from app.tasks.career import analyze_cv_task, plan_target_task, review_evidence_task
+from app.services.job_opportunity import create_job, current_analysis as current_ready_analysis, serialize_job
+from app.tasks.career import analyze_cv_task, analyze_job_task, apply_job_suggestions_task, plan_target_task, review_evidence_task
 
 router = APIRouter(prefix="/career", tags=["Career Engine"], dependencies=[Depends(get_current_user)])
 DB = Annotated[Session, Depends(get_db)]
@@ -42,6 +45,65 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 def _not_found() -> HTTPException:
     return HTTPException(status_code=404, detail="Kariyer kaydı bulunamadı")
+
+
+@router.post("/jobs/analyze", status_code=202)
+def create_job_analysis(request: JobAnalyzeRequest, db: DB, user: CurrentUser):
+    if current_ready_analysis(db, user.id) is None:
+        raise HTTPException(status_code=409, detail="İlan analizi için önce CV analizi tamamlanmalı")
+    row = create_job(db, user.id, request.source_url, request.job_text)
+    analyze_job_task.delay(row.id)
+    return serialize_job(row)
+
+
+@router.get("/jobs")
+def saved_jobs(db: DB, user: CurrentUser):
+    rows = db.scalars(select(JobOpportunity).where(JobOpportunity.user_id == user.id, JobOpportunity.saved.is_(True)).order_by(JobOpportunity.created_at.desc())).all()
+    return [serialize_job(row) for row in rows]
+
+
+@router.get("/jobs/{job_id}")
+def job_status(job_id: str, db: DB, user: CurrentUser):
+    row = db.scalar(select(JobOpportunity).where(JobOpportunity.id == job_id, JobOpportunity.user_id == user.id))
+    if row is None:
+        raise _not_found()
+    return serialize_job(row)
+
+
+@router.post("/jobs/{job_id}/save")
+def save_job(job_id: str, db: DB, user: CurrentUser):
+    row = db.scalar(select(JobOpportunity).where(JobOpportunity.id == job_id, JobOpportunity.user_id == user.id))
+    if row is None:
+        raise _not_found()
+    if row.status != "ready":
+        raise HTTPException(status_code=409, detail="Yalnız tamamlanan ilan analizi kaydedilebilir")
+    row.saved = True
+    db.commit(); db.refresh(row)
+    return serialize_job(row)
+
+
+@router.delete("/jobs/{job_id}", status_code=204)
+def delete_job(job_id: str, db: DB, user: CurrentUser):
+    result = db.execute(delete(JobOpportunity).where(JobOpportunity.id == job_id, JobOpportunity.user_id == user.id))
+    if not result.rowcount:
+        raise _not_found()
+    db.commit()
+
+
+@router.post("/jobs/{job_id}/apply", status_code=202)
+def apply_job(job_id: str, request: JobApplyRequest, db: DB, user: CurrentUser):
+    row = db.scalar(select(JobOpportunity).where(JobOpportunity.id == job_id, JobOpportunity.user_id == user.id))
+    if row is None:
+        raise _not_found()
+    indexed = {item.get("id"): item for item in (row.cv_suggestions or [])}
+    selected = [indexed.get(item_id) for item_id in request.suggestion_ids]
+    if row.status != "ready" or any(item is None or not item.get("safe_to_apply") for item in selected):
+        raise HTTPException(status_code=422, detail="Yalnız güvenli CV önerileri uygulanabilir")
+    row.apply_status = "queued"
+    db.commit()
+    apply_job_suggestions_task.delay(row.id, request.suggestion_ids)
+    db.refresh(row)
+    return serialize_job(row)
 
 
 @router.get("/analysis/current", response_model=CareerAnalysisResponse | None)

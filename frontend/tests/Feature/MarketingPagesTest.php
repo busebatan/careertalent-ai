@@ -15,19 +15,18 @@ class MarketingPagesTest extends TestCase
         Http::fake([
             'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
             'http://localhost:8000/api/v1/panel/ilan-eslestirme/analyze' => Http::response([], 404),
-            'http://localhost:8000/api/v1/panel/job-matches/analyze' => Http::response([
-                'job' => [
+            'http://localhost:8000/api/v1/career/jobs/analyze' => Http::response([
                     'id' => 'api-kariyer-bi-analisti',
+                    'status' => 'queued',
                     'title' => 'BI Analisti',
                     'company' => 'Perakende AI',
                     'source' => 'kariyer.net',
-                    'url' => 'https://www.kariyer.net/is-ilani/bi-analisti-perakende',
+                    'source_url' => 'https://www.kariyer.net/is-ilani/bi-analisti-perakende',
                     'match_score' => 82,
                     'matched_skills' => ['SQL'],
                     'missing_skills' => ['Power BI'],
                     'recommendation' => 'prepare',
                     'analyzed_at' => '2026-07-07T00:00:00+00:00',
-                ],
             ], 200),
             'http://localhost:8000/*' => Http::response([], 200),
         ]);
@@ -258,21 +257,20 @@ class MarketingPagesTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('İş Fırsatları');
-        $response->assertSee('İlan linki ekle');
-        $response->assertSee('Junior Veri Analisti');
-        $response->assertSee('Data Analyst (Remote)');
+        $response->assertSee('İş ilanını analiz et');
+        $response->assertSee('CV için öneriler');
         $response->assertSee('Analiz et');
     }
 
     public function test_panel_ilan_eslestirme_analiz_endpoint(): void
     {
         $response = $this->postJson('/panel/ilan-analizi/analiz', [
-            'url' => 'https://www.kariyer.net/is-ilani/bi-analisti-perakende',
+            'source_url' => 'https://www.kariyer.net/is-ilani/bi-analisti-perakende',
         ]);
 
         $response->assertOk();
-        $response->assertJsonPath('job.title', 'BI Analisti');
-        $response->assertJsonPath('job.source', 'kariyer.net');
+        $response->assertJsonPath('title', 'BI Analisti');
+        $response->assertJsonPath('source', 'kariyer.net');
     }
 
     public function test_panel_ilan_eslestirme_ingilizce(): void

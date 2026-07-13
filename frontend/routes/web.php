@@ -71,6 +71,10 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'panel.locale'])
     Route::post('/kariyer-rotam/hedef', [CareerLadderController::class, 'select'])->name('career-ladder.select');
     Route::get('/ilan-analizi', [JobMatchesController::class, 'show'])->name('job-matches');
     Route::post('/ilan-analizi/analiz', [JobMatchesController::class, 'analyze'])->name('job-matches.analyze');
+    Route::get('/ilan-analizi/{jobId}/durum', [JobMatchesController::class, 'status'])->name('job-matches.status');
+    Route::post('/ilan-analizi/{jobId}/kaydet', [JobMatchesController::class, 'save'])->name('job-matches.save');
+    Route::post('/ilan-analizi/{jobId}/uygula', [JobMatchesController::class, 'apply'])->name('job-matches.apply');
+    Route::delete('/ilan-analizi/{jobId}', [JobMatchesController::class, 'destroy'])->name('job-matches.destroy');
     Route::get('/basvurularim', [StudentFeaturesController::class, 'applications'])->name('applications');
     Route::get('/mulakat-hazirligi', [StudentFeaturesController::class, 'interview'])->name('interview');
     Route::get('/uzmanlardan-destek', [StudentFeaturesController::class, 'mentors'])->name('mentors');

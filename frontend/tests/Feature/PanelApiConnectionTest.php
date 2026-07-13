@@ -53,29 +53,46 @@ class PanelApiConnectionTest extends TestCase
     public function test_job_match_analyze_posts_to_fastapi(): void
     {
         Http::fake([
-            'http://localhost:8000/api/v1/panel/job-matches/analyze' => Http::response([
-                'job' => [
+            'http://localhost:8000/api/v1/career/jobs/analyze' => Http::response([
                     'id' => 'api-job-analysis',
+                    'status' => 'queued',
                     'title' => 'API İş Fırsatları',
                     'company' => 'FastAPI HR',
                     'source' => 'api.example',
-                    'url' => 'https://api.example/jobs/1',
+                    'source_url' => 'https://api.example/jobs/1',
                     'match_score' => 93,
                     'matched_skills' => ['SQL'],
                     'missing_skills' => [],
                     'recommendation' => 'apply',
                     'analyzed_at' => '2026-07-07T00:00:00+00:00',
-                ],
             ], 200),
         ]);
 
         $response = $this->postJson('/panel/ilan-analizi/analiz', [
-            'url' => 'https://api.example/jobs/1',
+            'source_url' => 'https://api.example/jobs/1',
         ]);
 
         $response->assertOk();
-        $response->assertJsonPath('job.title', 'API İş Fırsatları');
+        $response->assertJsonPath('title', 'API İş Fırsatları');
         Http::assertSent(fn ($request) => $request->method() === 'POST'
-            && $request->url() === 'http://localhost:8000/api/v1/panel/job-matches/analyze');
+            && $request->url() === 'http://localhost:8000/api/v1/career/jobs/analyze');
+    }
+
+    public function test_job_match_status_save_apply_and_delete_proxy_to_career_api(): void
+    {
+        $job = ['id' => 'job-1', 'status' => 'ready', 'saved' => true, 'cv_suggestions' => []];
+        Http::fake([
+            'http://localhost:8000/api/v1/career/jobs/job-1' => Http::response($job, 200),
+            'http://localhost:8000/api/v1/career/jobs/job-1/save' => Http::response($job, 200),
+            'http://localhost:8000/api/v1/career/jobs/job-1/apply' => Http::response([...$job, 'apply_status' => 'queued'], 202),
+        ]);
+
+        $this->getJson('/panel/ilan-analizi/job-1/durum')->assertOk()->assertJsonPath('id', 'job-1');
+        $this->postJson('/panel/ilan-analizi/job-1/kaydet')->assertOk()->assertJsonPath('saved', true);
+        $this->postJson('/panel/ilan-analizi/job-1/uygula', ['suggestion_ids' => ['suggestion-1']])->assertStatus(202)->assertJsonPath('apply_status', 'queued');
+        $this->deleteJson('/panel/ilan-analizi/job-1')->assertOk();
+
+        Http::assertSent(fn ($request) => $request->method() === 'DELETE'
+            && $request->url() === 'http://localhost:8000/api/v1/career/jobs/job-1');
     }
 }

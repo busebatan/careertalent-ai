@@ -143,6 +143,42 @@ class CareerTalentApiClient
         return $this->postJson('/api/v1/career/reset', ['scope' => $scope], 15);
     }
 
+    public function careerJobs(): array
+    {
+        return $this->getJson('/api/v1/career/jobs', 15);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function analyzeCareerJob(array $payload): array
+    {
+        return $this->postJson('/api/v1/career/jobs/analyze', $payload, 20);
+    }
+
+    public function careerJob(string $jobId): array
+    {
+        return $this->getJson('/api/v1/career/jobs/'.rawurlencode($jobId), 15);
+    }
+
+    public function saveCareerJob(string $jobId): array
+    {
+        return $this->postJson('/api/v1/career/jobs/'.rawurlencode($jobId).'/save', [], 15);
+    }
+
+    /** @param list<string> $suggestionIds */
+    public function applyCareerJobSuggestions(string $jobId, array $suggestionIds): array
+    {
+        return $this->postJson('/api/v1/career/jobs/'.rawurlencode($jobId).'/apply', ['suggestion_ids' => $suggestionIds], 20);
+    }
+
+    public function deleteCareerJob(string $jobId): array
+    {
+        try {
+            return $this->normalizeResponse($this->request(15)->delete($this->baseUrl().'/api/v1/career/jobs/'.rawurlencode($jobId)));
+        } catch (ConnectionException $exception) {
+            return $this->connectionError($exception);
+        }
+    }
+
     public function careerTargets(): array
     {
         return $this->getJson('/api/v1/career/targets', 10);

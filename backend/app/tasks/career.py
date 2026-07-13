@@ -2,8 +2,9 @@ from sqlalchemy import select
 
 from app.celery_app import celery_app
 from app.core.database import SessionLocal
-from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence
+from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence, JobOpportunity
 from app.services.career_engine import analyze_row, plan_target, review_evidence
+from app.services.job_opportunity import analyze_job, apply_suggestions
 
 
 @celery_app.task(name="career.analyze_cv")
@@ -69,5 +70,29 @@ def review_evidence_task(evidence_id: str) -> str:
             if result.status == "accepted":
                 reanalyze_task.delay(result.user_id, result.task_id)
         return evidence_id
+    finally:
+        db.close()
+
+
+@celery_app.task(name="career.analyze_job")
+def analyze_job_task(job_id: str) -> str:
+    db = SessionLocal()
+    try:
+        row = db.scalar(select(JobOpportunity).where(JobOpportunity.id == job_id))
+        if row is not None:
+            analyze_job(db, row)
+        return job_id
+    finally:
+        db.close()
+
+
+@celery_app.task(name="career.apply_job_suggestions")
+def apply_job_suggestions_task(job_id: str, suggestion_ids: list[str]) -> str:
+    db = SessionLocal()
+    try:
+        row = db.scalar(select(JobOpportunity).where(JobOpportunity.id == job_id))
+        if row is not None:
+            apply_suggestions(db, row, suggestion_ids)
+        return job_id
     finally:
         db.close()

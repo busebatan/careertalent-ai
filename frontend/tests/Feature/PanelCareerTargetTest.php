@@ -40,6 +40,78 @@ class PanelCareerTargetTest extends TestCase
         });
     }
 
+    public function test_selecting_ladder_role_shows_selected_state_on_roadmap(): void
+    {
+        $this->fakeCareerApi([
+            [
+                'id' => 'junior-da',
+                'tier' => 'A',
+                'title' => 'Junior Data Analyst',
+                'readiness' => 85,
+                'gap_count' => 4,
+                'gaps_summary' => 'Cloud',
+                'swot' => [
+                    'strengths' => ['SQL'],
+                    'weaknesses' => ['Cloud'],
+                    'opportunities' => ['Bootcamp'],
+                    'threats' => ['Competition'],
+                ],
+            ],
+            [
+                'id' => 'data-scientist',
+                'tier' => 'B',
+                'title' => 'Data Scientist',
+                'readiness' => 40,
+                'gap_count' => 3,
+                'gaps_summary' => 'ML projects',
+                'swot' => [
+                    'strengths' => ['Statistics'],
+                    'weaknesses' => ['Deep learning'],
+                    'opportunities' => ['Courses'],
+                    'threats' => ['Senior pool'],
+                ],
+            ],
+        ]);
+
+        $this->post(route('panel.career-ladder.select'), ['mode' => 'role', 'role_id' => 'data-scientist'])
+            ->assertRedirect(route('panel.roadmap'));
+
+        $this->get(route('panel.roadmap'))
+            ->assertOk()
+            ->assertSee('panel-card-ladder-selected', false)
+            ->assertSee('panel-card-ladder-collapsed', false)
+            ->assertSee('panel-btn-ladder-selected', false)
+            ->assertSee(__('panel.career_ladder.role_selected'), false)
+            ->assertSee('Deep learning', false);
+    }
+
+    public function test_roadmap_ladder_is_active_before_target_selection(): void
+    {
+        $this->fakeCareerApi([
+            [
+                'id' => 'junior-da',
+                'tier' => 'A',
+                'title' => 'Junior Data Analyst',
+                'readiness' => 85,
+                'gap_count' => 4,
+                'gaps_summary' => 'Cloud',
+                'swot' => [
+                    'strengths' => ['SQL'],
+                    'weaknesses' => ['Cloud'],
+                    'opportunities' => ['Bootcamp'],
+                    'threats' => ['Competition'],
+                ],
+            ],
+        ]);
+
+        $this->get(route('panel.roadmap'))
+            ->assertOk()
+            ->assertSee('panel-card-ladder-active', false)
+            ->assertSee(__('panel.career_ladder.select_role'), false)
+            ->assertSee(__('panel.career_ladder.swot_show'), false)
+            ->assertDontSee('panel-btn-ladder-selected', false);
+    }
+
     public function test_selecting_ladder_role_redirects_to_role_based_roadmap_and_tasks(): void
     {
         $this->fakeCareerApi([[

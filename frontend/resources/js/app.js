@@ -1,5 +1,5 @@
 import { PanelCvStore, panelCvRadar, profileCvUpload, pollCvAnalysis } from './panel-cv-store';
-import { JobMatchesStore, panelJobMatches } from './panel-job-matches';
+import { panelJobMatches } from './panel-job-matches';
 import { WeeklyTasksStore, dashboardWeeklyPlan } from './panel-weekly-tasks';
 import { exportHarvardCvPdf } from './cv-pdf-export';
 import {

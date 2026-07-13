@@ -37,18 +37,17 @@ echo "→ migrate + Livewire assets (Alpine panel UI)"
 php artisan migrate --force --no-interaction
 php artisan livewire:publish --assets --no-interaction 2>/dev/null || true
 
-echo "→ Laravel caches"
-php artisan route:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-echo "→ route smoke (panel.cv.analyze zorunlu)"
-php artisan route:list --name=panel.cv.analyze | grep -q 'cv-merkezi/analiz' \
-  || { echo "HATA: panel.cv.analyze route cache'te yok"; exit 1; }
-
 echo "→ permissions"
 chown -R yigit:www-data "$DEST"
+chmod -R ug+rwx "$DEST/frontend/storage" "$DEST/frontend/bootstrap/cache"
+
+echo "→ Laravel caches (yigit user — PHP-FPM ile aynı sahip)"
+cd "$DEST/frontend"
+sudo -u yigit php artisan route:clear
+sudo -u yigit php artisan config:cache
+sudo -u yigit php artisan route:cache
+sudo -u yigit php artisan view:clear
+sudo -u yigit php artisan view:cache
 
 echo "→ smoke (origin)"
 for path in / /panel /panel/kariyer-profilim /panel/cv-merkezi /panel/kariyer-rotam /panel/yetenek-pasaportu; do

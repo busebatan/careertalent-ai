@@ -2,10 +2,7 @@
 
 namespace App\Http\Controllers\App;
 
-use App\Data\PanelDemoData;
-use App\Data\PanelJobMatchDemoData;
 use App\Services\CareerTalentApiClient;
-use App\Services\JobMatchAnalyzer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,53 +10,50 @@ class JobMatchesController extends PanelController
 {
     public function show(CareerTalentApiClient $api)
     {
-        $result = $api->panel('job-matches');
-        $fallback = $this->fallbackJobMatches();
-        $data = $fallback;
-        if ($result['ok'] && is_array($result['body'])) {
-            $data = array_merge($fallback, $result['body']);
-        }
+        $jobs = $api->careerJobs();
+        $analysis = $api->currentCareerAnalysis();
+        $skills = collect($analysis['body']['skills'] ?? [])->pluck('name')->filter()->values()->all();
+        $radar = collect($analysis['body']['radar'] ?? []);
 
         return $this->panelView('app.job-matches', [
-            'seedJobs' => $data['seed_jobs'],
-            'userSkills' => $data['user_skills'],
-            'readiness' => $data['readiness'],
+            'seedJobs' => $jobs['ok'] && is_array($jobs['body']) ? $jobs['body'] : [],
+            'userSkills' => $skills,
+            'readiness' => (int) round((float) ($radar->avg('score') ?? 0)),
         ]);
     }
 
     public function analyze(Request $request, CareerTalentApiClient $api): JsonResponse
     {
-        $validated = $request->validate([
-            'url' => ['required', 'string', 'max:2048'],
+        $payload = $request->validate([
+            'source_url' => ['nullable', 'url:http,https', 'max:2048', 'required_without:job_text'],
+            'job_text' => ['nullable', 'string', 'min:40', 'max:30000', 'required_without:source_url'],
         ]);
-
-        $result = $api->analyzePanelJob($validated['url']);
-        if (! ($result['ok'] ?? false)) {
-            return response()->json([
-                'message' => $result['error'] ?? __('panel.job_matches.error_generic'),
-            ], $result['status'] ?? 502);
-        }
-
-        return response()->json(['job' => $result['body']['job'] ?? null]);
+        return $this->apiResponse($api->analyzeCareerJob($payload));
     }
 
-    /**
-     * @return array{seed_jobs: list<array<string, mixed>>, user_skills: list<string>, readiness: int}
-     */
-    private function fallbackJobMatches(): array
+    public function status(string $jobId, CareerTalentApiClient $api): JsonResponse
     {
-        $analyzer = new JobMatchAnalyzer(
-            PanelJobMatchDemoData::userSkills(),
-            PanelDemoData::stats()['readiness'],
-        );
+        return $this->apiResponse($api->careerJob($jobId));
+    }
 
-        return [
-            'seed_jobs' => array_map(
-                fn (string $url) => $analyzer->analyze($url),
-                PanelJobMatchDemoData::seedUrls(),
-            ),
-            'user_skills' => PanelJobMatchDemoData::userSkills(),
-            'readiness' => PanelDemoData::stats()['readiness'],
-        ];
+    public function save(string $jobId, CareerTalentApiClient $api): JsonResponse
+    {
+        return $this->apiResponse($api->saveCareerJob($jobId));
+    }
+
+    public function apply(string $jobId, Request $request, CareerTalentApiClient $api): JsonResponse
+    {
+        $payload = $request->validate(['suggestion_ids' => ['required', 'array', 'min:1', 'max:20'], 'suggestion_ids.*' => ['string', 'max:36']]);
+        return $this->apiResponse($api->applyCareerJobSuggestions($jobId, $payload['suggestion_ids']));
+    }
+
+    public function destroy(string $jobId, CareerTalentApiClient $api): JsonResponse
+    {
+        return $this->apiResponse($api->deleteCareerJob($jobId));
+    }
+
+    private function apiResponse(array $result): JsonResponse
+    {
+        return response()->json($result['ok'] ? $result['body'] : ['message' => $result['error'] ?? __('panel.job_matches.error_generic')], $result['ok'] ? ($result['status'] ?? 200) : ($result['status'] ?? 502));
     }
 }

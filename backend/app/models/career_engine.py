@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -75,3 +75,29 @@ class Evidence(Base):
     feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class JobOpportunity(Base):
+    __tablename__ = "job_opportunities"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(24), index=True, nullable=False, default="queued")
+    source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    job_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    title: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    company: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    source: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    required_skills: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    matched_skills: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    missing_skills: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    match_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cv_suggestions: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    saved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    apply_status: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    applied_suggestion_ids: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    result_analysis_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    error_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
