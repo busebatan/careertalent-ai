@@ -2,6 +2,8 @@ from fastapi import APIRouter , Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import require_admin
+from app.models.user import User
 from app.schemas.career_role import (CareerRoleCreate,CareerRoleResponse,)
 from app.services import career_role_service
 
@@ -18,6 +20,7 @@ def get_roles(
 def create_role(
     role: CareerRoleCreate,
     db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin),
 ):
     return career_role_service.create_role(db, role)
 
@@ -35,6 +38,7 @@ def update_role(
     role_id: int,
     role: CareerRoleCreate,
     db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin),
 ):
     return career_role_service.update_role(
         db,
@@ -47,6 +51,7 @@ def update_role(
 def delete_role(
     role_id: int,
     db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin),
 ):
     return career_role_service.delete_role(
         db,

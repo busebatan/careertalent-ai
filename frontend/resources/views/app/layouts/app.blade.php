@@ -39,11 +39,14 @@
                 <div class="mt-auto shrink-0">
                     @include('app.partials.sidebar-user')
                     <div class="border-t border-slate-200 pt-4 dark:border-slate-800">
-                        <a href="{{ route('home') }}"
-                            class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30">
-                            <i data-lucide="log-out" class="h-4 w-4" aria-hidden="true"></i>
-                            {{ __('panel.nav.logout') }}
-                        </a>
+                        <form method="post" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit"
+                                class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30">
+                                <i data-lucide="log-out" class="h-4 w-4" aria-hidden="true"></i>
+                                {{ __('panel.nav.logout') }}
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

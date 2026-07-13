@@ -33,10 +33,9 @@ from app.schemas.panel import (
 )
 from app.services.job_listing_parser import parse_job_listing
 from app.services.panel_target_store import get_target, put_target
-from app.core.security import require_admin
-from app.models.user import User
+from app.core.security import get_current_user
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 class JobMatchRequest(BaseModel):
@@ -327,7 +326,7 @@ def _analyze_job(url: str) -> dict:
 
 
 @router.get("/dashboard", response_model=DashboardResponse)
-def dashboard(current_user : User = Depends(require_admin),) -> DashboardResponse:
+def dashboard() -> DashboardResponse:
     return {"stats": _stats(), "weekly_tasks": _weekly_tasks(), "learning_resources": _learning_resources()}
 
 

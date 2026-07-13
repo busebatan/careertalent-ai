@@ -35,13 +35,16 @@ Route::middleware('marketing.locale')->group(function () {
     });
 
     Route::get('/giris', [AuthController::class, 'login'])->name('login');
+    Route::post('/giris', [AuthController::class, 'authenticate'])->name('login.submit');
     Route::get('/kayit', [AuthController::class, 'register'])->name('register');
+    Route::post('/kayit', [AuthController::class, 'store'])->name('register.submit');
+    Route::post('/cikis', [AuthController::class, 'logout'])->name('logout');
     Route::get('/locale/{locale}', [MarketingLocaleController::class, 'switch'])->name('marketing.locale');
 });
 
 
-// ── Admin panel (Sprint 2 demo: auth guard sonra eklenecek) ───────────────
-Route::prefix('admin')->name('admin.')->group(function () {
+// ── Admin panel ─────────────────────────────────────────────
+Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin'])->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/ogrenciler', [AdminController::class, 'students'])->name('students');
     Route::get('/cohortlar', [AdminController::class, 'cohorts'])->name('cohorts');
@@ -55,8 +58,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/ayarlar', [AdminController::class, 'settings'])->name('settings');
 });
 
-// ── Panel (Sprint 1: Breeze kurulunca auth middleware eklenecek) ──
-Route::prefix('panel')->name('panel.')->middleware('panel.locale')->group(function () {
+// ── Öğrenci paneli ──────────────────────────────────────────
+Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'panel.locale'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/profil', [ProfileController::class, 'show'])->name('profile');
     Route::post('/cv/analiz', [CvUploadController::class, 'analyze'])->name('cv.analyze');

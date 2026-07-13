@@ -1,11 +1,28 @@
 """Panel hedef rol kalıcılığı ve ilan parse testleri."""
 
+import pytest
 from fastapi.testclient import TestClient
 
+from app.core.security import get_current_user
 from app.main import app
+from app.models.user import User
 from app.services import panel_target_store
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def authenticated_panel_user():
+    app.dependency_overrides[get_current_user] = lambda: User(
+        id=1,
+        full_name="Ayşe Yılmaz",
+        email="ayse@example.com",
+        hashed_password="not-used",
+        is_active=True,
+        is_admin=False,
+    )
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 def test_panel_target_persists_to_backend_store(tmp_path, monkeypatch):

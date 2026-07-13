@@ -15,7 +15,10 @@ abstract class PanelController extends Controller
         return view($view, array_merge($data, [
             'apiHealth' => $api->health(),
             'apiUrl' => $api->baseUrl(),
-            'panelUser' => PanelDemoData::panelUser(),
+            'panelUser' => [
+                'name' => session('auth.user.full_name', PanelDemoData::panelUser()['name']),
+                'avatar_url' => null,
+            ],
         ]));
     }
 

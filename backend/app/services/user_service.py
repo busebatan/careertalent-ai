@@ -1,10 +1,10 @@
 from fastapi import HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.core.security import (hash_password,verify_password,create_access_token,)
+from app.core.security import DUMMY_PASSWORD_HASH, create_access_token, hash_password, verify_password
 from app.models.user import User
 from app.schemas.user import UserCreate
-from app.core.security import (create_access_token, verify_password,)
 
 
 def create_user(
@@ -13,19 +13,19 @@ def create_user(
 ) -> User:
     existing_user = (
         db.query(User)
-        .filter(User.email == user.email)
+        .filter(func.lower(User.email) == user.email.lower())
         .first()
     )
 
     if existing_user:
         raise HTTPException(
-            status_code=400,
+            status_code=409,
             detail="Email already registered",
         )
 
     new_user = User(
         full_name=user.full_name,
-        email=user.email,
+        email=user.email.lower(),
         hashed_password=hash_password(user.password),
         is_active=True,
         is_admin=False,
@@ -43,13 +43,15 @@ def login_user(
     password: str,
 ) -> str:
 
+    normalized_email = email.strip().lower()
     user = (
         db.query(User)
-        .filter(User.email == email)
+        .filter(func.lower(User.email) == normalized_email)
         .first()
     )
 
     if user is None:
+        verify_password(password, DUMMY_PASSWORD_HASH)
         raise HTTPException(
             status_code=401,
             detail="Invalid email or password",
@@ -62,6 +64,12 @@ def login_user(
         raise HTTPException(
             status_code=401,
             detail="Invalid email or password",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail="Account is inactive",
         )
 
     access_token = create_access_token(

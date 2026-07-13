@@ -1,10 +1,41 @@
 """Panel endpoint kontrat testleri."""
 
+import pytest
 from fastapi.testclient import TestClient
 
+from app.core.security import get_current_user
 from app.main import app
+from app.models.user import User
 
 client = TestClient(app)
+
+
+def panel_user() -> User:
+    return User(
+        id=1,
+        full_name="Ayşe Yılmaz",
+        email="ayse@example.com",
+        hashed_password="not-used",
+        is_active=True,
+        is_admin=False,
+    )
+
+
+@pytest.fixture(autouse=True)
+def authenticated_panel_user():
+    app.dependency_overrides[get_current_user] = panel_user
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_panel_endpoints_require_authentication():
+    app.dependency_overrides.pop(get_current_user, None)
+
+    response = client.get("/api/v1/panel/dashboard")
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Not authenticated"
+    app.dependency_overrides[get_current_user] = panel_user
 
 
 def test_panel_dashboard_endpoint():

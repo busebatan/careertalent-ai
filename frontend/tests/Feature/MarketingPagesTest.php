@@ -122,7 +122,8 @@ class MarketingPagesTest extends TestCase
         $this->get('/giris')
             ->assertStatus(200)
             ->assertSee('Giriş Yap')
-            ->assertSee('Demo paneline git');
+            ->assertSee('action="'.route('login.submit').'"', false)
+            ->assertDontSee('Demo paneline git');
     }
 
     public function test_kayit_sayfasi_acilir(): void
@@ -130,7 +131,8 @@ class MarketingPagesTest extends TestCase
         $this->get('/kayit')
             ->assertStatus(200)
             ->assertSee('Kayıt Ol')
-            ->assertSee('Hesap Oluştur');
+            ->assertSee('Hesap Oluştur')
+            ->assertSee('Şifre Tekrarı');
     }
 
     public function test_nasil_calisir_sayfasi_acilir(): void

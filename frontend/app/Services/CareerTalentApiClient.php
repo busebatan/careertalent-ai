@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 
@@ -19,6 +20,48 @@ class CareerTalentApiClient
     public function health(): array
     {
         return $this->getJson('/health', 3);
+    }
+
+    /**
+     * @param  array{full_name: string, email: string, password: string}  $payload
+     * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
+     */
+    public function register(array $payload): array
+    {
+        return $this->postJson('/api/v1/auth/register', $payload, 10);
+    }
+
+    /**
+     * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
+     */
+    public function login(string $email, string $password): array
+    {
+        try {
+            $response = Http::asForm()->timeout(10)->post($this->baseUrl().'/api/v1/auth/login', [
+                'username' => $email,
+                'password' => $password,
+            ]);
+
+            return $this->normalizeResponse($response);
+        } catch (ConnectionException $exception) {
+            return $this->connectionError($exception);
+        }
+    }
+
+    /**
+     * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
+     */
+    public function me(string $accessToken): array
+    {
+        try {
+            $response = Http::withToken($accessToken)
+                ->timeout(10)
+                ->get($this->baseUrl().'/api/v1/auth/me');
+
+            return $this->normalizeResponse($response);
+        } catch (ConnectionException $exception) {
+            return $this->connectionError($exception);
+        }
     }
 
     /**
@@ -69,7 +112,7 @@ class CareerTalentApiClient
     public function analyzeCv(UploadedFile $file): array
     {
         try {
-            $response = Http::timeout(120)
+            $response = $this->request(120)
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
                 ->post($this->baseUrl().'/api/v1/cv/analyze');
 
@@ -96,7 +139,7 @@ class CareerTalentApiClient
     private function getJson(string $path, int $timeout): array
     {
         try {
-            return $this->normalizeResponse(Http::timeout($timeout)->get($this->baseUrl().$path));
+            return $this->normalizeResponse($this->request($timeout)->get($this->baseUrl().$path));
         } catch (ConnectionException $exception) {
             return $this->connectionError($exception);
         }
@@ -109,7 +152,7 @@ class CareerTalentApiClient
     private function postJson(string $path, array $payload, int $timeout): array
     {
         try {
-            return $this->normalizeResponse(Http::timeout($timeout)->post($this->baseUrl().$path, $payload));
+            return $this->normalizeResponse($this->request($timeout)->post($this->baseUrl().$path, $payload));
         } catch (ConnectionException $exception) {
             return $this->connectionError($exception);
         }
@@ -123,7 +166,7 @@ class CareerTalentApiClient
     private function putJson(string $path, array $payload, int $timeout): array
     {
         try {
-            return $this->normalizeResponse(Http::timeout($timeout)->put($this->baseUrl().$path, $payload));
+            return $this->normalizeResponse($this->request($timeout)->put($this->baseUrl().$path, $payload));
         } catch (ConnectionException $exception) {
             return $this->connectionError($exception);
         }
@@ -153,6 +196,16 @@ class CareerTalentApiClient
             'body' => $response->json(),
             'error' => null,
         ];
+    }
+
+    private function request(int $timeout): PendingRequest
+    {
+        $request = Http::timeout($timeout);
+        $token = session('auth.access_token');
+
+        return is_string($token) && $token !== ''
+            ? $request->withToken($token)
+            : $request;
     }
 
     /**

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta, UTC
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
 
 from sqlalchemy.orm import Session
 
@@ -12,10 +12,8 @@ from app.models.user import User
 
 from app.core.config import settings
 
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-)
+password_hash = PasswordHash.recommended()
+DUMMY_PASSWORD_HASH = password_hash.hash("timing-attack-placeholder")
 
 
 oauth2_scheme = OAuth2PasswordBearer(
@@ -23,17 +21,14 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return password_hash.hash(password)
 
 
 def verify_password(
     plain_password: str,
     hashed_password: str,
 ) -> bool:
-    return pwd_context.verify(
-        plain_password,
-        hashed_password,
-    )
+    return password_hash.verify(plain_password, hashed_password)
 
 def create_access_token(
     data: dict,
@@ -101,6 +96,12 @@ def get_current_user(
         raise HTTPException(
             status_code=401,
             detail="User not found",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail="Account is inactive",
         )
 
     return user    

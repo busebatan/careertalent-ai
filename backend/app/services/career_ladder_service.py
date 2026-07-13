@@ -30,7 +30,7 @@ def _skill_map(skills: list[dict[str, Any]]) -> dict[str, int]:
     return mapped
 
 
-def _match_score(user_skills: dict[str, int], required: dict[str, Any]) -> tuple[int, list[str], list[str]]:
+def _match_score(user_skills: dict[str, int], required: dict[str, Any]) -> tuple[int, str, bool]:
     name = str(required.get("name", "")).strip()
     key = name.lower()
     target = _LEVEL_SCORES.get(str(required.get("level", "temel")).lower(), 50)
@@ -44,6 +44,21 @@ def _match_score(user_skills: dict[str, int], required: dict[str, Any]) -> tuple
 
     met = user_score >= target
     return (100 if met else max(0, int((user_score / max(target, 1)) * 100)), name, met)
+
+
+def _matching_cv_skill_name(cv_skills: list[dict[str, Any]], required_name: str) -> str | None:
+    required_key = required_name.strip().lower()
+    for item in cv_skills:
+        candidate = str(item.get("name", "")).strip()
+        candidate_key = candidate.lower()
+        if candidate_key and (candidate_key in required_key or required_key in candidate_key):
+            return candidate
+
+    return None
+
+
+def _display_skill_name(name: str) -> str:
+    return name.split("(", 1)[0].strip()
 
 
 def _tier_for_readiness(readiness: int) -> str:
@@ -105,9 +120,9 @@ def build_career_ladder(cv_skills: list[dict[str, Any]]) -> list[dict[str, Any]]
             pct, name, met = _match_score(user_skills, req)
             scores.append(pct)
             if met:
-                strengths.append(name)
+                strengths.append(_matching_cv_skill_name(cv_skills, name) or name)
             else:
-                weaknesses.append(name)
+                weaknesses.append(_display_skill_name(name))
 
         readiness = int(sum(scores) / len(scores)) if scores else 0
         tier = _tier_for_readiness(readiness)
@@ -180,12 +195,13 @@ def build_skill_radar(
                 continue
             target = _LEVEL_SCORES.get(str(req.get("level", "temel")).lower(), 50)
             user_score = _user_skill_score(user_skills, name)
+            label = _matching_cv_skill_name(cv_skills, name) or name
             skills_out.append({
-                "label": name,
+                "label": label,
                 "score": user_score if user_score > 0 else 35,
                 "target": target,
             })
-            seen.add(_normalize_key(name))
+            seen.add(_normalize_key(label))
 
     for item in sorted(cv_skills, key=lambda s: int(s.get("score", 0)), reverse=True):
         if len(skills_out) >= 8:
