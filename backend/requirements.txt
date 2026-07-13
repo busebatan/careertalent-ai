@@ -19,6 +19,7 @@ pwdlib[argon2]>=0.3.0
 
 # CV işleme
 pdfplumber>=0.11.4
+Pillow>=10.0.0
 
 # Yapay zeka
 langchain>=0.3.0

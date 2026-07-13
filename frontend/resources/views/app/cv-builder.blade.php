@@ -8,7 +8,7 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl"
-    x-data="cvBuilder({{ Js::from($cvDraft) }}, {{ Js::from($cvLabels) }}, @js(app()->getLocale()), @js($hasCvAnalysis ?? false), @js($cvFileName ?? ''), @js(route('panel.cv.analyze-builder')), @js(route('panel.cv.clear')))">
+    x-data="cvBuilder({{ Js::from($cvDraft) }}, {{ Js::from($cvLabels) }}, @js(app()->getLocale()), @js($hasCvAnalysis ?? false), @js($cvFileName ?? ''), @js(route('panel.cv.analyze-builder')), @js(route('panel.cv.clear')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), {{ Js::from($acceptedEvidence ?? []) }})">
 
     <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -61,6 +61,17 @@
         @include('app.partials.cv-builder-form')
         @include('app.partials.cv-builder-preview')
     </div>
+
+    @if (! empty($acceptedEvidence))
+        <section class="panel-card mt-8 p-5">
+            <h2 class="mb-3 font-semibold">{{ app()->getLocale() === 'en' ? 'Verified achievements from AI review' : 'AI incelemesinden doğrulanmış kazanımlar' }}</h2>
+            <ul class="space-y-2 text-sm">
+                @foreach ($acceptedEvidence as $achievement)
+                    <li><strong>{{ $achievement['title'] }}</strong>@if (! empty($achievement['skill_impacts'])) · {{ implode(', ', $achievement['skill_impacts']) }}@endif</li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
 
     <div x-show="pdfExportStatus === 'done' && !pdfModalOpen" x-cloak
         class="fixed bottom-6 left-1/2 z-50 max-w-sm -translate-x-1/2 rounded-xl border border-emerald-300 bg-white px-4 py-3 text-sm text-slate-800 shadow-lg dark:border-emerald-800 dark:bg-slate-900 dark:text-slate-100"

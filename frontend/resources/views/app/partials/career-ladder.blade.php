@@ -3,7 +3,7 @@
     $grouped = collect($careerLadder)->groupBy('tier');
 @endphp
 
-<section id="kariyer-merdiveni" class="mb-10">
+<section id="kariyer-merdiveni" class="mb-10" x-data="{ openRole: @js($selectedTarget['title'] ?? null) }">
     @empty($hideSectionHeader)
     <div class="mb-4">
         <h2 class="text-lg font-semibold">{{ __('panel.career_ladder.title') }}</h2>
@@ -23,12 +23,8 @@
                     </div>
                     <div class="space-y-3">
                         @foreach ($grouped[$tierKey] as $role)
-                            <article class="panel-card p-5"
-                                x-data="{
-                                    open: {{ $role['tier'] === 'near' ? 'true' : 'false' }},
-                                    swotShow: @js(__('panel.career_ladder.swot_show')),
-                                    swotHide: @js(__('panel.career_ladder.swot_hide'))
-                                }">
+                            @php($roleKey = (string) ($role['id'] ?? $role['title']))
+                            <article class="panel-card p-5">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div class="min-w-0 flex-1">
                                         <div class="mb-1 flex flex-wrap items-center gap-2">
@@ -54,12 +50,12 @@
                                                 {{ __('panel.career_ladder.select_role') }}
                                             </button>
                                         </form>
-                                        <button type="button" @click="open = !open" class="panel-outline-btn">
-                                            <span x-text="open ? swotHide : swotShow"></span>
+                                        <button type="button" @click="openRole = openRole === @js($role['title'] ?? $roleKey) ? null : @js($role['title'] ?? $roleKey)" class="panel-outline-btn">
+                                            <span x-text="openRole === @js($role['title'] ?? $roleKey) ? @js(__('panel.career_ladder.swot_hide')) : @js(__('panel.career_ladder.swot_show'))"></span>
                                         </button>
                                     </div>
                                 </div>
-                                <div x-show="open" x-cloak class="mt-4 grid gap-2 sm:grid-cols-2">
+                                <div x-show="openRole === @js($role['title'] ?? $roleKey)" x-cloak class="mt-4 grid gap-2 sm:grid-cols-2">
                                     <div class="panel-swot-cell">
                                         <p class="mb-1 text-xs font-medium text-emerald-400">Güçlü (S)</p>
                                         <ul class="list-inside list-disc text-xs text-slate-600 dark:text-slate-400">

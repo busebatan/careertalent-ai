@@ -174,13 +174,13 @@ class MarketingPagesTest extends TestCase
         $response = $this->get('/panel');
 
         $response->assertStatus(200);
-        $response->assertSee('Gösterge Paneli');
+        $response->assertSee('Ana Sayfa');
         $response->assertSee('Hoş geldin');
         $response->assertSee('Henüz CV analizi yok');
         $response->assertDontSee('CV ve profil');
         $response->assertSee('Eğitim önerileri');
         $response->assertSee('Bu haftanın görevleri');
-        $response->assertSee('Google Data Analytics');
+        $response->assertDontSee('Google Data Analytics');
         $response->assertSee('CV oluştur');
         $response->assertSee('API bağlı', false);
         $response->assertSee('data-lucide="layout-dashboard"', false);
@@ -189,14 +189,11 @@ class MarketingPagesTest extends TestCase
 
     public function test_panel_kariyer_merdiveni_sayfasi_acilir(): void
     {
-        $response = $this->get('/panel/kariyer-merdiveni');
+        $response = $this->get('/panel/kariyer-rotam');
 
         $response->assertStatus(200);
         $response->assertSee('Kariyer merdiveni');
-        $response->assertSee('Junior Veri Analisti');
-        $response->assertSee('A — Hazır');
-        $response->assertSee('BI Analisti');
-        $response->assertSee('SWOT göster');
+        $response->assertSee('AI kariyer merdiveni henüz hazır değil');
     }
 
     public function test_panel_ingilizce_locale(): void
@@ -207,17 +204,17 @@ class MarketingPagesTest extends TestCase
         $response->assertSee('Welcome');
         $response->assertSee('No CV analysis yet');
         $response->assertSee('Learning resources');
-        $response->assertSee('Build CV');
+        $response->assertSee('CV Center');
         $response->assertSee('API connected', false);
     }
 
     public function test_panel_kariyer_merdiveni_ingilizce(): void
     {
-        $response = $this->withSession(['panel_locale' => 'en'])->get('/panel/kariyer-merdiveni');
+        $response = $this->withSession(['panel_locale' => 'en'])->get('/panel/kariyer-rotam');
 
         $response->assertStatus(200);
         $response->assertSee('Career ladder');
-        $response->assertSee('Show SWOT');
+        $response->assertSee('AI career ladder is not ready.');
     }
 
     public function test_panel_locale_switch_route(): void
@@ -229,22 +226,22 @@ class MarketingPagesTest extends TestCase
 
     public function test_panel_profil_sayfasi_acilir(): void
     {
-        $response = $this->get('/panel/profil');
+        $response = $this->get('/panel/kariyer-profilim');
 
         $response->assertStatus(200);
         $response->assertSee('Profil bilgileri');
         $response->assertSee('Giriş bilgileri');
         $response->assertSee('CV yükle');
         $response->assertSee('Şifre değiştir');
-        $response->assertSee('AI ile düzenle');
+        $response->assertDontSee('AI ile düzenle');
     }
 
     public function test_panel_cv_olustur_sayfasi_acilir(): void
     {
-        $response = $this->get('/panel/cv-olustur');
+        $response = $this->get('/panel/cv-merkezi');
 
         $response->assertStatus(200);
-        $response->assertSee('CV Oluştur');
+        $response->assertSee('CV Merkezi');
         $response->assertSee('CV içerik dili');
         $response->assertSee('PDF hangi dilde indirilsin?');
         $response->assertSee('İstanbul Üniversitesi');
@@ -254,10 +251,10 @@ class MarketingPagesTest extends TestCase
 
     public function test_panel_ilan_eslestirme_sayfasi_acilir(): void
     {
-        $response = $this->get('/panel/ilan-eslestirme');
+        $response = $this->get('/panel/ilan-analizi');
 
         $response->assertStatus(200);
-        $response->assertSee('İlan Eşleştirme');
+        $response->assertSee('İş Fırsatları');
         $response->assertSee('İlan linki ekle');
         $response->assertSee('Junior Veri Analisti');
         $response->assertSee('Data Analyst (Remote)');
@@ -266,7 +263,7 @@ class MarketingPagesTest extends TestCase
 
     public function test_panel_ilan_eslestirme_analiz_endpoint(): void
     {
-        $response = $this->postJson('/panel/ilan-eslestirme/analiz', [
+        $response = $this->postJson('/panel/ilan-analizi/analiz', [
             'url' => 'https://www.kariyer.net/is-ilani/bi-analisti-perakende',
         ]);
 
@@ -277,10 +274,10 @@ class MarketingPagesTest extends TestCase
 
     public function test_panel_ilan_eslestirme_ingilizce(): void
     {
-        $response = $this->withSession(['panel_locale' => 'en'])->get('/panel/ilan-eslestirme');
+        $response = $this->withSession(['panel_locale' => 'en'])->get('/panel/ilan-analizi');
 
         $response->assertStatus(200);
-        $response->assertSee('Job Matching');
+        $response->assertSee('Job Opportunities');
         $response->assertSee('Analyze');
     }
 }

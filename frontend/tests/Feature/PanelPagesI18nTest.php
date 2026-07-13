@@ -24,32 +24,24 @@ class PanelPagesI18nTest extends TestCase
   public static function panelPagesProvider(): array
   {
     return [
-      'dashboard-tr' => ['/panel', 'tr', ['Gösterge Paneli', 'Hoş geldin', 'Henüz CV analizi yok', 'Bu haftanın görevleri', 'Tümünü gör']],
-      'dashboard-en' => ['/panel', 'en', ['Dashboard', 'Welcome', 'No CV analysis yet', 'Learning resources', 'View all']],
-      'roadmap-tr' => ['/panel/yol-haritasi', 'tr', ['Yol Haritası', 'Gap analizine göre', 'Görevlerime git', 'SQL modülü 1']],
-      'roadmap-en' => ['/panel/yol-haritasi', 'en', ['Roadmap', 'gap analysis', 'Go to my tasks', 'SQL modülü 1']],
-      'learning-tr' => ['/panel/egitim-onerileri', 'tr', ['Eğitim Önerileri', 'Gap analizine göre', 'Google Data Analytics', 'Tümü']],
-      'learning-en' => ['/panel/egitim-onerileri', 'en', ['Learning Resources', 'gap analysis', 'Google Data Analytics', 'All']],
-      'tasks-tr' => ['/panel/gorevlerim', 'tr', ['Görevlerim', 'Not ekle', 'Görev ekle', 'SQL modülü 1', 'kişisel not']],
-      'tasks-en' => ['/panel/gorevlerim', 'en', ['Tasks', 'Add note', 'Add task', 'SQL modülü 1', 'personal notes']],
-      'chat-tr' => ['/panel/sohbet', 'tr', ['Sohbet', 'demo kariyer asistanı', 'Hazır sorular']],
-      'chat-en' => ['/panel/sohbet', 'en', ['Chat', 'Demo career assistant', 'Suggested prompts']],
-      'job-radar-tr' => ['/panel/is-radari', 'tr', ['İş Radarı', 'Trendyol', 'Sadece %70+ hazır ilanlar']],
-      'job-radar-en' => ['/panel/is-radari', 'en', ['Job Radar', 'Trendyol', 'Only 70%+ ready listings']],
-      'applications-tr' => ['/panel/basvuru-takibi', 'tr', ['Başvuru Takibi', 'Aktif başvuru', 'Trendyol']],
-      'applications-en' => ['/panel/basvuru-takibi', 'en', ['Applications', 'Active applications', 'Trendyol']],
-      'skill-passport-tr' => ['/panel/yetenek-pasaportu', 'tr', ['Yetenek Pasaportu', 'Kanıt skoru', 'E-ticaret satış analizi']],
-      'skill-passport-en' => ['/panel/yetenek-pasaportu', 'en', ['Skill Passport', 'Evidence score', 'E-ticaret satış analizi']],
-      'interview-tr' => ['/panel/mulakat-simulasyonu', 'tr', ['Mülakat Simülasyonu', 'Demo skorla', 'Bir satış tablosunda']],
-      'interview-en' => ['/panel/mulakat-simulasyonu', 'en', ['Interview Simulator', 'Score demo', 'Bir satış tablosunda']],
-      'mentors-tr' => ['/panel/mentor-degerlendirme', 'tr', ['Mentor Değerlendirme', 'CV hızlı kontrol', 'Demo randevu iste']],
-      'mentors-en' => ['/panel/mentor-degerlendirme', 'en', ['Mentor Review', 'CV hızlı kontrol', 'Request demo booking']],
-      'career-ladder-tr' => ['/panel/kariyer-merdiveni', 'tr', ['Kariyer merdiveni', 'Junior Veri Analisti', 'SWOT göster', 'BI Analisti']],
-      'career-ladder-en' => ['/panel/kariyer-merdiveni', 'en', ['Career ladder', 'Junior Veri Analisti', 'Show SWOT', 'BI Analisti']],
-      'profile-tr' => ['/panel/profil', 'tr', ['Profil', 'Profil bilgileri', 'Giriş bilgileri', 'Şifre değiştir', 'AI ile düzenle', 'CV yükle']],
-      'profile-en' => ['/panel/profil', 'en', ['Profile', 'Profile details', 'Login settings', 'Change password', 'Edit with AI', 'Upload CV']],
-      'cv-builder-tr' => ['/panel/cv-olustur', 'tr', ['CV Oluştur', 'PDF indirildi', 'PDF indir', 'Kaydet', 'animate-spin', 'İstanbul Üniversitesi', 'İsteğe bağlı bölüm ekle', 'CvOptionalSections', 'data-optional-section']],
-      'cv-builder-en' => ['/panel/cv-olustur', 'en', ['Build CV', 'PDF downloaded', 'Download PDF', 'Save', 'animate-spin', 'Istanbul University', 'Add optional section', 'CvOptionalSections', 'data-optional-section']],
+      'dashboard-tr' => ['/panel', 'tr', ['Ana Sayfa', 'Hoş geldin', 'Henüz CV analizi yok']],
+      'dashboard-en' => ['/panel', 'en', ['Dashboard', 'Welcome', 'No CV analysis yet']],
+      'profile-tr' => ['/panel/kariyer-profilim', 'tr', ['Hesap', 'Profil bilgileri', 'CV yükle', 'Abonelik', 'Gizlilik']],
+      'profile-en' => ['/panel/kariyer-profilim', 'en', ['Career Profile']],
+      'skill-passport-tr' => ['/panel/yetenek-pasaportu', 'tr', ['Yetenek Pasaportu', 'Kanıt skoru', 'Kanıt yüklemek için listeden bir yeteneğe tıkla.']],
+      'skill-passport-en' => ['/panel/yetenek-pasaportu', 'en', ['Skill Passport', 'Evidence score', 'Click a skill in the list to upload evidence.']],
+      'cv-builder-tr' => ['/panel/cv-merkezi', 'tr', ['CV Merkezi', 'PDF indir', 'Kaydet', 'CvOptionalSections']],
+      'cv-builder-en' => ['/panel/cv-merkezi', 'en', ['CV Center', 'Download PDF', 'Save', 'CvOptionalSections']],
+      'roadmap-tr' => ['/panel/kariyer-rotam', 'tr', ['Kariyer Rotam', 'Kariyer merdiveni', 'Eğitim Önerileri']],
+      'roadmap-en' => ['/panel/kariyer-rotam', 'en', ['Career Route', 'Career ladder', 'Learning Resources']],
+      'job-analysis-tr' => ['/panel/ilan-analizi', 'tr', ['İş Fırsatları', 'Analiz et']],
+      'job-analysis-en' => ['/panel/ilan-analizi', 'en', ['Job Opportunities', 'Analyze']],
+      'applications-tr' => ['/panel/basvurularim', 'tr', ['Başvurularım', 'Aktif başvuru']],
+      'applications-en' => ['/panel/basvurularim', 'en', ['Applications', 'Active applications']],
+      'interview-tr' => ['/panel/mulakat-hazirligi', 'tr', ['Mülakat Hazırlığı', 'Demo skorla']],
+      'interview-en' => ['/panel/mulakat-hazirligi', 'en', ['Interview Preparation', 'Score demo']],
+      'account-tr' => ['/panel/hesap', 'tr', ['Hesap', 'Profil bilgileri', 'Giriş bilgileri', 'CV yükle', 'Abonelik', 'Gizlilik']],
+      'chat-tr' => ['/panel/ai-yardimcisi', 'tr', ['Kariyer Asistanı', 'demo kariyer asistanı']],
     ];
   }
 
@@ -68,7 +60,7 @@ class PanelPagesI18nTest extends TestCase
 
   public function test_cv_builder_bilingual_draft_json(): void
   {
-    $response = $this->get('/panel/cv-olustur');
+    $response = $this->get('/panel/cv-merkezi');
 
     $response->assertStatus(200);
     $response->assertSee('Istanbul University', false);
@@ -91,5 +83,39 @@ class PanelPagesI18nTest extends TestCase
     $this->withSession(['panel_locale' => 'en'])
       ->get('/panel')
       ->assertSee('Welcome');
+  }
+
+  public function test_student_sidebar_uses_consolidated_information_architecture(): void
+  {
+    $response = $this->withSession(['panel_locale' => 'tr'])->get('/panel');
+
+    $response->assertOk();
+    foreach (['Ana Sayfa', 'KARİYERİM', 'Kariyer Profilim', 'CV Merkezi', 'Yetenek Pasaportu', 'Kariyer Rotam', 'FIRSATLAR', 'İş Fırsatları', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'] as $label) {
+      $response->assertSee($label, false);
+    }
+    $response->assertSeeInOrder(['Ana Sayfa', 'Kariyer Asistanı', 'KARİYERİM', 'Kariyer Profilim', 'CV Merkezi', 'Yetenek Pasaportu', 'Kariyer Rotam', 'FIRSATLAR', 'İş Fırsatları', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'], false);
+    $this->assertStringNotContainsString('Hesap, Paket ve Gizlilik', $response->getContent());
+    $this->assertSame(1, substr_count($response->getContent(), 'Kariyer Asistanı'));
+    foreach (['İş Radarı', 'Mentor Değerlendirme', 'Görevlerim &amp; Notlar'] as $removedLabel) {
+      $response->assertDontSee($removedLabel, false);
+    }
+  }
+
+  public function test_legacy_student_panel_urls_redirect_to_canonical_pages(): void
+  {
+    $redirects = [
+      '/panel/profil' => '/panel/kariyer-profilim',
+      '/panel/cv-olustur' => '/panel/cv-merkezi',
+      '/panel/yol-haritasi' => '/panel/kariyer-rotam',
+      '/panel/ilan-eslestirme' => '/panel/ilan-analizi',
+      '/panel/basvuru-takibi' => '/panel/basvurularim',
+      '/panel/mulakat-simulasyonu' => '/panel/mulakat-hazirligi',
+      '/panel/sohbet' => '/panel/ai-yardimcisi',
+      '/panel/kariyer-profilim/yetenekler' => '/panel/yetenek-pasaportu',
+    ];
+
+    foreach ($redirects as $legacy => $canonical) {
+      $this->get($legacy)->assertRedirect($canonical);
+    }
   }
 }

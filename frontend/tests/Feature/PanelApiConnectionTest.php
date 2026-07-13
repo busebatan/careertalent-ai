@@ -9,33 +9,12 @@ class PanelApiConnectionTest extends TestCase
 {
     public function test_dashboard_uses_fastapi_panel_payload(): void
     {
+        $task = ['id' => 'api-task-1', 'target_id' => 'target-1', 'title' => 'API görevini tamamla', 'hint' => 'FastAPI kariyer verisi', 'status' => 'pending', 'evidence_required' => true, 'evidence_types' => ['link'], 'skill_impacts' => ['API'], 'training_suggestions' => [['catalog_id' => 'api-course', 'title' => 'API Kaynak Kursu', 'provider' => 'FastAPI Academy', 'url' => 'https://example.com/api-course', 'skills' => ['API']]], 'feedback' => null];
         Http::fake([
             'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
-            'http://localhost:8000/api/v1/panel/dashboard' => Http::response([
-                'stats' => [
-                    'readiness' => 91,
-                    'career' => 'API Panel Analisti',
-                    'weekly_tasks_total' => 1,
-                    'weekly_tasks_done' => 0,
-                ],
-                'weekly_tasks' => [[
-                    'id' => 'api-task-1',
-                    'title' => 'API görevini tamamla',
-                    'hint' => 'FastAPI panel verisi',
-                    'done' => false,
-                ]],
-                'learning_resources' => [[
-                    'id' => 'api-course-1',
-                    'title' => 'API Kaynak Kursu',
-                    'provider' => 'FastAPI Academy',
-                    'price_type' => 'free',
-                    'price_label' => 'Ücretsiz',
-                    'price_range' => '0-500',
-                    'has_certificate' => true,
-                    'skills' => ['API'],
-                    'url' => 'https://example.com/api-course',
-                ]],
-            ], 200),
+            'http://localhost:8000/api/v1/career/analysis/current' => Http::response(['status' => 'ready', 'current_role' => 'API Panel Analisti', 'created_at' => '2026-07-04T00:00:00Z', 'radar' => [], 'career_ladder' => [['title' => 'API Panel Analisti', 'readiness' => 91]]], 200),
+            'http://localhost:8000/api/v1/career/targets' => Http::response([['id' => 'target-1', 'title' => 'API Panel Analisti', 'source' => 'custom', 'status' => 'active']], 200),
+            'http://localhost:8000/api/v1/career/targets/target-1/tasks' => Http::response([$task], 200),
             'http://localhost:8000/*' => Http::response([], 200),
         ]);
 
@@ -45,44 +24,15 @@ class PanelApiConnectionTest extends TestCase
         $response->assertSee('API Panel Analisti', false);
         $response->assertSee('API görevini tamamla', false);
         $response->assertSee('API Kaynak Kursu', false);
-        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/panel/dashboard');
+        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/career/analysis/current');
     }
 
     public function test_panel_feature_pages_use_fastapi_payloads(): void
     {
         Http::fake([
             'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
-            'http://localhost:8000/api/v1/panel/job-radar' => Http::response([
-                'radar' => [
-                    'roles' => ['API Growth Analyst'],
-                    'sources' => ['FastAPI Jobs'],
-                    'alerts' => [[
-                        'company' => 'API Radar Co',
-                        'role' => 'API Growth Analyst',
-                        'source' => 'FastAPI Jobs',
-                        'match' => 88,
-                        'salary' => '₺55k-70k',
-                        'gaps' => ['dbt'],
-                        'action' => 'API radar aksiyonu',
-                    ]],
-                ],
-            ], 200),
-            'http://localhost:8000/api/v1/panel/skill-passport' => Http::response([
-                'passport' => [
-                    'score' => 84,
-                    'verified' => 1,
-                    'total' => 1,
-                    'items' => [[
-                        'skill' => 'API Kanıt Yeteneği',
-                        'level' => 'İleri',
-                        'evidence' => 'FastAPI kanıt kartı',
-                        'type' => 'API',
-                        'status' => 'verified',
-                        'impact' => 'Canlı API verisi',
-                    ]],
-                    'gaps' => ['API kanıt boşluğu'],
-                ],
-            ], 200),
+            'http://localhost:8000/api/v1/career/analysis/current' => Http::response(['status' => 'ready', 'current_role' => 'API', 'radar' => [['label' => 'API Kanıt Yeteneği', 'score' => 84, 'target' => 90]], 'career_ladder' => []], 200),
+            'http://localhost:8000/api/v1/career/targets' => Http::response([], 200),
             'http://localhost:8000/api/v1/panel/chat' => Http::response([
                 'assistant' => [
                     'prompts' => [[
@@ -94,12 +44,9 @@ class PanelApiConnectionTest extends TestCase
             'http://localhost:8000/*' => Http::response([], 200),
         ]);
 
-        $this->get('/panel/is-radari')->assertOk()->assertSee('API Radar Co', false);
-        $this->get('/panel/yetenek-pasaportu')->assertOk()->assertSee('API Kanıt Yeteneği', false);
-        $this->get('/panel/sohbet')->assertOk()->assertSee('API asistan mesajı', false);
+        $this->get('/panel/kariyer-profilim')->assertOk()->assertSee('API Kanıt Yeteneği', false);
+        $this->get('/panel/ai-yardimcisi')->assertOk()->assertSee('API asistan mesajı', false);
 
-        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/panel/job-radar');
-        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/panel/skill-passport');
         Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/panel/chat');
     }
 
@@ -109,7 +56,7 @@ class PanelApiConnectionTest extends TestCase
             'http://localhost:8000/api/v1/panel/job-matches/analyze' => Http::response([
                 'job' => [
                     'id' => 'api-job-analysis',
-                    'title' => 'API İlan Analizi',
+                    'title' => 'API İş Fırsatları',
                     'company' => 'FastAPI HR',
                     'source' => 'api.example',
                     'url' => 'https://api.example/jobs/1',
@@ -122,12 +69,12 @@ class PanelApiConnectionTest extends TestCase
             ], 200),
         ]);
 
-        $response = $this->postJson('/panel/ilan-eslestirme/analiz', [
+        $response = $this->postJson('/panel/ilan-analizi/analiz', [
             'url' => 'https://api.example/jobs/1',
         ]);
 
         $response->assertOk();
-        $response->assertJsonPath('job.title', 'API İlan Analizi');
+        $response->assertJsonPath('job.title', 'API İş Fırsatları');
         Http::assertSent(fn ($request) => $request->method() === 'POST'
             && $request->url() === 'http://localhost:8000/api/v1/panel/job-matches/analyze');
     }

@@ -44,14 +44,14 @@ php artisan route:cache
 php artisan view:cache
 
 echo "→ route smoke (panel.cv.analyze zorunlu)"
-php artisan route:list --name=panel.cv.analyze --columns=method,uri | grep -q 'cv/analiz' \
+php artisan route:list --name=panel.cv.analyze | grep -q 'cv-merkezi/analiz' \
   || { echo "HATA: panel.cv.analyze route cache'te yok"; exit 1; }
 
 echo "→ permissions"
 chown -R yigit:www-data "$DEST"
 
 echo "→ smoke (origin)"
-for path in / /panel /panel/profil /panel/cv-olustur; do
+for path in / /panel /panel/kariyer-profilim /panel/cv-merkezi /panel/kariyer-rotam; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $DOMAIN" "https://127.0.0.1${path}" --insecure)
   echo "  $code $path"
 done

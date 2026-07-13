@@ -16,12 +16,16 @@ function installBrowserMocks() {
 
     globalThis.window = {
         dispatchEvent: () => true,
+        location: { reload: () => true },
+    };
+    globalThis.document = {
+        querySelector: () => ({ getAttribute: () => 'csrf-token' }),
     };
 }
 
 installBrowserMocks();
 
-const { PanelCvStore, PANEL_CV_STORAGE_KEY } = await import('../../resources/js/panel-cv-store.js');
+const { PanelCvStore, PANEL_CV_STORAGE_KEY, panelCvRadar } = await import('../../resources/js/panel-cv-store.js');
 
 function sampleLocales() {
     return {
@@ -95,5 +99,48 @@ describe('PanelCvStore.saveBuilder', () => {
         assert.deepEqual(saved.locales.tr.enabledOptional, ['languages', 'awards', 'volunteer']);
         assert.equal(saved.locales.tr.optional.volunteer[0].organization, 'TEV');
         assert.deepEqual(saved.locales.en.enabledOptional, ['languages', 'awards']);
+    });
+});
+
+describe('panelCvRadar career reset', () => {
+    beforeEach(() => {
+        storage.clear();
+    });
+
+    it('sends the selected reset scope and reloads only after success', async () => {
+        let request;
+        let reloads = 0;
+        globalThis.fetch = async (url, options) => {
+            request = { url, options };
+            return { ok: true, json: async () => ({ status: 'cleared', scope: 'plan' }) };
+        };
+        window.location.reload = () => { reloads += 1; };
+        PanelCvStore.saveBuilder(sampleLocales(), 'tr');
+        const state = panelCvRadar({}, true, 'cv.pdf', '/panel/cv-merkezi/temizle');
+        state.resetScope = 'plan';
+
+        await state.clearCv();
+
+        assert.equal(request.url, '/panel/cv-merkezi/temizle');
+        assert.equal(request.options.method, 'POST');
+        assert.deepEqual(JSON.parse(request.options.body), { scope: 'plan' });
+        assert.equal(request.options.headers['X-CSRF-TOKEN'], 'csrf-token');
+        assert.equal(PanelCvStore.get(), null);
+        assert.equal(reloads, 1);
+    });
+
+    it('keeps the page and local radar when the reset request fails', async () => {
+        let reloads = 0;
+        globalThis.fetch = async () => ({ ok: false, json: async () => ({ message: 'Reset failed' }) });
+        window.location.reload = () => { reloads += 1; };
+        PanelCvStore.saveBuilder(sampleLocales(), 'tr');
+        const state = panelCvRadar({}, true, 'cv.pdf', '/panel/cv-merkezi/temizle');
+
+        await state.clearCv();
+
+        assert.equal(state.resetError, 'Reset failed');
+        assert.equal(state.resetWorking, false);
+        assert.notEqual(PanelCvStore.get(), null);
+        assert.equal(reloads, 0);
     });
 });

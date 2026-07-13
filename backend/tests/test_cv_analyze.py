@@ -31,38 +31,33 @@ startxref
 %%EOF"""
 
 
-def test_cv_analyze_rejects_non_pdf():
+def test_cv_analyze_rejects_non_pdf(client):
+    client.post("/api/v1/auth/register", json={"full_name": "Ayşe Yılmaz", "email": "ayse@example.com", "password": "GucluParola123!"})
+    token = client.post("/api/v1/auth/login", data={"username": "ayse@example.com", "password": "GucluParola123!"}).json()["access_token"]
     response = client.post(
         "/api/v1/cv/analyze",
         files={"file": ("cv.txt", b"hello", "text/plain")},
+        headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 422
 
 
-def test_cv_analyze_accepts_pdf(monkeypatch):
+def test_cv_analyze_accepts_pdf(client, monkeypatch):
+    client.post("/api/v1/auth/register", json={"full_name": "Ayşe Yılmaz", "email": "ayse@example.com", "password": "GucluParola123!"})
+    token = client.post("/api/v1/auth/login", data={"username": "ayse@example.com", "password": "GucluParola123!"}).json()["access_token"]
     monkeypatch.setattr(
         "app.api.v1.cv.extract_text_from_pdf",
         lambda _data: "SQL Python Excel Pandas ile veri analizi deneyimi",
     )
-    monkeypatch.setattr(
-        "app.api.v1.cv.extract_profile_from_text",
-        lambda _text: {
-            "summary": "test",
-            "skills": [
-                {"name": "SQL", "score": 80},
-                {"name": "Python", "score": 70},
-            ],
-            "source": "test",
-        },
-    )
+    monkeypatch.setattr("app.api.v1.cv.analyze_cv_task.delay", lambda _analysis_id: None)
 
     response = client.post(
         "/api/v1/cv/analyze",
         files={"file": ("cv.pdf", BytesIO(_MINIMAL_PDF), "application/pdf")},
+        headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     data = response.json()
-    assert data["status"] == "ready"
-    assert len(data["career_ladder"]) >= 1
-    assert "skill_radar" in data
+    assert data["status"] == "queued"
+    assert data["analysis_id"]

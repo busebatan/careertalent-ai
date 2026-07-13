@@ -3,7 +3,19 @@
 @section('title', __('panel.skill_passport.title'))
 
 @section('content')
-<div class="mx-auto max-w-6xl" x-data="{ items: {{ Js::from($passport['items']) }}, newSkill: '', newEvidence: '', addEvidence() { if (!this.newSkill.trim() || !this.newEvidence.trim()) return; this.items.push({ skill: this.newSkill, level: 'Demo', evidence: this.newEvidence, type: 'Portfolio', status: 'review', impact: '{{ __('panel.skill_passport.new_impact') }}' }); this.newSkill = ''; this.newEvidence = ''; } }">
+<div class="mx-auto max-w-6xl"
+    x-data="skillPassport({{ Js::from($passport['items']) }}, @js(route('panel.tasks.evidence', ['taskId' => '__TASK_ID__'])), @js(route('panel.tasks.status', ['taskId' => '__TASK_ID__'])), @js([
+        'link' => __('panel.skill_passport.evidence_kind_link'),
+        'file' => __('panel.skill_passport.evidence_kind_file'),
+        'submit' => __('panel.skill_passport.add_button'),
+        'status' => [
+            'verified' => __('panel.skill_passport.status_verified'),
+            'review' => __('panel.skill_passport.status_review'),
+            'revision' => __('panel.skill_passport.status_revision'),
+            'missing' => __('panel.skill_passport.status_missing'),
+        ],
+    ]))">
+
     <header class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
             <h1 class="mb-1 text-2xl font-bold">{{ __('panel.skill_passport.title') }}</h1>
@@ -12,11 +24,17 @@
         <a href="{{ route('panel.cv-builder') }}" class="panel-btn-secondary text-sm">{{ __('panel.skill_passport.update_cv') }}</a>
     </header>
 
+    @if (! empty($careerEngineError))
+        <p class="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-200" role="status">{{ $careerEngineError }}</p>
+    @endif
+
     <section class="mb-8 grid gap-4 md:grid-cols-3">
         <div class="panel-card p-6">
             <p class="panel-muted text-sm">{{ __('panel.skill_passport.score') }}</p>
             <p class="text-4xl font-bold text-emerald-600 dark:text-emerald-400">%{{ $passport['score'] }}</p>
-            <div class="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-800"><div class="h-full rounded-full bg-emerald-500" style="width: {{ $passport['score'] }}%"></div></div>
+            <div class="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-800">
+                <div class="h-full rounded-full bg-emerald-500" style="width: {{ $passport['score'] }}%"></div>
+            </div>
         </div>
         <div class="panel-card p-6">
             <p class="panel-muted text-sm">{{ __('panel.skill_passport.verified') }}</p>
@@ -26,46 +44,92 @@
         <div class="panel-card p-6">
             <p class="panel-muted text-sm">{{ __('panel.skill_passport.gaps') }}</p>
             <ul class="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                @foreach ($passport['gaps'] as $gap)
-                    <li>• {{ $gap }}</li>
-                @endforeach
+                @forelse ($passport['gaps'] as $gap)
+                    <li>{{ $gap }}</li>
+                @empty
+                    <li class="panel-muted">{{ __('panel.skill_passport.no_gaps') }}</li>
+                @endforelse
             </ul>
         </div>
     </section>
 
     <section class="grid gap-6 lg:grid-cols-[1fr_22rem]">
         <div class="space-y-3">
-            <template x-for="item in items" :key="item.skill + item.evidence">
-                <article class="panel-card p-5">
+            <p class="panel-muted text-sm">{{ __('panel.skill_passport.click_skill_hint') }}</p>
+
+            <template x-for="item in items" :key="item.skill">
+                <article class="panel-card cursor-pointer p-5 transition hover:border-emerald-500/40"
+                    :class="selectedSkill === item.skill ? 'border-emerald-500/60 ring-1 ring-emerald-500/30' : ''"
+                    @click="selectSkill(item.skill)">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <div class="mb-2 flex flex-wrap items-center gap-2">
                                 <h2 class="font-semibold" x-text="item.skill"></h2>
                                 <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300" x-text="item.level"></span>
-                                <span class="rounded-full px-2 py-0.5 text-xs" :class="item.status === 'verified' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : (item.status === 'review' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'bg-red-500/15 text-red-700 dark:text-red-300')" x-text="item.status"></span>
+                                <span class="rounded-full px-2 py-0.5 text-xs" :class="statusClass(item.status)" x-text="statusLabel(item.status)"></span>
                             </div>
                             <p class="text-sm text-slate-800 dark:text-slate-200" x-text="item.evidence"></p>
                             <p class="panel-muted mt-1 text-xs" x-text="item.impact"></p>
+                            <p x-show="item.feedback" x-cloak class="mt-2 rounded-lg bg-amber-500/10 p-2 text-xs text-amber-800 dark:text-amber-200" x-text="item.feedback"></p>
                         </div>
                         <span class="rounded-xl border border-slate-200 px-3 py-1 text-xs dark:border-slate-700" x-text="item.type"></span>
                     </div>
                 </article>
             </template>
+
+            <p x-show="!items.length" x-cloak class="panel-card border-dashed p-6 text-center text-sm text-slate-500">
+                {{ __('panel.skill_passport.empty_analysis') }}
+            </p>
         </div>
 
-        <form class="panel-card h-fit space-y-4 p-5" @submit.prevent="addEvidence()">
-            <h2 class="font-semibold">{{ __('panel.skill_passport.add_title') }}</h2>
-            <label class="block text-sm">
-                <span class="mb-1 block text-xs text-slate-500">{{ __('panel.skill_passport.skill_label') }}</span>
-                <input x-model="newSkill" class="panel-input-block w-full rounded-xl" placeholder="SQL, Power BI...">
-            </label>
-            <label class="block text-sm">
-                <span class="mb-1 block text-xs text-slate-500">{{ __('panel.skill_passport.evidence_label') }}</span>
-                <textarea x-model="newEvidence" rows="4" class="panel-input-block w-full rounded-xl" placeholder="GitHub linki, proje çıktısı, sertifika..."></textarea>
-            </label>
-            <button class="w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500">{{ __('panel.skill_passport.add_button') }}</button>
-            <p class="panel-muted text-xs">{{ __('panel.skill_passport.demo_note') }}</p>
-        </form>
+        <aside class="panel-card h-fit space-y-4 p-5 lg:sticky lg:top-6">
+            <template x-if="selectedItem()">
+                <div class="space-y-4">
+                    <div>
+                        <p class="panel-muted text-xs uppercase tracking-wide">{{ __('panel.skill_passport.skill_label') }}</p>
+                        <h2 class="text-lg font-semibold" x-text="selectedItem().skill"></h2>
+                        <p class="panel-muted mt-1 text-sm" x-text="selectedItem().impact"></p>
+                    </div>
+
+                    <template x-if="selectedItem().status === 'verified'">
+                        <p class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-200">
+                            {{ __('panel.skill_passport.verified_message') }}
+                        </p>
+                    </template>
+
+                    <template x-if="canUpload(selectedItem())">
+                        <div class="space-y-3">
+                            <p class="text-sm font-medium">{{ __('panel.skill_passport.add_title') }}</p>
+                            <p x-show="selectedItem().task_title" class="panel-muted text-xs" x-text="selectedItem().task_title"></p>
+                            <p x-show="error" x-cloak class="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-200" x-text="error"></p>
+                            <form class="space-y-3" @submit.prevent="submitEvidence()">
+                                <select x-model="evidence.kind" class="panel-input w-full">
+                                    <option value="link">{{ __('panel.skill_passport.evidence_kind_link') }}</option>
+                                    <option value="file">{{ __('panel.skill_passport.evidence_kind_file') }}</option>
+                                </select>
+                                <input x-show="evidence.kind === 'link'" x-model="evidence.url" type="url" class="panel-input-block" placeholder="https://github.com/...">
+                                <input x-show="evidence.kind === 'file'" @change="evidence.file = $event.target.files[0] || null" type="file" class="panel-input-block" accept="application/pdf,image/*">
+                                <button type="submit" :disabled="submitting" class="w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60">
+                                    <span x-show="!submitting">{{ __('panel.skill_passport.add_button') }}</span>
+                                    <span x-show="submitting" x-cloak>…</span>
+                                </button>
+                            </form>
+                        </div>
+                    </template>
+
+                    <template x-if="selectedItem() && !canUpload(selectedItem()) && selectedItem().status !== 'verified'">
+                        <div class="space-y-3">
+                            <p class="text-sm">{{ __('panel.skill_passport.no_task_hint') }}</p>
+                            <a href="{{ route('panel.roadmap') }}" class="panel-btn-secondary inline-flex text-sm">{{ __('panel.skill_passport.go_roadmap') }}</a>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <template x-if="!selectedItem()">
+                <p class="panel-muted text-sm">{{ __('panel.skill_passport.select_skill_hint') }}</p>
+            </template>
+        </aside>
     </section>
 </div>
 @endsection

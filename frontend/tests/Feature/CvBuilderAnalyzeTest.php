@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class CvBuilderAnalyzeTest extends TestCase
 {
-    public function test_builder_analyze_route_proxies_to_api_and_stores_session(): void
+    public function test_builder_analyze_route_proxies_to_api_without_local_analysis_state(): void
     {
         $this->withoutMiddleware();
 
@@ -39,6 +39,6 @@ class CvBuilderAnalyzeTest extends TestCase
             ->assertJsonPath('file_name', 'ayse-yilmaz-builder.json')
             ->assertJsonPath('skill_radar.target_role', 'Veri Analisti');
 
-        $this->assertSame('builder', session('cv_analysis.source'));
+        $this->assertNull(session('cv_analysis'));
     }
 }

@@ -11,6 +11,18 @@ AIProvider = Literal["deepseek", "gemini", "groq"]
 SUPPORTED_PROVIDERS: tuple[AIProvider, ...] = ("deepseek", "gemini", "groq")
 
 
+class AIUnavailableError(RuntimeError):
+    """Aktif sağlayıcı için anahtar yok."""
+
+
+class AIProviderError(RuntimeError):
+    """Sağlayıcı veya model yanıtı kullanılamadı."""
+
+
+class AIOutputError(RuntimeError):
+    """Model yanıtı beklenen JSON sözleşmesine uymuyor."""
+
+
 def _provider() -> str:
     return settings.AI_PROVIDER.strip().lower()
 

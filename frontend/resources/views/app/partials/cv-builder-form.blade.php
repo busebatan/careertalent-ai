@@ -27,9 +27,6 @@
       <div>
         <label class="panel-muted mb-1 block text-xs" x-text="uiLabels[editLang].form.summary"></label>
         <textarea x-model="locales[editLang].personal.summary" rows="3" class="panel-input-block"></textarea>
-        <button type="button" @click="aiPolish('summary')"
-          class="mt-2 text-xs text-violet-600 hover:text-violet-500 dark:text-violet-300"
-          x-text="uiLabels[editLang].form.ai_summary"></button>
       </div>
     </div>
   </details>
@@ -86,7 +83,6 @@
           </template>
           <div class="flex flex-wrap gap-2">
             <button type="button" @click="exp.bullets.push('')" class="text-xs text-emerald-600 dark:text-emerald-400" x-text="uiLabels[editLang].form.add_bullet"></button>
-            <button type="button" @click="aiPolishExperience(editLang, exp)" class="text-xs text-violet-600 dark:text-violet-300" x-text="uiLabels[editLang].form.ai_edit"></button>
           </div>
         </div>
       </template>
@@ -124,7 +120,6 @@
           <input type="text" x-model="prj.name" :placeholder="uiLabels[editLang].form.project_name" class="panel-input-block">
           <input type="text" x-model="prj.link" :placeholder="uiLabels[editLang].form.link_optional" class="panel-input-block">
           <textarea x-model="prj.description" rows="2" class="panel-input-block"></textarea>
-          <button type="button" @click="aiPolishProject(editLang, prj)" class="text-xs text-violet-600 dark:text-violet-300" x-text="uiLabels[editLang].form.ai_edit"></button>
         </div>
       </template>
     </div>

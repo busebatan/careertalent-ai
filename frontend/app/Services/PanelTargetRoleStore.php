@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 
 class PanelTargetRoleStore
@@ -76,17 +75,24 @@ class PanelTargetRoleStore
      */
     public static function get(): ?array
     {
-        $result = app(CareerTalentApiClient::class)->panelTarget();
-        $target = $result['body']['target'] ?? null;
-        if (($result['ok'] ?? false) && is_array($target)) {
-            Session::put(self::SESSION_KEY, $target);
-
-            return $target;
+        $result = app(CareerTalentApiClient::class)->careerTargets();
+        $body = $result['body'] ?? null;
+        $targets = is_array($body) && array_is_list($body) ? $body : ($body['targets'] ?? []);
+        if (! ($result['ok'] ?? false) || ! is_array($targets)) {
+            return null;
         }
 
-        $sessionTarget = Session::get(self::SESSION_KEY);
+        $eligible = array_values(array_filter($targets, static fn ($target) => is_array($target) && in_array($target['status'] ?? null, ['active', 'ready', 'queued'], true)));
+        usort($eligible, static function (array $left, array $right): int {
+            $rank = ['active' => 0, 'ready' => 1, 'queued' => 2];
+            return ($rank[$left['status'] ?? 'queued'] ?? 9) <=> ($rank[$right['status'] ?? 'queued'] ?? 9);
+        });
 
-        return is_array($sessionTarget) ? $sessionTarget : null;
+        if ($eligible !== []) {
+            return $eligible[0];
+        }
+
+        return null;
     }
 
     public static function storageKey(): string
@@ -105,18 +111,17 @@ class PanelTargetRoleStore
      */
     private static function persist(array $target): array
     {
-        $target['selected_at'] = now()->toIso8601String();
-        Session::put(self::SESSION_KEY, $target);
-
-        $result = app(CareerTalentApiClient::class)->savePanelTarget($target);
-        $apiTarget = $result['body']['target'] ?? null;
+        $result = app(CareerTalentApiClient::class)->createCareerTarget(array_filter([
+            'title' => $target['title'] ?? null,
+            'source' => $target['source'] ?? 'custom',
+            'job_url' => $target['job_url'] ?? null,
+        ], static fn ($value) => $value !== null));
+        $apiTarget = $result['body']['target'] ?? $result['body'] ?? null;
         if (($result['ok'] ?? false) && is_array($apiTarget)) {
-            Session::put(self::SESSION_KEY, $apiTarget);
-
             return $apiTarget;
         }
 
-        return $target;
+        return [];
     }
 
     /**

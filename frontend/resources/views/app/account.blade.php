@@ -1,12 +1,12 @@
 @extends('app.layouts.app')
 
-@section('title', __('panel.profile.title'))
+@section('title', __('panel.nav.account'))
 
 @section('content')
-<div class="mx-auto max-w-3xl" x-data="{ tab: window.location.hash === '#cv-yukle' ? 'cv' : 'profil' }">
+<div class="mx-auto max-w-3xl" x-data="{ tab: window.location.hash === '#cv-yukle' ? 'cv' : (window.location.hash === '#abonelik' ? 'abonelik' : (window.location.hash === '#gizlilik' ? 'gizlilik' : @js($initialTab ?? 'profil'))) }">
     <header class="mb-8">
-        <h1 class="mb-1 text-2xl font-bold">{{ __('panel.profile.title') }}</h1>
-        <p class="text-slate-600 dark:text-slate-400">{{ __('panel.profile.subtitle') }}</p>
+        <h1 class="mb-1 text-2xl font-bold">{{ __('panel.nav.account') }}</h1>
+        <p class="text-slate-600 dark:text-slate-400">{{ __('panel.account.subtitle') }}</p>
     </header>
 
     <div class="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-4 dark:border-slate-800">
@@ -24,6 +24,16 @@
             :class="tab === 'cv' ? 'bg-slate-100 font-medium text-slate-900 dark:bg-slate-800 dark:text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
             class="rounded-lg px-4 py-2 text-sm">
             {{ __('panel.profile.tab_cv') }}
+        </button>
+        <button type="button" @click="tab = 'abonelik'"
+            :class="tab === 'abonelik' ? 'bg-slate-100 font-medium text-slate-900 dark:bg-slate-800 dark:text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+            class="rounded-lg px-4 py-2 text-sm">
+            {{ __('panel.account.tab_subscription') }}
+        </button>
+        <button type="button" @click="tab = 'gizlilik'"
+            :class="tab === 'gizlilik' ? 'bg-slate-100 font-medium text-slate-900 dark:bg-slate-800 dark:text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+            class="rounded-lg px-4 py-2 text-sm">
+            {{ __('panel.account.tab_privacy') }}
         </button>
     </div>
 
@@ -141,6 +151,32 @@
                     {{ __('panel.profile.no_cv') }}
                 @endif
             </p>
+        </div>
+    </section>
+
+    <section id="abonelik" x-show="tab === 'abonelik'" x-cloak class="space-y-6">
+        <div class="panel-card space-y-4 p-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h2 class="font-semibold">{{ __('panel.account.subscription_title') }}</h2>
+                    <p class="panel-muted mt-1 text-sm">{{ __('panel.account.subscription_desc') }}</p>
+                </div>
+                <span class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                    {{ __('panel.account.free_plan') }}
+                </span>
+            </div>
+            <button type="button" disabled class="panel-btn-disabled">{{ __('panel.account.manage_subscription_soon') }}</button>
+        </div>
+    </section>
+
+    <section id="gizlilik" x-show="tab === 'gizlilik'" x-cloak class="space-y-6">
+        <div class="panel-card space-y-4 p-6">
+            <h2 class="font-semibold">{{ __('panel.account.privacy_title') }}</h2>
+            <p class="panel-muted text-sm">{{ __('panel.account.privacy_desc') }}</p>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <button type="button" disabled class="panel-btn-disabled">{{ __('panel.account.export_data_soon') }}</button>
+                <button type="button" disabled class="panel-btn-disabled">{{ __('panel.account.delete_account_soon') }}</button>
+            </div>
         </div>
     </section>
 </div>

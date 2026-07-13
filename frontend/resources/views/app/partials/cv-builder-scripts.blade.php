@@ -1,5 +1,5 @@
 <script>
-function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFileName = '', analyzeBuilderUrl = '', clearUrl = '') {
+function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFileName = '', analyzeBuilderUrl = '', clearUrl = '', statusUrl = '', verifiedAchievements = []) {
     return {
         mode: 'edit',
         locales: initial,
@@ -17,6 +17,12 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         cvFileName: serverFileName || '',
         analyzeBuilderUrl,
         clearUrl,
+        resetOpen: false,
+        resetScope: 'all',
+        resetWorking: false,
+        resetError: '',
+        statusUrl,
+        verifiedAchievements: Array.isArray(verifiedAchievements) ? verifiedAchievements : [],
         cvFileLabel: @js(__('panel.skill_radar.cv_file', ['name' => ':name'])),
         optionalSectionPick: '',
         _skipLocalesSync: false,
@@ -138,8 +144,6 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
 
             this.saveStatus = 'saving';
             this.analyzeError = null;
-            this._skipLocalesSync = true;
-            window.PanelCvStore.saveBuilder(this.locales, this.panelLocale);
 
             try {
                 const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -162,8 +166,23 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
                     throw new Error(payload.message || this.uiLabels[this.panelLocale]?.analyze_failed || 'CV analizi başarısız');
                 }
 
-                if (payload.skill_radar) {
-                    window.PanelCvStore.saveFromAnalysis(payload.file_name, this.panelLocale, payload.skill_radar);
+                if (payload.status === 'queued' && payload.analysis_id && this.statusUrl && window.pollCvAnalysis) {
+                    const completed = await window.pollCvAnalysis(payload.analysis_id, this.statusUrl, this.panelLocale);
+                    const radar = completed.skill_radar || {
+                        overall_match: completed.radar?.reduce((sum, item) => sum + Number(item.score || 0), 0) / Math.max(completed.radar?.length || 1, 1),
+                        target_role: completed.current_role || '',
+                        skills: completed.radar || [],
+                    };
+                    window.PanelCvStore.saveBuilder(this.locales, this.panelLocale);
+                    window.PanelCvStore.saveFromAnalysis(payload.file_name, this.panelLocale, radar);
+                } else if (payload.skill_radar || (payload.status === 'ready' && payload.radar)) {
+                    const radar = payload.skill_radar || {
+                        overall_match: payload.radar.reduce((sum, item) => sum + Number(item.score || 0), 0) / Math.max(payload.radar.length, 1),
+                        target_role: payload.current_role || '',
+                        skills: payload.radar,
+                    };
+                    window.PanelCvStore.saveBuilder(this.locales, this.panelLocale);
+                    window.PanelCvStore.saveFromAnalysis(payload.file_name, this.panelLocale, radar);
                 }
 
                 window.location.reload();
@@ -174,20 +193,24 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         },
 
         async clearCvAnalysis() {
-            if (this.clearUrl) {
-                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                try {
-                    await fetch(this.clearUrl, {
-                        method: 'POST',
-                        headers: token ? { 'X-CSRF-TOKEN': token, Accept: 'application/json' } : { Accept: 'application/json' },
-                    });
-                } catch {
-                    // best-effort
-                }
+            if (!this.clearUrl || this.resetWorking) return;
+            this.resetWorking = true;
+            this.resetError = '';
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            try {
+                const response = await fetch(this.clearUrl, {
+                    method: 'POST',
+                    headers: { ...(token ? { 'X-CSRF-TOKEN': token } : {}), 'Content-Type': 'application/json', Accept: 'application/json' },
+                    body: JSON.stringify({ scope: this.resetScope }),
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(payload.message || @js(__('panel.skill_radar.reset_failed')));
+                window.PanelCvStore?.clear();
+                window.location.reload();
+            } catch (error) {
+                this.resetError = error?.message || @js(__('panel.skill_radar.reset_failed'));
+                this.resetWorking = false;
             }
-
-            window.PanelCvStore?.clear();
-            window.location.reload();
         },
 
         addEducation() {

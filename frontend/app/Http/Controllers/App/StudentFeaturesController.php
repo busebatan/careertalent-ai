@@ -3,17 +3,31 @@
 namespace App\Http\Controllers\App;
 
 use App\Data\PanelDemoData;
+use App\Services\CareerTalentApiClient;
+use App\Services\PanelTargetRoleStore;
+use App\Services\SkillPassportBuilder;
 
 class StudentFeaturesController extends PanelController
 {
-    public function skillPassport()
+    public function skillPassport(CareerTalentApiClient $api, SkillPassportBuilder $builder)
     {
-        $data = $this->panelApiData('skill-passport', [
-            'passport' => PanelDemoData::skillPassport(),
-        ]);
+        $analysisResult = $api->currentCareerAnalysis();
+        $analysis = ($analysisResult['ok'] ?? false) && is_array($analysisResult['body'] ?? null) ? $analysisResult['body'] : [];
+        $target = PanelTargetRoleStore::get();
+        $tasks = [];
+        $taskError = null;
+
+        if (is_array($target) && ! empty($target['id'])) {
+            $result = $api->careerTargetTasks((string) $target['id']);
+            $taskBody = $result['body'] ?? [];
+            $tasks = is_array($taskBody) && array_is_list($taskBody) ? $taskBody : ($taskBody['tasks'] ?? []);
+            $taskError = ($result['ok'] ?? false) ? null : ($result['error'] ?? null);
+        }
 
         return $this->panelView('app.skill-passport', [
-            'passport' => $data['passport'],
+            'passport' => $builder->build($analysis, is_array($tasks) ? $tasks : []),
+            'selectedTarget' => $target,
+            'careerEngineError' => $taskError,
         ]);
     }
 

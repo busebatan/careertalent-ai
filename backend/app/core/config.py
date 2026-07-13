@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+psycopg2://careertalent:careertalent@127.0.0.1:5432/careertalent"
     REDIS_URL: str = "redis://localhost:6379/0"
+    CELERY_TASK_ALWAYS_EAGER: bool = False
 
     # Yapay zeka — AI_PROVIDER ile seçilir: deepseek | gemini | groq
     AI_PROVIDER: str = "deepseek"

@@ -46,8 +46,8 @@ class AdminPanelPagesTest extends TestCase
         $response = $this->get('/admin');
 
         $response->assertStatus(200);
-        $response->assertSee('/panel/is-radari', false);
+        $response->assertSee('/panel/ilan-analizi/radar', false);
         $response->assertSee('/panel/yetenek-pasaportu', false);
-        $response->assertSee('/panel/mentor-degerlendirme', false);
+        $response->assertSee('/panel/uzmanlardan-destek', false);
     }
 }

@@ -122,6 +122,67 @@ class CareerTalentApiClient
         }
     }
 
+    /** @param array<string, mixed> $payload */
+    public function analyzeCvTextQueued(array $payload): array
+    {
+        return $this->postJson('/api/v1/cv/analyze-text', $payload, 120);
+    }
+
+    public function careerAnalysis(string $analysisId): array
+    {
+        return $this->getJson('/api/v1/career/analysis/'.rawurlencode($analysisId), 10);
+    }
+
+    public function currentCareerAnalysis(): array
+    {
+        return $this->getJson('/api/v1/career/analysis/current', 10);
+    }
+
+    public function resetCareer(string $scope): array
+    {
+        return $this->postJson('/api/v1/career/reset', ['scope' => $scope], 15);
+    }
+
+    public function careerTargets(): array
+    {
+        return $this->getJson('/api/v1/career/targets', 10);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createCareerTarget(array $payload): array
+    {
+        return $this->postJson('/api/v1/career/targets', $payload, 30);
+    }
+
+    public function careerTargetTasks(string $targetId): array
+    {
+        return $this->getJson('/api/v1/career/targets/'.rawurlencode($targetId).'/tasks', 10);
+    }
+
+    public function careerTask(string $taskId): array
+    {
+        return $this->getJson('/api/v1/career/tasks/'.rawurlencode($taskId), 10);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function submitCareerEvidence(string $taskId, array $payload): array
+    {
+        return $this->postJson('/api/v1/career/tasks/'.rawurlencode($taskId).'/evidence', $payload, 30);
+    }
+
+    public function submitCareerEvidenceFile(string $taskId, UploadedFile $file): array
+    {
+        try {
+            $response = $this->request(30)
+                ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+                ->post($this->baseUrl().'/api/v1/career/tasks/'.rawurlencode($taskId).'/evidence/upload');
+
+            return $this->normalizeResponse($response);
+        } catch (ConnectionException $exception) {
+            return $this->connectionError($exception);
+        }
+    }
+
     /**
      * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
      */
@@ -178,7 +239,8 @@ class CareerTalentApiClient
     private function normalizeResponse($response): array
     {
         if (! $response->successful()) {
-            $message = $response->json('detail')
+            $detail = $response->json('detail');
+            $message = (is_array($detail) ? ($detail['message'] ?? $detail['code'] ?? null) : $detail)
                 ?? $response->json('message')
                 ?? $response->body();
 
