@@ -35,7 +35,7 @@ chmod -R ug+rwx storage bootstrap/cache
 
 echo "→ migrate + Livewire assets (Alpine panel UI)"
 php artisan migrate --force --no-interaction
-php artisan livewire:publish --assets --force --no-interaction
+php artisan livewire:publish --assets --no-interaction 2>/dev/null || true
 
 echo "→ Laravel caches"
 php artisan route:clear
@@ -51,7 +51,7 @@ echo "→ permissions"
 chown -R yigit:www-data "$DEST"
 
 echo "→ smoke (origin)"
-for path in / /panel /panel/kariyer-profilim /panel/cv-merkezi /panel/kariyer-rotam; do
+for path in / /panel /panel/kariyer-profilim /panel/cv-merkezi /panel/kariyer-rotam /panel/yetenek-pasaportu; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $DOMAIN" "https://127.0.0.1${path}" --insecure)
   echo "  $code $path"
 done

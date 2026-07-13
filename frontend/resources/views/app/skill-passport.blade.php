@@ -24,6 +24,13 @@
         <a href="{{ route('panel.cv-builder') }}" class="panel-btn-secondary text-sm">{{ __('panel.skill_passport.update_cv') }}</a>
     </header>
 
+    @if (empty($selectedTarget['id'] ?? null))
+        <p class="mb-4 rounded-xl border border-sky-500/30 bg-sky-500/10 p-4 text-sm text-sky-900 dark:text-sky-100" role="status">
+            {{ __('panel.skill_passport.target_required') }}
+            <a href="{{ route('panel.roadmap') }}" class="ml-1 font-medium text-emerald-700 underline dark:text-emerald-300">{{ __('panel.skill_passport.go_roadmap') }}</a>
+        </p>
+    @endif
+
     @if (! empty($careerEngineError))
         <p class="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-200" role="status">{{ $careerEngineError }}</p>
     @endif

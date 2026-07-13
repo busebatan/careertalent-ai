@@ -7,9 +7,9 @@
     $avatarUrl = $panelUser['avatar_url'] ?? null;
 @endphp
 
-<a href="{{ route('panel.profile') }}"
+<a href="{{ route('panel.account') }}"
     class="mb-4 flex items-center gap-3 rounded-lg px-1 py-1 transition hover:bg-slate-100 dark:hover:bg-slate-800/50"
-    aria-label="{{ __('panel.nav.profile') }}: {{ $displayName }}">
+    aria-label="{{ __('panel.nav.account') }}: {{ $displayName }}">
     @if ($avatarUrl)
         <img src="{{ $avatarUrl }}" alt="" width="40" height="40"
             class="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-emerald-500/25 dark:ring-emerald-400/30">

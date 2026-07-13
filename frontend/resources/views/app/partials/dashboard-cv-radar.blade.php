@@ -25,7 +25,7 @@
         <h2 class="mb-2 text-lg font-semibold" x-text="labels.empty_title"></h2>
         <p class="panel-muted mx-auto mb-4 max-w-md text-sm" x-text="labels.empty_desc"></p>
         <div class="flex flex-wrap justify-center gap-2">
-            <a href="{{ route('panel.profile') }}#cv-yukle" class="inline-flex rounded-xl bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+            <a href="{{ route('panel.account') }}#cv-yukle" class="inline-flex rounded-xl bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-500"
                 x-text="labels.upload_cta"></a>
             <a href="{{ route('panel.cv-builder') }}" class="inline-flex rounded-xl border border-emerald-600 px-5 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
                 x-text="labels.create_cv"></a>

@@ -171,6 +171,7 @@ return [
         'verified_message' => 'Bu yetenek için kanıt doğrulandı.',
         'no_task_hint' => 'Bu yetenek için henüz görev eşleşmesi yok. Önce kariyer hedefi seç; görev planı oluşunca kanıt yükleyebilirsin.',
         'go_roadmap' => 'Kariyer rotasına git',
+        'target_required' => 'Kanıt yüklemek için önce kariyer hedefi seçmelisin.',
         'empty_analysis' => 'AI yetenek analizi henüz hazır değil. CV yükleyerek başla.',
         'status_verified' => 'Doğrulandı',
         'status_review' => 'İncelemede',

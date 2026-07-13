@@ -26,8 +26,8 @@ class PanelPagesI18nTest extends TestCase
     return [
       'dashboard-tr' => ['/panel', 'tr', ['Ana Sayfa', 'Hoş geldin', 'Henüz CV analizi yok']],
       'dashboard-en' => ['/panel', 'en', ['Dashboard', 'Welcome', 'No CV analysis yet']],
-      'profile-tr' => ['/panel/kariyer-profilim', 'tr', ['Hesap', 'Profil bilgileri', 'CV yükle', 'Abonelik', 'Gizlilik']],
-      'profile-en' => ['/panel/kariyer-profilim', 'en', ['Career Profile']],
+      'account-tr' => ['/panel/hesap', 'tr', ['Hesap', 'Profil bilgileri', 'Giriş bilgileri', 'CV yükle', 'Abonelik', 'Gizlilik']],
+      'account-en' => ['/panel/hesap', 'en', ['Account', 'Profile details', 'Upload CV']],
       'skill-passport-tr' => ['/panel/yetenek-pasaportu', 'tr', ['Yetenek Pasaportu', 'Kanıt skoru', 'Kanıt yüklemek için listeden bir yeteneğe tıkla.']],
       'skill-passport-en' => ['/panel/yetenek-pasaportu', 'en', ['Skill Passport', 'Evidence score', 'Click a skill in the list to upload evidence.']],
       'cv-builder-tr' => ['/panel/cv-merkezi', 'tr', ['CV Merkezi', 'PDF indir', 'Kaydet', 'CvOptionalSections']],
@@ -40,7 +40,6 @@ class PanelPagesI18nTest extends TestCase
       'applications-en' => ['/panel/basvurularim', 'en', ['Applications', 'Active applications']],
       'interview-tr' => ['/panel/mulakat-hazirligi', 'tr', ['Mülakat Hazırlığı', 'Demo skorla']],
       'interview-en' => ['/panel/mulakat-hazirligi', 'en', ['Interview Preparation', 'Score demo']],
-      'account-tr' => ['/panel/hesap', 'tr', ['Hesap', 'Profil bilgileri', 'Giriş bilgileri', 'CV yükle', 'Abonelik', 'Gizlilik']],
       'chat-tr' => ['/panel/ai-yardimcisi', 'tr', ['Kariyer Asistanı', 'demo kariyer asistanı']],
     ];
   }
@@ -90,10 +89,11 @@ class PanelPagesI18nTest extends TestCase
     $response = $this->withSession(['panel_locale' => 'tr'])->get('/panel');
 
     $response->assertOk();
-    foreach (['Ana Sayfa', 'KARİYERİM', 'Kariyer Profilim', 'CV Merkezi', 'Yetenek Pasaportu', 'Kariyer Rotam', 'FIRSATLAR', 'İş Fırsatları', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'] as $label) {
+    foreach (['Ana Sayfa', 'KARİYERİM', 'CV Merkezi', 'Yetenek Pasaportu', 'Kariyer Rotam', 'FIRSATLAR', 'İş Fırsatları', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'] as $label) {
       $response->assertSee($label, false);
     }
-    $response->assertSeeInOrder(['Ana Sayfa', 'Kariyer Asistanı', 'KARİYERİM', 'Kariyer Profilim', 'CV Merkezi', 'Yetenek Pasaportu', 'Kariyer Rotam', 'FIRSATLAR', 'İş Fırsatları', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'], false);
+    $response->assertSeeInOrder(['Ana Sayfa', 'Kariyer Asistanı', 'KARİYERİM', 'CV Merkezi', 'Yetenek Pasaportu', 'Kariyer Rotam', 'FIRSATLAR', 'İş Fırsatları', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'], false);
+    $response->assertDontSee('Kariyer Profilim', false);
     $this->assertStringNotContainsString('Hesap, Paket ve Gizlilik', $response->getContent());
     $this->assertSame(1, substr_count($response->getContent(), 'Kariyer Asistanı'));
     foreach (['İş Radarı', 'Mentor Değerlendirme', 'Görevlerim &amp; Notlar'] as $removedLabel) {
@@ -104,7 +104,8 @@ class PanelPagesI18nTest extends TestCase
   public function test_legacy_student_panel_urls_redirect_to_canonical_pages(): void
   {
     $redirects = [
-      '/panel/profil' => '/panel/kariyer-profilim',
+      '/panel/profil' => '/panel/hesap',
+      '/panel/kariyer-profilim' => '/panel/hesap',
       '/panel/cv-olustur' => '/panel/cv-merkezi',
       '/panel/yol-haritasi' => '/panel/kariyer-rotam',
       '/panel/ilan-eslestirme' => '/panel/ilan-analizi',

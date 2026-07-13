@@ -61,7 +61,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin'
 // ── Öğrenci paneli ──────────────────────────────────────────
 Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'panel.locale'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/kariyer-profilim', [ProfileController::class, 'show'])->name('profile');
+    Route::redirect('/kariyer-profilim', '/panel/hesap');
     Route::get('/cv-merkezi', [CvBuilderController::class, 'show'])->name('cv-builder');
     Route::post('/cv-merkezi/analiz', [CvUploadController::class, 'analyze'])->name('cv.analyze');
     Route::post('/cv-merkezi/analiz-olusturucu', [CvUploadController::class, 'analyzeBuilder'])->name('cv.analyze-builder');
@@ -87,7 +87,7 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'panel.locale'])
     Route::get('/ilan-analizi/radar', fn () => redirect()->route('panel.job-matches'))->name('job-radar');
     Route::redirect('/kariyer-rotam/mentor', '/panel/uzmanlardan-destek');
 
-    Route::redirect('/profil', '/panel/kariyer-profilim');
+    Route::redirect('/profil', '/panel/hesap');
     Route::redirect('/cv-olustur', '/panel/cv-merkezi');
     Route::redirect('/kariyer-merdiveni', '/panel/kariyer-rotam/kariyer-merdiveni');
     Route::redirect('/yol-haritasi', '/panel/kariyer-rotam');

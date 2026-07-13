@@ -7,11 +7,6 @@ use App\Services\CareerTalentApiClient;
 
 class ProfileController extends PanelController
 {
-    public function show(CareerTalentApiClient $api)
-    {
-        return $this->accountView($api, 'profil');
-    }
-
     public function account(CareerTalentApiClient $api)
     {
         return $this->accountView($api, 'profil');

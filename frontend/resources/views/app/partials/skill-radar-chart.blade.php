@@ -74,7 +74,7 @@
         <div class="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-stretch">
             @if (! empty($showCvToolbar))
                 <div class="flex flex-col gap-2 sm:min-w-[9.5rem]">
-                    <a href="{{ route('panel.profile') }}#cv-yukle"
+                    <a href="{{ route('panel.account') }}#cv-yukle"
                         class="panel-btn-secondary text-center text-sm">
                         {{ __('panel.dashboard.upload_cv') }}
                     </a>

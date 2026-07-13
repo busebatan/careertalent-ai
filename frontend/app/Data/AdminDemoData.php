@@ -40,7 +40,7 @@ class AdminDemoData
             ['key' => 'interviews', 'title' => 'Mülakat Simülasyonu', 'desc' => 'Soru bankası, rubric ve skor trendleri.', 'admin_route' => 'admin.interviews', 'panel_route' => 'panel.interview', 'metric' => '86 oturum'],
             ['key' => 'mentors', 'title' => 'Mentor Marketplace', 'desc' => 'Review paketleri, mentor slotları ve gelir takibi.', 'admin_route' => 'admin.mentors', 'panel_route' => 'panel.mentors', 'metric' => '₺18.4K GMV'],
             ['key' => 'learning', 'title' => 'Eğitim & Affiliate', 'desc' => 'Kurs önerileri, partner linkleri ve dönüşüm.', 'admin_route' => 'admin.learning', 'panel_route' => 'panel.learning', 'metric' => '24 kaynak'],
-            ['key' => 'settings', 'title' => 'Ürün Ayarları', 'desc' => 'Demo mod, FastAPI durumu, panel yayın kontrolleri.', 'admin_route' => 'admin.settings', 'panel_route' => 'panel.profile', 'metric' => 'Demo açık'],
+            ['key' => 'settings', 'title' => 'Ürün Ayarları', 'desc' => 'Demo mod, FastAPI durumu, panel yayın kontrolleri.', 'admin_route' => 'admin.settings', 'panel_route' => 'panel.account', 'metric' => 'Demo açık'],
         ];
     }
 
@@ -152,7 +152,7 @@ class AdminDemoData
             'settings' => [
                 'title' => 'Ürün Ayarları',
                 'subtitle' => 'Panel yayını, demo mod, FastAPI health ve admin görünürlük ayarları.',
-                'panel_route' => 'panel.profile',
+                'panel_route' => 'panel.account',
                 'actions' => ['Demo modu kapat/aç', 'FastAPI health kontrol et', 'Panel menü görünürlüğü ayarla'],
                 'rows' => [
                     ['name' => 'FastAPI CV analizi', 'meta' => 'CvUploadController proxy bağlı', 'score' => 'Aktif', 'status' => 'Bağlı', 'next' => 'Health monitor ekle'],

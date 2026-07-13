@@ -44,7 +44,7 @@ class PanelApiConnectionTest extends TestCase
             'http://localhost:8000/*' => Http::response([], 200),
         ]);
 
-        $this->get('/panel/kariyer-profilim')->assertOk()->assertSee('API Kanıt Yeteneği', false);
+        $this->get('/panel/yetenek-pasaportu')->assertOk()->assertSee('API Kanıt Yeteneği', false);
         $this->get('/panel/ai-yardimcisi')->assertOk()->assertSee('API asistan mesajı', false);
 
         Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/panel/chat');

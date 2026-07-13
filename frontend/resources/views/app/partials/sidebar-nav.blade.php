@@ -5,7 +5,6 @@
             ['route' => 'panel.chat', 'match' => 'panel.chat', 'label' => 'panel.nav.chat', 'icon' => 'chat'],
         ]],
         ['label' => 'panel.nav_groups.career', 'items' => [
-            ['route' => 'panel.profile', 'match' => 'panel.profile', 'label' => 'panel.nav.profile', 'icon' => 'profile'],
             ['route' => 'panel.cv-builder', 'match' => 'panel.cv-builder', 'label' => 'panel.nav.cv_builder', 'icon' => 'cv'],
             ['route' => 'panel.skill-passport', 'match' => 'panel.skill-passport', 'label' => 'panel.nav.skill_passport', 'icon' => 'passport'],
             ['route' => 'panel.roadmap', 'match' => 'panel.roadmap', 'label' => 'panel.nav.roadmap', 'icon' => 'roadmap'],

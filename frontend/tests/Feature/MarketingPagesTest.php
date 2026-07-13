@@ -224,9 +224,12 @@ class MarketingPagesTest extends TestCase
             ->assertSessionHas('panel_locale', 'en');
     }
 
-    public function test_panel_profil_sayfasi_acilir(): void
+    public function test_panel_profil_url_hesaba_yonlendirir(): void
     {
-        $response = $this->get('/panel/kariyer-profilim');
+        $this->get('/panel/kariyer-profilim')
+            ->assertRedirect('/panel/hesap');
+
+        $response = $this->get('/panel/hesap');
 
         $response->assertStatus(200);
         $response->assertSee('Profil bilgileri');

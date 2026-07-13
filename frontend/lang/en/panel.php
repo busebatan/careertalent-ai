@@ -171,6 +171,7 @@ return [
         'verified_message' => 'Evidence for this skill has been verified.',
         'no_task_hint' => 'No matching task yet for this skill. Select a career target first; once tasks are generated you can upload evidence.',
         'go_roadmap' => 'Go to career route',
+        'target_required' => 'Select a career target first to upload evidence.',
         'empty_analysis' => 'AI skill analysis is not ready yet. Upload your CV to get started.',
         'status_verified' => 'Verified',
         'status_review' => 'Under review',
