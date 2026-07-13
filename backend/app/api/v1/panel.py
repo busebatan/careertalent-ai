@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 from app.schemas.panel import (
@@ -33,6 +33,8 @@ from app.schemas.panel import (
 )
 from app.services.job_listing_parser import parse_job_listing
 from app.services.panel_target_store import get_target, put_target
+from app.core.security import require_admin
+from app.models.user import User
 
 router = APIRouter()
 
@@ -325,7 +327,7 @@ def _analyze_job(url: str) -> dict:
 
 
 @router.get("/dashboard", response_model=DashboardResponse)
-def dashboard() -> DashboardResponse:
+def dashboard(current_user : User = Depends(require_admin),) -> DashboardResponse:
     return {"stats": _stats(), "weekly_tasks": _weekly_tasks(), "learning_resources": _learning_resources()}
 
 
