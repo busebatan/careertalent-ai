@@ -3,8 +3,11 @@
 from io import BytesIO
 
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from app.main import app
+from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence
+from app.models.engagement import CvDocument
 
 client = TestClient(app)
 
@@ -72,6 +75,29 @@ def test_cv_analyze_accepts_pdf_and_tracks_current_upload(client, monkeypatch, t
     assert first_analysis["file_name"] == "cv.pdf"
     assert first_analysis["source"] == "upload"
 
+    client.post("/api/v1/auth/register", json={"full_name": "Other Owner", "email": "other@example.com", "password": "GucluParola123!"})
+    other_token = client.post("/api/v1/auth/login", data={"username": "other@example.com", "password": "GucluParola123!"}).json()["access_token"]
+    other_headers = {"Authorization": f"Bearer {other_token}"}
+    other_path = tmp_path / "2" / "cv" / "other-document.pdf"
+    other_path.parent.mkdir(parents=True)
+    other_path.write_bytes(_MINIMAL_PDF)
+
+    override = app.dependency_overrides
+    db = next(override[__import__("app.core.database", fromlist=["get_db"]).get_db]())
+    target = CareerTarget(id="old-target", user_id=1, title="Financial Analyst", source="ladder", status="active")
+    task = CareerTask(id="old-task", user_id=1, target_id=target.id, title="Excel", hint="", status="completed", evidence_types=["link"], skill_impacts=["Excel"])
+    evidence = Evidence(id="old-evidence", user_id=1, task_id=task.id, kind="link", url="https://example.com", status="accepted")
+    other_target = CareerTarget(id="other-target", user_id=2, title="Backend Developer", source="ladder", status="active")
+    other_task = CareerTask(id="other-task", user_id=2, target_id=other_target.id, title="FastAPI", hint="", status="pending", evidence_types=["link"], skill_impacts=["Python"])
+    db.add_all([
+        target, task, evidence,
+        CareerAnalysis(id="other-analysis", user_id=2, status="ready", source="upload", cv_text="Python FastAPI", current_role="Developer"),
+        other_target, other_task,
+        CvDocument(id="other-document", user_id=2, kind="uploaded", display_name="other.pdf", original_name="other.pdf", file_path=str(other_path), file_size=len(_MINIMAL_PDF), is_current=True),
+    ])
+    db.commit()
+    db.close()
+
     second = client.post(
         "/api/v1/cv/analyze",
         files={"file": ("job-specific.pdf", BytesIO(_MINIMAL_PDF), "application/pdf")},
@@ -79,22 +105,61 @@ def test_cv_analyze_accepts_pdf_and_tracks_current_upload(client, monkeypatch, t
     )
     assert second.status_code == 202
     documents = client.get("/api/v1/cv/documents", headers={"Authorization": f"Bearer {token}"}).json()
-    assert len(documents) == 2
+    assert len(documents) == 1
     assert [item["display_name"] for item in documents if item["is_current"]] == ["job-specific.pdf"]
-    assert next(item for item in documents if item["id"] == first_id)["is_current"] is False
+    assert all(item["id"] != first_id for item in documents)
+    assert not (tmp_path / "1" / "cv" / f"{first_id}.pdf").exists()
+    assert client.get(f"/api/v1/career/analysis/{data['analysis_id']}", headers={"Authorization": f"Bearer {token}"}).status_code == 404
+    assert client.get("/api/v1/career/targets", headers={"Authorization": f"Bearer {token}"}).json() == []
+    assert client.get("/api/v1/cv/documents", headers=other_headers).json()[0]["id"] == "other-document"
+    assert client.get("/api/v1/career/analysis/other-analysis", headers=other_headers).status_code == 200
+    assert client.get("/api/v1/career/targets", headers=other_headers).json()[0]["id"] == "other-target"
+    assert other_path.exists()
     profile = client.get("/api/v1/career/profile", headers={"Authorization": f"Bearer {token}"}).json()
     assert profile["uploaded_cv"]["name"] == "job-specific.pdf"
     current_id = next(item["id"] for item in documents if item["is_current"])
+    rejected = client.post("/api/v1/cv/analyze", files={"file": ("not-a-cv.txt", b"invalid", "text/plain")}, headers={"Authorization": f"Bearer {token}"})
+    assert rejected.status_code == 422
+    assert client.get("/api/v1/cv/documents", headers={"Authorization": f"Bearer {token}"}).json()[0]["id"] == current_id
+    assert client.get(f"/api/v1/career/analysis/{second.json()['analysis_id']}", headers={"Authorization": f"Bearer {token}"}).status_code == 200
     assert client.patch(f"/api/v1/cv/documents/{current_id}/archive", headers={"Authorization": f"Bearer {token}"}).status_code == 200
     assert client.get("/api/v1/career/profile", headers={"Authorization": f"Bearer {token}"}).json()["uploaded_cv"] is None
 
-    reanalysis = client.post(f"/api/v1/cv/documents/{first_id}/analyze", headers={"Authorization": f"Bearer {token}"})
-    assert reanalysis.status_code == 202
-    active = client.get(f"/api/v1/career/analysis/{reanalysis.json()['analysis_id']}", headers={"Authorization": f"Bearer {token}"}).json()
-    assert active["id"] == reanalysis.json()["analysis_id"]
-    assert active["cv_document_id"] == first_id
-    assert active["file_name"] == "cv.pdf"
-    assert active["source"] == "archive_uploaded"
+    assert client.post(f"/api/v1/cv/documents/{first_id}/analyze", headers={"Authorization": f"Bearer {token}"}).status_code == 404
+
+
+def test_deleting_last_cv_clears_career_flow(client, monkeypatch, tmp_path):
+    client.post("/api/v1/auth/register", json={"full_name": "Delete Owner", "email": "delete@example.com", "password": "GucluParola123!"})
+    token = client.post("/api/v1/auth/login", data={"username": "delete@example.com", "password": "GucluParola123!"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    monkeypatch.setattr("app.api.v1.cv.extract_text_from_pdf", lambda _data: "SQL Python Excel Pandas ile veri analizi deneyimi")
+    monkeypatch.setattr("app.api.v1.cv.analyze_cv_task.delay", lambda _analysis_id: None)
+    monkeypatch.setattr("app.api.v1.cv.settings.UPLOAD_DIR", str(tmp_path))
+    queued = client.post("/api/v1/cv/analyze", files={"file": ("cv.pdf", BytesIO(_MINIMAL_PDF), "application/pdf")}, headers=headers)
+    document_id = client.get("/api/v1/cv/documents", headers=headers).json()[0]["id"]
+
+    override = app.dependency_overrides
+    db = next(override[__import__("app.core.database", fromlist=["get_db"]).get_db]())
+    evidence_path = tmp_path / "1" / "delete-evidence.pdf"
+    evidence_path.parent.mkdir(parents=True, exist_ok=True)
+    evidence_path.write_bytes(_MINIMAL_PDF)
+    target = CareerTarget(id="delete-target", user_id=1, title="Data Analyst", source="ladder", status="active")
+    task = CareerTask(id="delete-task", user_id=1, target_id=target.id, title="SQL", hint="", status="completed", evidence_types=["link"], skill_impacts=["SQL"])
+    db.add_all([target, task, Evidence(id="delete-evidence", user_id=1, task_id=task.id, kind="file", file_path=str(evidence_path), status="accepted")])
+    db.commit()
+    db.close()
+
+    assert client.patch(f"/api/v1/cv/documents/{document_id}/archive", headers=headers).status_code == 200
+    assert client.delete(f"/api/v1/cv/documents/{document_id}", headers=headers).status_code == 204
+    assert client.get("/api/v1/cv/documents", headers=headers).json() == []
+    assert client.get(f"/api/v1/career/analysis/{queued.json()['analysis_id']}", headers=headers).status_code == 404
+    assert client.get("/api/v1/career/targets", headers=headers).json() == []
+    assert not evidence_path.exists()
+
+    db = next(override[__import__("app.core.database", fromlist=["get_db"]).get_db]())
+    assert db.scalar(select(CareerTask).where(CareerTask.user_id == 1)) is None
+    assert db.scalar(select(Evidence).where(Evidence.user_id == 1)) is None
+    db.close()
 
 
 def test_generated_cv_archive_can_start_owner_scoped_active_analysis(client, monkeypatch, tmp_path):

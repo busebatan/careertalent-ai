@@ -230,14 +230,29 @@ def submit_evidence(db: Session, user_id: int, task: CareerTask, kind: str, url:
     return evidence
 
 
-def reset_career_state(db: Session, user_id: int, scope: str) -> dict[str, int]:
+def reset_career_state(db: Session, user_id: int, scope: str, *, commit: bool = True) -> dict[str, int]:
+    evidence_files = career_evidence_file_paths(db, user_id) if scope in {"plan", "all"} else []
     deleted = {"analyses": 0, "targets": 0, "tasks": 0, "evidence": 0}
     if scope in {"plan", "all"}:
         deleted.update(_delete_target_plan(db, user_id))
     if scope in {"analysis", "all"}:
         deleted["analyses"] = db.execute(delete(CareerAnalysis).where(CareerAnalysis.user_id == user_id)).rowcount
-    db.commit()
+    if commit:
+        db.commit()
+        remove_career_evidence_files(user_id, evidence_files)
     return deleted
+
+
+def career_evidence_file_paths(db: Session, user_id: int) -> list[str]:
+    return list(db.scalars(select(Evidence.file_path).where(Evidence.user_id == user_id, Evidence.file_path.is_not(None))).all())
+
+
+def remove_career_evidence_files(user_id: int, file_paths: list[str]) -> None:
+    upload_root = (Path(settings.UPLOAD_DIR).resolve() / str(user_id))
+    for file_path in file_paths:
+        path = Path(file_path).resolve()
+        if path.is_relative_to(upload_root) and path.is_file():
+            path.unlink()
 
 
 def _delete_target_plan(db: Session, user_id: int) -> dict[str, int]:

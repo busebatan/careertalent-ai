@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 from fastapi.responses import FileResponse
-from sqlalchemy import select, update
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -21,7 +21,7 @@ from app.models.user import User
 from app.models.engagement import CvDocument
 from app.schemas.career import CVQueueResponse
 from app.schemas.cv import AnalyzeTextRequest
-from app.services.career_engine import create_analysis
+from app.services.career_engine import career_evidence_file_paths, create_analysis, remove_career_evidence_files, reset_career_state
 from app.services.cv_content import has_meaningful_cv_content
 from app.services.cv_parser import extract_text_from_pdf
 from app.tasks.career import analyze_cv_task
@@ -42,6 +42,14 @@ def _store_pdf(user_id: int, document_id: str, data: bytes) -> str:
     path.write_bytes(data)
     os.chmod(path, 0o600)
     return str(path)
+
+
+def _remove_cv_files(user_id: int, documents: list[CvDocument]) -> None:
+    base = (Path(settings.UPLOAD_DIR).resolve() / str(user_id) / "cv")
+    for document in documents:
+        path = Path(document.file_path).resolve()
+        if path.is_relative_to(base) and path.is_file():
+            path.unlink()
 
 
 def _safe_pdf_name(name: str) -> str:
@@ -107,9 +115,20 @@ async def analyze_cv(db: DB, user: CurrentUser, file: UploadFile = File(...)):
         raise HTTPException(status_code=422, detail="PDF'de analiz edilebilir deneyim, eğitim, proje veya yetenek içeriği bulunamadı")
     document_id = str(uuid4())
     display_name = _safe_pdf_name(file.filename)
-    db.execute(update(CvDocument).where(CvDocument.user_id == user.id, CvDocument.kind == "uploaded", CvDocument.is_current.is_(True)).values(is_current=False))
-    db.add(CvDocument(id=document_id, user_id=user.id, kind="uploaded", display_name=display_name, original_name=display_name, file_path=_store_pdf(user.id, document_id, data), file_size=len(data), language=None, builder_data=None, is_current=True))
-    db.commit()
+    previous_documents = list(db.scalars(select(CvDocument).where(CvDocument.user_id == user.id)).all())
+    evidence_files = career_evidence_file_paths(db, user.id)
+    file_path = _store_pdf(user.id, document_id, data)
+    try:
+        reset_career_state(db, user.id, "all", commit=False)
+        db.execute(delete(CvDocument).where(CvDocument.user_id == user.id))
+        db.add(CvDocument(id=document_id, user_id=user.id, kind="uploaded", display_name=display_name, original_name=display_name, file_path=file_path, file_size=len(data), language=None, builder_data=None, is_current=True))
+        db.commit()
+    except Exception:
+        db.rollback()
+        Path(file_path).unlink(missing_ok=True)
+        raise
+    _remove_cv_files(user.id, previous_documents)
+    remove_career_evidence_files(user.id, evidence_files)
     return _queue(db, user, cv_text, "upload", display_name, document_id)
 
 
@@ -184,7 +203,11 @@ def archive_current_cv(document_id: str, db: DB, user: CurrentUser):
 def delete_cv_document(document_id: str, db: DB, user: CurrentUser):
     row = db.scalar(select(CvDocument).where(CvDocument.id == document_id, CvDocument.user_id == user.id, CvDocument.is_current.is_(False)))
     if row is None: raise HTTPException(status_code=404, detail="Geçmiş CV kaydı bulunamadı")
-    path = Path(row.file_path).resolve(); base = (Path(settings.UPLOAD_DIR).resolve() / str(user.id) / "cv")
+    remaining = db.scalar(select(func.count()).select_from(CvDocument).where(CvDocument.user_id == user.id, CvDocument.id != document_id)) or 0
+    evidence_files = career_evidence_file_paths(db, user.id) if remaining == 0 else []
+    if remaining == 0:
+        reset_career_state(db, user.id, "all", commit=False)
     db.delete(row); db.commit()
-    if path.is_relative_to(base) and path.is_file(): path.unlink()
+    _remove_cv_files(user.id, [row])
+    remove_career_evidence_files(user.id, evidence_files)
     return Response(status_code=204)
