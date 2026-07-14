@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 from fastapi.responses import FileResponse
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -115,19 +115,21 @@ async def analyze_cv(db: DB, user: CurrentUser, file: UploadFile = File(...)):
         raise HTTPException(status_code=422, detail="PDF'de analiz edilebilir deneyim, eğitim, proje veya yetenek içeriği bulunamadı")
     document_id = str(uuid4())
     display_name = _safe_pdf_name(file.filename)
-    previous_documents = list(db.scalars(select(CvDocument).where(CvDocument.user_id == user.id)).all())
     evidence_files = career_evidence_file_paths(db, user.id)
     file_path = _store_pdf(user.id, document_id, data)
     try:
         reset_career_state(db, user.id, "all", commit=False)
-        db.execute(delete(CvDocument).where(CvDocument.user_id == user.id))
+        db.execute(
+            update(CvDocument)
+            .where(CvDocument.user_id == user.id, CvDocument.kind == "uploaded", CvDocument.is_current.is_(True))
+            .values(is_current=False)
+        )
         db.add(CvDocument(id=document_id, user_id=user.id, kind="uploaded", display_name=display_name, original_name=display_name, file_path=file_path, file_size=len(data), language=None, builder_data=None, is_current=True))
         db.commit()
     except Exception:
         db.rollback()
         Path(file_path).unlink(missing_ok=True)
         raise
-    _remove_cv_files(user.id, previous_documents)
     remove_career_evidence_files(user.id, evidence_files)
     return _queue(db, user, cv_text, "upload", display_name, document_id)
 

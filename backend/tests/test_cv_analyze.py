@@ -105,10 +105,10 @@ def test_cv_analyze_accepts_pdf_and_tracks_current_upload(client, monkeypatch, t
     )
     assert second.status_code == 202
     documents = client.get("/api/v1/cv/documents", headers={"Authorization": f"Bearer {token}"}).json()
-    assert len(documents) == 1
+    assert len(documents) == 2
     assert [item["display_name"] for item in documents if item["is_current"]] == ["job-specific.pdf"]
-    assert all(item["id"] != first_id for item in documents)
-    assert not (tmp_path / "1" / "cv" / f"{first_id}.pdf").exists()
+    assert next(item for item in documents if item["id"] == first_id)["is_current"] is False
+    assert (tmp_path / "1" / "cv" / f"{first_id}.pdf").exists()
     assert client.get(f"/api/v1/career/analysis/{data['analysis_id']}", headers={"Authorization": f"Bearer {token}"}).status_code == 404
     assert client.get("/api/v1/career/targets", headers={"Authorization": f"Bearer {token}"}).json() == []
     assert client.get("/api/v1/cv/documents", headers=other_headers).json()[0]["id"] == "other-document"
@@ -120,12 +120,15 @@ def test_cv_analyze_accepts_pdf_and_tracks_current_upload(client, monkeypatch, t
     current_id = next(item["id"] for item in documents if item["is_current"])
     rejected = client.post("/api/v1/cv/analyze", files={"file": ("not-a-cv.txt", b"invalid", "text/plain")}, headers={"Authorization": f"Bearer {token}"})
     assert rejected.status_code == 422
-    assert client.get("/api/v1/cv/documents", headers={"Authorization": f"Bearer {token}"}).json()[0]["id"] == current_id
+    current_documents = client.get("/api/v1/cv/documents", headers={"Authorization": f"Bearer {token}"}).json()
+    assert [item["id"] for item in current_documents if item["is_current"]] == [current_id]
     assert client.get(f"/api/v1/career/analysis/{second.json()['analysis_id']}", headers={"Authorization": f"Bearer {token}"}).status_code == 200
     assert client.patch(f"/api/v1/cv/documents/{current_id}/archive", headers={"Authorization": f"Bearer {token}"}).status_code == 200
     assert client.get("/api/v1/career/profile", headers={"Authorization": f"Bearer {token}"}).json()["uploaded_cv"] is None
 
-    assert client.post(f"/api/v1/cv/documents/{first_id}/analyze", headers={"Authorization": f"Bearer {token}"}).status_code == 404
+    reanalysis = client.post(f"/api/v1/cv/documents/{first_id}/analyze", headers={"Authorization": f"Bearer {token}"})
+    assert reanalysis.status_code == 202
+    assert reanalysis.json()["status"] == "queued"
 
 
 def test_deleting_last_cv_clears_career_flow(client, monkeypatch, tmp_path):
