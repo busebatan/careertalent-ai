@@ -32,7 +32,7 @@
     <div class="panel-shell">
         <aside class="panel-sidebar" aria-label="{{ __('panel.brand') }}">
             <div class="flex h-full min-h-0 flex-col p-6">
-                <a href="{{ route('home') }}" class="mb-8 block shrink-0 text-lg font-bold text-emerald-600 dark:text-emerald-400">{{ __('panel.brand') }}</a>
+                <a href="{{ route('panel.dashboard') }}" class="mb-8 block shrink-0 text-lg font-bold text-emerald-600 dark:text-emerald-400">{{ __('panel.brand') }}</a>
                 <nav class="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain text-sm">
                     @include('app.partials.sidebar-nav')
                 </nav>

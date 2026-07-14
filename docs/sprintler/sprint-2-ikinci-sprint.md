@@ -33,9 +33,11 @@ Sprint 1 tablosu ve backlog [sprint-1-ilk-sprint.md](sprint-1-ilk-sprint.md) dos
 
 **Canlı URL'ler:**
 - Tanıtım: https://careertalent.ygtlabs.ai/
-- Giriş / kayıt: https://careertalent.ygtlabs.ai/giris · https://careertalent.ygtlabs.ai/kayit
+- Panel giriş / kayıt: https://careertalent.ygtlabs.ai/panel/login · https://careertalent.ygtlabs.ai/panel/register
+- Admin giriş: https://careertalent.ygtlabs.ai/admin/login
 - Öğrenci paneli: https://careertalent.ygtlabs.ai/panel
 - Admin paneli: https://careertalent.ygtlabs.ai/admin (admin JWT gerekir)
+- Eski kısayollar: `/giris` → `/panel/login`, `/kayit` → `/panel/register` (301)
 
 ### Katman özeti
 
@@ -61,6 +63,7 @@ Sprint 1 tablosu ve backlog [sprint-1-ilk-sprint.md](sprint-1-ilk-sprint.md) dos
 | AI kariyer asistanı | `ChatController.php`, `engagement.py` |
 | İlan URL analizi (tek ilan) | `job_opportunity.py`, `JobMatchesController.php` |
 | Admin panel iskeleti (demo) | `AdminController.php`, `AdminDemoData.php`, 11 rota |
+| Ayrı auth yüzeyleri (panel + admin login) | `AuthController.php`, `panel/login`, `admin/login` |
 | Canlı deploy | careertalent.ygtlabs.ai |
 
 ### Tanıtım sitesi envanteri (14 Temmuz)
@@ -70,8 +73,32 @@ Sprint 1 tablosu ve backlog [sprint-1-ilk-sprint.md](sprint-1-ilk-sprint.md) dos
 | `/` | İçerik var | Hero, özellikler, panel önizlemesi, i18n TR/EN |
 | `/ozellikler`, `/nasil-calisir`, `/bootcamp` | İçerik var | Lang dosyalarından gerçek metin |
 | `/meslekler` | İnteraktif | 4 adımlı sihirbaz + `careers-catalog.json` |
-| `/giris`, `/kayit` | Gerçek auth | FastAPI JWT'ye bağlı |
+| `/panel/login`, `/panel/register` | Gerçek auth | Panel güvenlik yüzeyi (yeşil tema); FastAPI JWT |
+| `/admin/login` | Gerçek auth | Admin güvenlik yüzeyi (amber tema); yalnız `is_admin` |
+| `/giris`, `/kayit` | Redirect | 301 → `/panel/login`, `/panel/register` |
 | `/fiyatlandirma`, `/galeri`, `/faq`, `/blog`, `/hakkimizda`, `/iletisim` | Placeholder | «İçerik yakında eklenecek» |
+
+### Auth yüzeyleri — ayrı ekran görüntüleri (14 Temmuz)
+
+> Panel ve admin için **ayrı güvenlik yüzeyleri**; marketing `/giris` artık yalnızca redirect. Görseller: `screenshots/sprint-2/auth/`
+
+| Yüzey | URL | Tema | Dosya |
+|-------|-----|------|-------|
+| Panel giriş | `/panel/login` | Yeşil (öğrenci) | `auth/panel-login.png` |
+| Panel kayıt | `/panel/register` | Yeşil (öğrenci) | `auth/panel-register.png` |
+| Admin giriş | `/admin/login` | Amber (yönetici) | `auth/admin-login.png` |
+
+**Panel giriş** — https://careertalent.ygtlabs.ai/panel/login
+
+![Panel giriş — güvenli oturum yüzeyi](screenshots/sprint-2/auth/panel-login.png)
+
+**Panel kayıt** — https://careertalent.ygtlabs.ai/panel/register
+
+![Panel kayıt — kariyer profili oluştur](screenshots/sprint-2/auth/panel-register.png)
+
+**Admin giriş** — https://careertalent.ygtlabs.ai/admin/login
+
+![Admin giriş — yönetim alanı](screenshots/sprint-2/auth/admin-login.png)
 
 ### Panel envanteri (14 Temmuz)
 
@@ -156,6 +183,7 @@ Eski Sprint 1 rotaları (`/panel/cv-olustur`, `/panel/yol-haritasi` vb.) yeni is
 | Admin gerçek veri bağlantısı | Döne + Buse | ☐ | Sprint 2 kalan iş |
 | `openapi.yaml` v1 (careers, roadmap) | Döne | ☐ | Runtime OpenAPI var; dosya commit edilmedi |
 | JWT auth + kalıcı kullanıcı (Sprint 1 carry) | Döne | ☑ | Sprint 2 hafta 1'de tamamlandı |
+| Panel + admin ayrı login/register UI | Bithanya + Buse | ☑ | `/panel/login`, `/panel/register`, `/admin/login` |
 | Marketing placeholder sayfaları | Bithanya | ☐ | 6 sayfa hâlâ placeholder |
 
 ### Kabul kriterleri
@@ -195,7 +223,7 @@ Eski Sprint 1 rotaları (`/panel/cv-olustur`, `/panel/yol-haritasi` vb.) yeni is
 | 11.07 | Bithanya | Admin panel layout + demo modüller | Admin gerçek veri bekliyor |
 | 12.07 | Yiğit | Career ladder + education search entegrasyonu | Toplu job scraper ertelendi |
 | 13.07 | Buse | İş planı v002 (B2B cohort SaaS pivot) taslağı | `docs/is-planlari/2026-07-13-v002-iyilestirilmis-is-plani.md` |
-| 14.07 | Tüm takım | Sprint 2 ara rapor + ürün ekran görüntüleri güncellendi | openapi.yaml, admin gerçek veri, marketing placeholder |
+| 14.07 | Bithanya + Buse | Panel/admin ayrı auth yüzeyleri (`/panel/login`, `/panel/register`, `/admin/login`); sprint görselleri güncellendi | `/giris` → 301 redirect |
 
 ---
 
@@ -231,6 +259,7 @@ Sprint 1'den taşınan auth, Celery ve OpenAPI borçlarının büyük kısmı Sp
 | Hazırlık % UI | Bithanya | `panel-dashboard.png`, `TaskReadinessCalculator.php` |
 | AI kariyer asistanı | Döne | `ChatController.php`, `engagement.py` |
 | Admin panel (demo) | Buse + Bithanya | `AdminController.php`, `admin-dashboard.png` |
+| Ayrı auth yüzeyleri (panel + admin) | Bithanya + Buse | `panel-login.png`, `panel-register.png`, `admin-login.png` |
 | Canlı deploy güncellemesi | Buse | careertalent.ygtlabs.ai |
 
 ### Tamamlanmayan / devam eden
@@ -248,7 +277,7 @@ Sprint 1'den taşınan auth, Celery ve OpenAPI borçlarının büyük kısmı Sp
 | Akış | Çalışıyor mu? | Not |
 |------|---------------|-----|
 | Tanıtım sitesi | Kısmen | Çekirdek + meslek sihirbazı evet; 6 sayfa placeholder |
-| Kayıt / giriş | Evet | FastAPI JWT |
+| Kayıt / giriş | Evet | `/panel/login`, `/panel/register`, `/admin/login`; `/giris` redirect |
 | CV yükleme | Evet | Celery kuyruk + kalıcı document |
 | Kariyer seçimi + gap | Kısmen | CV analizi sonrası hedef plan |
 | Yol haritası / görevler | Kısmen | AI plan; boş state yeni kullanıcıda |
@@ -292,7 +321,7 @@ Sprint 1'den taşınan auth, Celery ve OpenAPI borçlarının büyük kısmı Sp
 
 > Canlı ortam ekran görüntüleri. Admin dashboard yerel render (demo veri); canlı `/admin` admin JWT gerektirir.
 
-### Tanıtım ve auth
+### Tanıtım ve güvenli oturum yüzeyleri
 
 **Ana sayfa** — https://careertalent.ygtlabs.ai/
 
@@ -302,9 +331,7 @@ Sprint 1'den taşınan auth, Celery ve OpenAPI borçlarının büyük kısmı Sp
 
 ![Sprint 2 meslek sihirbazı](screenshots/sprint-2/meslekler.png)
 
-**Giriş** — https://careertalent.ygtlabs.ai/giris
-
-![Sprint 2 giriş sayfası](screenshots/sprint-2/giris.png)
+**Auth (panel + admin)** — ayrı görseller: [Auth yüzeyleri bölümü](#auth-yüzeyleri--ayrı-ekran-görüntüleri-14-temmuz) · `screenshots/sprint-2/auth/`
 
 ### Öğrenci paneli (kayıtlı kullanıcı)
 
@@ -342,7 +369,9 @@ Sprint 1'den taşınan auth, Celery ve OpenAPI borçlarının büyük kısmı Sp
 |-------|-----|--------|------|
 | Ana sayfa | `/` | 1→2 | Gerçek |
 | Meslek sihirbazı | `/meslekler` | 2 | Gerçek |
-| Giriş / kayıt | `/giris`, `/kayit` | 2 | Gerçek API |
+| Panel giriş | `/panel/login` | 2 | Gerçek API |
+| Panel kayıt | `/panel/register` | 2 | Gerçek API |
+| Admin giriş | `/admin/login` | 2 | Gerçek API (admin rol) |
 | Panel dashboard | `/panel` | 1→2 | Gerçek API |
 | CV merkezi | `/panel/cv-merkezi` | 2 | Gerçek API |
 | Kariyer rotam | `/panel/kariyer-rotam` | 2 | Gerçek API |
@@ -355,8 +384,8 @@ Sprint 1'den taşınan auth, Celery ve OpenAPI borçlarının büyük kısmı Sp
 
 ### Ekran görüntüsü / video
 
-- Demo URL (canlı): https://careertalent.ygtlabs.ai/ · https://careertalent.ygtlabs.ai/panel · https://careertalent.ygtlabs.ai/admin
-- Ekran görüntüleri: `screenshots/sprint-2/` (yukarıdaki bölüm)
+- Demo URL (canlı): https://careertalent.ygtlabs.ai/panel/login · https://careertalent.ygtlabs.ai/panel/register · https://careertalent.ygtlabs.ai/admin/login · https://careertalent.ygtlabs.ai/panel · https://careertalent.ygtlabs.ai/admin
+- Ekran görüntüleri: `screenshots/sprint-2/` · auth ayrı: `screenshots/sprint-2/auth/`
 - Video linki (varsa): _
 
 ---

@@ -167,6 +167,157 @@ html:not(.dark) { color-scheme: light; }
     .panel-main {
         @apply flex min-h-screen min-w-0 flex-col md:min-h-0 md:overflow-y-auto md:overscroll-y-contain;
     }
+
+    .admin-shell {
+        --admin-accent: #ffbd72;
+        --admin-accent-hover: #e8a85a;
+        --admin-accent-ink: #9a5e1c;
+        --admin-accent-ink-dark: #ffbd72;
+        --admin-accent-soft: rgb(255 189 114 / 0.15);
+        --admin-accent-soft-strong: rgb(255 189 114 / 0.22);
+        --admin-accent-border: rgb(255 189 114 / 0.28);
+        --admin-accent-border-soft: rgb(255 189 114 / 0.18);
+        --admin-accent-surface: rgb(255 189 114 / 0.08);
+    }
+
+    .admin-shell .panel-sidebar {
+        border-right: 1px solid var(--admin-accent-border);
+    }
+
+    .admin-shell .panel-nav-link-active {
+        background: var(--admin-accent-soft);
+        color: var(--admin-accent-ink);
+        font-weight: 500;
+    }
+
+    :is(.dark) .admin-shell .panel-nav-link-active {
+        background: var(--admin-accent-soft-strong);
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-brand {
+        color: var(--admin-accent-ink);
+    }
+
+    :is(.dark) .admin-shell .admin-brand {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-kicker {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--admin-accent-ink);
+    }
+
+    :is(.dark) .admin-shell .admin-kicker {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-accent-text {
+        color: var(--admin-accent-ink);
+    }
+
+    :is(.dark) .admin-shell .admin-accent-text {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-accent-link {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--admin-accent-ink);
+    }
+
+    .admin-shell .admin-accent-link:hover {
+        text-decoration: underline;
+    }
+
+    :is(.dark) .admin-shell .admin-accent-link {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-accent-badge {
+        border-radius: 9999px;
+        background: var(--admin-accent-soft);
+        padding: 0.25rem 0.625rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--admin-accent-ink);
+    }
+
+    :is(.dark) .admin-shell .admin-accent-badge {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-accent-bar {
+        height: 100%;
+        border-radius: 9999px;
+        background: var(--admin-accent);
+    }
+
+    .admin-shell .admin-btn-primary {
+        border-radius: 0.75rem;
+        background: var(--admin-accent);
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #10172b;
+    }
+
+    .admin-shell .admin-btn-primary:hover {
+        background: var(--admin-accent-hover);
+    }
+
+    .admin-shell .admin-card-hover {
+        transition: color 150ms, background-color 150ms, border-color 150ms;
+    }
+
+    .admin-shell .admin-card-hover:hover {
+        border-color: var(--admin-accent-border);
+        background: var(--admin-accent-surface);
+    }
+
+    .admin-shell .panel-outline-btn:hover {
+        border-color: var(--admin-accent-border);
+        color: var(--admin-accent-ink);
+    }
+
+    :is(.dark) .admin-shell .panel-outline-btn:hover {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-header {
+        border-bottom: 1px solid var(--admin-accent-border-soft);
+    }
+
+    .admin-shell .admin-accent-dot {
+        background: var(--admin-accent);
+    }
+
+    .admin-shell .admin-accent-pill {
+        background: var(--admin-accent);
+        color: #10172b;
+    }
+
+    .admin-shell .admin-lang-active {
+        background: var(--admin-accent-soft);
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    :is(.dark) .admin-shell .admin-lang-active {
+        background: var(--admin-accent-soft-strong);
+        color: #fff;
+    }
+
+    .admin-shell .admin-accent-check {
+        color: var(--admin-accent);
+    }
+
+    .admin-shell .admin-sidebar-footer {
+        border-top: 1px solid var(--admin-accent-border-soft);
+    }
 }
 
 /* Marketing — Career trajectory visual system */

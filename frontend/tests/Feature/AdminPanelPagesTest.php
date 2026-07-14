@@ -40,6 +40,9 @@ class AdminPanelPagesTest extends TestCase
         $response
             ->assertOk()
             ->assertSee('Yönetim Özeti')
+            ->assertDontSee('Yönetim alanı', false)
+            ->assertDontSee('Öğrenci panelinden ayrı yönetim yüzeyi', false)
+            ->assertSee('livewire', false)
             ->assertSee('Aktif öğrenci')
             ->assertSee('Admin hesapları hariç')
             ->assertSee('Gerçek Öğrenci')
