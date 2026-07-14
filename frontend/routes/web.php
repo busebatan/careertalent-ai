@@ -50,18 +50,15 @@ Route::middleware('marketing.locale')->group(function () {
 
 
 // ── Admin panel ─────────────────────────────────────────────
-Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin', 'panel.locale'])->group(function () {
+    Route::get('/locale/{locale}', [PanelLocaleController::class, 'switch'])->name('locale');
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/ogrenciler', [AdminController::class, 'students'])->name('students');
-    Route::get('/cohortlar', [AdminController::class, 'cohorts'])->name('cohorts');
     Route::get('/readiness', [AdminController::class, 'readiness'])->name('readiness');
     Route::get('/yetenek-pasaportu', [AdminController::class, 'skillPassport'])->name('skill-passport');
     Route::get('/is-radari', [AdminController::class, 'jobRadar'])->name('job-radar');
     Route::get('/basvurular', [AdminController::class, 'applications'])->name('applications');
     Route::get('/mulakatlar', [AdminController::class, 'interviews'])->name('interviews');
-    Route::get('/mentorlar', [AdminController::class, 'mentors'])->name('mentors');
-    Route::get('/egitimler', [AdminController::class, 'learning'])->name('learning');
-    Route::get('/ayarlar', [AdminController::class, 'settings'])->name('settings');
 });
 
 // ── Öğrenci paneli ──────────────────────────────────────────

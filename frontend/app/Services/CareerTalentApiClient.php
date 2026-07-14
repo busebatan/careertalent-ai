@@ -67,6 +67,22 @@ class CareerTalentApiClient
     /**
      * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
      */
+    public function adminDashboard(): array
+    {
+        return $this->getJson('/api/v1/admin/dashboard', 10);
+    }
+
+    /**
+     * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
+     */
+    public function adminModule(string $module): array
+    {
+        return $this->getJson('/api/v1/admin/modules/'.rawurlencode($module), 10);
+    }
+
+    /**
+     * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
+     */
     public function panel(string $endpoint): array
     {
         return $this->getJson('/api/v1/panel/'.ltrim($endpoint, '/'), 10);

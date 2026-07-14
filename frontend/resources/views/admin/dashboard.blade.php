@@ -1,76 +1,67 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Admin Dashboard')
+@section('title', __('admin.dashboard.title'))
 
 @section('content')
 <div class="mx-auto max-w-7xl">
-    <header class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-            <h1 class="mb-1 text-2xl font-bold">Admin Dashboard</h1>
-            <p class="text-slate-600 dark:text-slate-400">Cohort, öğrenci, readiness, iş radarı ve gelir odaklı modüllerin demo yönetim paneli.</p>
-        </div>
-        <a href="{{ route('panel.dashboard') }}" class="panel-btn-secondary">Öğrenci panelini aç</a>
+    <header class="mb-8">
+        <h1 class="mb-1 text-2xl font-bold text-slate-900 dark:text-white">{{ __('admin.dashboard.title') }}</h1>
+        <p class="text-slate-600 dark:text-slate-400">{{ __('admin.dashboard.subtitle') }}</p>
     </header>
 
-    <section class="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        @foreach ($stats as $stat)
-            <article class="panel-card p-5">
-                <p class="panel-muted text-sm">{{ $stat['label'] }}</p>
-                <p class="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{{ $stat['value'] }}</p>
-                <p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">{{ $stat['trend'] }}</p>
-            </article>
-        @endforeach
-    </section>
+    @if ($adminError)
+        <p class="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">{{ $adminError }}</p>
+    @else
+        <section class="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            @foreach ($stats as $stat)
+                <article class="panel-card p-5">
+                    <p class="panel-muted text-sm">{{ $stat['label'] }}</p>
+                    <p class="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{{ $stat['value'] }}</p>
+                    <p class="mt-1 text-xs admin-accent-text">{{ $stat['detail'] }}</p>
+                </article>
+            @endforeach
+        </section>
 
-    <section class="mb-8 grid gap-6 lg:grid-cols-[1fr_24rem]">
-        <div class="panel-card p-5">
-            <div class="mb-4 flex items-center justify-between gap-3">
-                <h2 class="text-lg font-semibold">Cohort sağlığı</h2>
-                <a href="{{ route('admin.cohorts') }}" class="text-xs font-medium text-emerald-600 hover:underline dark:text-emerald-400">Detay →</a>
+        <section class="mb-8 panel-card overflow-hidden">
+            <div class="border-b border-slate-200 p-5 dark:border-slate-800">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">{{ __('admin.dashboard.recent_students') }}</h2>
+                <p class="panel-muted text-sm">{{ __('admin.dashboard.recent_students_hint') }}</p>
             </div>
-            <div class="space-y-3">
-                @foreach ($cohorts as $cohort)
-                    <article class="panel-entry !space-y-2">
-                        <div class="flex items-center justify-between gap-3">
-                            <div>
-                                <p class="font-semibold">{{ $cohort['name'] }}</p>
-                                <p class="panel-muted text-xs">{{ $cohort['students'] }} öğrenci · Odak: {{ $cohort['focus'] }}</p>
-                            </div>
-                            <span class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-sm font-semibold text-emerald-700 dark:text-emerald-300">%{{ $cohort['readiness'] }}</span>
+            <div class="divide-y divide-slate-200 dark:divide-slate-800">
+                @forelse ($recentStudents as $student)
+                    <article class="flex flex-col gap-1 p-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p class="font-semibold text-slate-900 dark:text-white">{{ $student['name'] }}</p>
+                            <p class="panel-muted text-sm">{{ $student['email'] }}</p>
                         </div>
-                        <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-full rounded-full bg-emerald-500" style="width: {{ $cohort['readiness'] }}%"></div></div>
+                        <p class="panel-muted text-sm">
+                            @if (! empty($student['registered_at']))
+                                {{ __('admin.dashboard.registered_at', ['date' => $student['registered_at']]) }}
+                            @else
+                                {{ __('admin.dashboard.registered_unknown') }}
+                            @endif
+                        </p>
                     </article>
-                @endforeach
+                @empty
+                    <p class="panel-muted p-5 text-sm">{{ __('admin.dashboard.no_students') }}</p>
+                @endforelse
             </div>
-        </div>
+        </section>
 
-        <aside class="panel-card p-5">
-            <h2 class="mb-3 text-lg font-semibold">Admin → Panel bağlantıları</h2>
-            <p class="panel-muted mb-4 text-sm">Her admin modülü öğrencinin gördüğü `/panel` sayfasına bağlandı. Demo kararları öğrenci deneyimindeki ilgili ekrana iner.</p>
-            <div class="space-y-2">
-                <a href="{{ route('admin.skill-passport') }}" class="panel-outline-btn block text-center">Kanıt onay kuyruğu</a>
-                <a href="{{ route('admin.job-radar') }}" class="panel-outline-btn block text-center">İlan sinyali yönetimi</a>
-                <a href="{{ route('admin.mentors') }}" class="panel-outline-btn block text-center">Mentor gelir ekranı</a>
-            </div>
-        </aside>
-    </section>
-
-    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        @foreach ($modules as $module)
-            <article class="panel-card flex flex-col p-5">
-                <div class="mb-4 flex items-start justify-between gap-3">
-                    <div>
-                        <h2 class="font-semibold">{{ $module['title'] }}</h2>
-                        <p class="panel-muted mt-1 text-sm">{{ $module['desc'] }}</p>
+        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            @foreach ($modules as $module)
+                <article class="panel-card flex flex-col p-5">
+                    <div class="mb-4 flex items-start justify-between gap-3">
+                        <div>
+                            <h2 class="font-semibold text-slate-900 dark:text-white">{{ $module['title'] }}</h2>
+                            <p class="panel-muted mt-1 text-sm">{{ $module['description'] }}</p>
+                        </div>
+                        <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300">{{ __('admin.dashboard.records_count', ['count' => $module['count']]) }}</span>
                     </div>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs dark:bg-slate-800">{{ $module['metric'] }}</span>
-                </div>
-                <div class="mt-auto flex flex-wrap gap-2 pt-3">
-                    <a href="{{ route($module['admin_route']) }}" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500">Yönet</a>
-                    <a href="{{ route($module['panel_route']) }}" class="panel-btn-secondary">Panel karşılığı</a>
-                </div>
-            </article>
-        @endforeach
-    </section>
+                    <a href="{{ route($module['route']) }}" class="admin-btn-primary mt-auto w-fit">{{ __('admin.dashboard.open_records') }}</a>
+                </article>
+            @endforeach
+        </section>
+    @endif
 </div>
 @endsection

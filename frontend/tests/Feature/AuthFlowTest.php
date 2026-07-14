@@ -125,7 +125,12 @@ class AuthFlowTest extends TestCase
     {
         Http::fakeSequence()
             ->push($this->user(false))
-            ->push($this->user(true));
+            ->push($this->user(true))
+            ->push([
+                'stats' => [],
+                'module_counts' => [],
+                'recent_students' => [],
+            ]);
         $this->withSession(['auth.access_token' => 'user-token'])
             ->get('/admin')
             ->assertForbidden();
