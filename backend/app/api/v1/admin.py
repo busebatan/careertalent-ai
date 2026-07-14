@@ -131,6 +131,7 @@ def _students(db: Session) -> AdminModuleResponse:
             )
             for student in students
         ],
+        total=_count(db, User),
     )
 
 
@@ -155,6 +156,7 @@ def _readiness(db: Session) -> AdminModuleResponse:
             )
             for analysis, user_name in rows
         ],
+        total=_count(db, CareerAnalysis),
     )
 
 
@@ -180,6 +182,7 @@ def _skill_passport(db: Session) -> AdminModuleResponse:
             )
             for evidence, task_title, user_name in rows
         ],
+        total=_count(db, Evidence),
     )
 
 
@@ -204,6 +207,7 @@ def _job_radar(db: Session) -> AdminModuleResponse:
             )
             for job, user_name in rows
         ],
+        total=_count(db, JobOpportunity),
     )
 
 
@@ -228,6 +232,7 @@ def _applications(db: Session) -> AdminModuleResponse:
             )
             for application, user_name in rows
         ],
+        total=_count(db, JobApplication),
     )
 
 
@@ -252,12 +257,18 @@ def _interviews(db: Session) -> AdminModuleResponse:
             )
             for interview, user_name in rows
         ],
+        total=_count(db, CareerInterview),
     )
 
 
-def _module(title: str, subtitle: str, rows: Iterable[AdminTableRow]) -> AdminModuleResponse:
+def _module(
+    title: str,
+    subtitle: str,
+    rows: Iterable[AdminTableRow],
+    total: int,
+) -> AdminModuleResponse:
     items = list(rows)
-    return AdminModuleResponse(title=title, subtitle=subtitle, total=len(items), rows=items)
+    return AdminModuleResponse(title=title, subtitle=subtitle, total=total, rows=items)
 
 
 def _row(name: str, meta: str, score: str, status: str, next_action: str) -> AdminTableRow:

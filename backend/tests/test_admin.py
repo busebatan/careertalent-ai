@@ -217,6 +217,35 @@ def test_admin_empty_modules_return_zero_without_demo_rows(client):
     assert module.json()["rows"] == []
 
 
+def test_admin_module_reports_true_total_while_limiting_visible_rows(client):
+    _register(client, "admin@example.com", "Yönetici Hesabı")
+    _promote_to_admin("admin@example.com")
+    with next(app.dependency_overrides[get_db]()) as db:
+        db.add_all(
+            [
+                User(
+                    full_name=f"Öğrenci {index}",
+                    email=f"ogrenci-{index}@example.com",
+                    hashed_password="not-used-by-this-read-test",
+                    is_active=True,
+                    is_admin=False,
+                )
+                for index in range(51)
+            ]
+        )
+        db.commit()
+
+    response = client.get(
+        "/api/v1/admin/modules/students",
+        headers=_headers(client, "admin@example.com"),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 51
+    assert len(response.json()["rows"]) == 50
+    assert all(row["name"].startswith("Öğrenci") for row in response.json()["rows"])
+
+
 def test_admin_module_name_is_constrained_by_api_contract(client):
     _register(client, "admin@example.com", "Yönetici Hesabı")
     _promote_to_admin("admin@example.com")
