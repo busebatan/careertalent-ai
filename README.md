@@ -77,33 +77,37 @@ YZTA bootcamp ve benzeri programlardan mezun olan veya mezun olmaya hazırlanan 
 
 Öncelik: **MoSCoW** (Must / Should / Could). Sprint ataması Product Owner (Yiğit) + SM (Buse) ile yapılır.
 
-| ID | User Story | Öncelik | Sprint | Durum (5 Tem) |
+| ID | User Story | Öncelik | Sprint | Durum (16 Tem) |
 |----|------------|---------|--------|---------------|
-| US-01 | Öğrenci olarak kayıt olup giriş yapabilmeliyim | Must | 1 | Devam (UI iskelet) |
-| US-02 | PDF CV yükleyebilmeliyim; iş kuyruğa alınmalı | Must | 1 | Kısmen (senkron API, Celery yok) |
+| US-01 | Öğrenci olarak kayıt olup giriş yapabilmeliyim | Must | 1→2 | Tamamlandı (FastAPI JWT + Laravel session) |
+| US-02 | PDF CV yükleyebilmeliyim; iş kuyruğa alınmalı | Must | 1→2 | Tamamlandı (Celery + kalıcı CV kaydı) |
 | US-03 | Tanıtım sitesinde ürünü görebilmeliyim | Must | 1 | İskelet (kısmi içerik) |
 | US-04 | Panelde backend/API sağlık durumunu görebilmeliyim | Must | 1 | Tamamlandı |
-| US-05 | CV'den yapılandırılmış profil çıkarılmalı | Must | 1-2 | Kısmen (`/cv/analyze`) |
-| US-06 | 5 hedef meslek listelenmeli (`data/roles`) | Must | 2 | Tamamlandı (seed) |
-| US-07 | Seçtiğim meslek için gap + readiness % görmeliyim | Must | 2 | Planlı (panel demo) |
-| US-08 | Haftalık yol haritası ve görevler oluşmalı | Must | 2 | Planlı |
-| US-09 | Eksik yetenek için filtrelenmiş eğitim linki görmeliyim | Should | 2 | Demo |
-| US-10 | Görev tamamlanınca skor güncellenmeli | Should | 2 | Planlı |
-| US-11 | Bağlamlı kariyer sohbeti kullanabilmeliyim | Could | 3 | Planlı |
+| US-05 | CV'den yapılandırılmış profil çıkarılmalı | Must | 1–2 | Tamamlandı (AI kariyer analizi) |
+| US-06 | CV'den sabit katalog sınırı olmadan kişiye özel kariyer rolleri önerilmeli | Must | 2 | Tamamlandı (3–15 dinamik A/B/C rolü) |
+| US-07 | Seçtiğim meslek için gap + readiness % görmeliyim | Must | 2 | Tamamlandı (career engine) |
+| US-08 | Haftalık yol haritası ve görevler oluşmalı | Must | 2 | Tamamlandı (`plan_target`) |
+| US-09 | Eksik yetenek için filtrelenmiş eğitim linki görmeliyim | Should | 2 | Kısmen (dinamik eğitim araması) |
+| US-10 | Görev tamamlanınca skor güncellenmeli | Should | 2 | Kısmen (kanıt sonrası yeniden analiz) |
+| US-11 | Bağlamlı kariyer sohbeti kullanabilmeliyim | Could | 2 | Tamamlandı |
 | US-12 | Mentör cohort özetini görebilmeliyim | Could | 3 | Planlı |
-| US-13 | Gerçek iş ilanına uyum skoru alabilmeliyim | Could | Faz 2 | İskelet |
-| US-14 | Yeteneklerimi kanıt linkleriyle pasaport halinde gösterebilmeliyim | Should | 2 | Demo panel |
-| US-15 | Rol bazlı mülakat sorusu çözüp demo geri bildirim alabilmeliyim | Should | 2 | Demo panel |
-| US-16 | Başvurularımı aşama bazlı takip edebilmeliyim | Should | 2 | Demo panel |
-| US-17 | Hedef rol ilanlarını uyum ve gap uyarısıyla görebilmeliyim | Should | 2 | Demo panel |
+| US-13 | Gerçek iş ilanına uyum skoru alabilmeliyim | Could | Faz 2 | Tamamlandı (tek URL analizi) |
+| US-14 | Yeteneklerimi kanıt linkleriyle pasaport halinde gösterebilmeliyim | Should | 2 | Tamamlandı (evidence API) |
+| US-15 | Rol bazlı mülakat sorusu çözüp geri bildirim alabilmeliyim | Should | 2 | Tamamlandı (engagement API) |
+| US-16 | Başvurularımı aşama bazlı takip edebilmeliyim | Should | 2 | Tamamlandı (applications API) |
+| US-17 | Hedef rol ilanlarını uyum ve gap uyarısıyla görebilmeliyim | Should | 2 | Kısmen (tek-ilan MVP) |
 | US-18 | Mentor review paketi seçip demo talep oluşturabilmeliyim | Could | 3 | Demo panel |
-| US-19 | Admin olarak öğrenci, cohort, readiness ve gelir modüllerini yönetebilmeliyim | Should | 2 | Demo panel |
+| US-19 | Admin olarak öğrenci, cohort, readiness ve gelir modüllerini yönetebilmeliyim | Should | 2 | Kısmen (gerçek öğrenci/readiness; cohort ve gelir eksik) |
 
 Detaylı sprint görevleri: [Sprint 1](docs/sprintler/sprint-1-ilk-sprint.md) · [Sprint 2](docs/sprintler/sprint-2-ikinci-sprint.md) · [Sprint 3](docs/sprintler/sprint-3-son-sprint.md)
 
 ---
 
 ## 2. Sprint Süreçleri ve Raporlar
+
+### Her Sprint Sonunda Beklentiler
+
+Her sprint kaydı; **Backlog Dağıtma Mantığı**, **Daily Scrum Notları**, **Sprint Board Updates**, **Ürün Durumu**, **Sprint Review** ve **Sprint Retrospective** başlıklarını içerir. Ana README denetim özetini, sprint dosyası ayrıntı ve kanıtları tutar.
 
 ### Backlog Dağıtma Mantığı
 
@@ -210,15 +214,47 @@ Detay: [sprint-1-ilk-sprint.md](docs/sprintler/sprint-1-ilk-sprint.md)
 
 ---
 
-### Sprint 2 — İkinci Sprint (6 Temmuz – 19 Temmuz 2026) — Planlı
+### Sprint 2 — İkinci Sprint (6 Temmuz – 19 Temmuz 2026) — Devam ediyor
 
 **Sprint hedefi:** Öğrenci hedef mesleğini seçsin; eksik yetenekler ve haftalık yol haritasını görsün; hazırlık % panelde görünsün.
 
-**Sprint 2 demo modu:** FastAPI entegrasyonu şimdilik kapalı; öğrenci panelindeki yeni gelir odaklı sayfalar demo veriyle çalışır. CV analiz akışı FastAPI proxy olarak bağlı kalır. Yeni öğrenci sayfaları: `/panel/is-radari`, `/panel/basvuru-takibi`, `/panel/yetenek-pasaportu`, `/panel/mulakat-simulasyonu`, `/panel/mentor-degerlendirme`, `/panel/sohbet`.
+#### Backlog Dağıtma Mantığı
 
-**Sprint 2 admin demo modu:** `/admin` auth’suz demo yönetim yüzeyi olarak açıldı. Admin sayfaları öğrenci panelindeki ilgili modüllere bağlanır: `/admin/ogrenciler`, `/admin/cohortlar`, `/admin/readiness`, `/admin/yetenek-pasaportu`, `/admin/is-radari`, `/admin/basvurular`, `/admin/mulakatlar`, `/admin/mentorlar`, `/admin/egitimler`, `/admin/ayarlar`.
+Sprint 1'den devreden JWT ve Celery **Must** olarak kapatıldı. Sprint 2 odağı; dinamik CV analizi, hedef rol, görev planı, gerçek admin verisi ve kariyer veri merkezi oldu. OpenAPI dosyası, marketing placeholder sayfaları, cohort/gelir modülleri ve tam görev→skor otomasyonu açık kaldı.
 
-_(Sprint 2 Daily Scrum, Board Updates, Review ve Retro ilerledikçe buraya eklenecek.)_
+#### Daily Scrum Notları
+
+6–16 Temmuz kayıtları; auth, Celery, CV belgeleri, dinamik kariyer motoru, panel/API entegrasyonu, admin gerçek verisi, kariyer veri merkezi ve dashboard CV aksiyon kartını kapsıyor. Ayrıntı: [Sprint 2 Daily Scrum](docs/sprintler/sprint-2-ikinci-sprint.md#daily-scrum-notları).
+
+#### Sprint Board Updates
+
+- **Done:** JWT/session köprüsü, CV kuyruğu ve geçmişi, dinamik 3–15 kariyer rolü, hedef planı, AI asistan, tek-ilan analizi, gerçek admin modülleri, kariyer veri merkezi.
+- **In Progress:** OpenAPI dosyası, marketing içeriği, görev→skor otomasyonu, admin cohort/gelir kapsamı.
+- **To Do / ertelenen:** toplu ilan tarama ve opsiyonel Livewire geçişi.
+
+#### Ürün Durumu (16 Temmuz ara durum)
+
+| Alan | Durum |
+|------|-------|
+| Öğrenci paneli | Gerçek FastAPI verisi; CV, kariyer rotası, görev, kanıt, başvuru ve mülakat akışları bağlı |
+| Kariyer analizi | Sabit meslek listesi yok; CV'den 3–15 kişiye özel A/B/C rolü |
+| Admin | Gerçek DB sayımları ve modülleri; kariyer rol/yetenek/kaynak/gereksinim CRUD |
+| Eksik | OpenAPI dosyası, 6 marketing placeholder, cohort/gelir modülleri, tam skor otomasyonu |
+
+#### Sprint Review (16 Temmuz ara değerlendirme)
+
+CV yükleme→AI analiz→rol önerisi→hedef seçimi→görev planı akışı; kullanıcı/admin auth ayrımı; gerçek admin listeleri ve kariyer veri merkezi gösterilebilir durumda. Nihai review 19 Temmuz'da açık maddeler yeniden kontrol edilerek kapatılacak.
+
+#### Sprint Retrospective (16 Temmuz ara değerlendirme)
+
+Plan A iki servisli mimari auth ve kariyer akışında çalıştı. En büyük iyileştirme alanı; dokümanın runtime'dan geri kalmaması, demo etiketlerinin temizlenmesi ve OpenAPI sözleşmesinin repoya eklenmesi.
+
+#### Her Sprint Sonunda Beklentiler
+
+- [x] Zorunlu altı sprint başlığı README ve Sprint 2 kaydında mevcut.
+- [x] 16 Temmuz ürün ve board ara durumu repo kanıtıyla güncel.
+- [x] Sprint 1 tarihsel kaydına dokunulmadı.
+- [ ] 19 Temmuz nihai Review/Retro ve kalan backlog kapanışı.
 
 Detay: [sprint-2-ikinci-sprint.md](docs/sprintler/sprint-2-ikinci-sprint.md)
 
