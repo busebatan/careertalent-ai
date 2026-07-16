@@ -41,30 +41,6 @@
         </div>
     </section>
 
-    <section data-dashboard-cv-actions aria-labelledby="dashboard-cv-actions-title" class="panel-card mb-8 overflow-hidden">
-        <div class="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-            <div class="flex min-w-0 items-start gap-4">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                    <i data-lucide="file-text" class="h-6 w-6" aria-hidden="true"></i>
-                </div>
-                <div>
-                    <h2 id="dashboard-cv-actions-title" class="text-lg font-semibold">{{ __('panel.dashboard.cv_section_title') }}</h2>
-                    <p class="panel-muted mt-1 max-w-xl text-sm">{{ __('panel.dashboard.cv_section_desc') }}</p>
-                </div>
-            </div>
-            <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
-                <a href="{{ route('panel.account') }}#cv-yukle"
-                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500">
-                    {{ __('panel.dashboard.upload_cv') }}
-                </a>
-                <a href="{{ route('panel.cv-builder') }}"
-                    class="panel-btn-secondary inline-flex items-center justify-center gap-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500">
-                    {{ __('panel.dashboard.create_cv') }}
-                </a>
-            </div>
-        </div>
-    </section>
-
     @include('app.partials.dashboard-cv-radar')
 
     <section class="mb-10 grid gap-6 lg:grid-cols-2">

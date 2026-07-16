@@ -10,7 +10,13 @@ class DashboardCvRadarTest extends TestCase
     public function test_dashboard_shows_empty_state_without_cv_analysis(): void
     {
         $response = $this->get(route('panel.dashboard'));
-        $response->assertOk()->assertSee(__('panel.skill_radar.empty_title'), false)->assertDontSee('id="yetenek-radari"', false);
+        $response->assertOk()
+            ->assertSee('data-dashboard-cv-empty', false)
+            ->assertSee(__('panel.skill_radar.empty_title'), false)
+            ->assertSee('href="'.route('panel.account').'#cv-yukle"', false)
+            ->assertSee('href="'.route('panel.cv-builder').'"', false)
+            ->assertDontSee('data-dashboard-cv-actions', false)
+            ->assertDontSee('id="yetenek-radari"', false);
     }
 
     public function test_dashboard_shows_api_radar_after_cv_analysis(): void
@@ -28,10 +34,8 @@ class DashboardCvRadarTest extends TestCase
         $response = $this->get(route('panel.dashboard'));
         $response->assertOk()
             ->assertSee('id="yetenek-radari"', false)
-            ->assertSee('data-dashboard-cv-actions', false)
-            ->assertSee(__('panel.dashboard.cv_section_title'), false)
-            ->assertSee('href="'.route('panel.account').'#cv-yukle"', false)
-            ->assertSee('href="'.route('panel.cv-builder').'"', false)
+            ->assertSee('data-dashboard-cv-empty', false)
+            ->assertDontSee('data-dashboard-cv-actions', false)
             ->assertSee('İş Analisti', false)
             ->assertSee('%86', false)
             ->assertSee(__('panel.skill_radar.from_cv_analysis'), false);

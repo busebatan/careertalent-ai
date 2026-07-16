@@ -24,8 +24,8 @@ class PanelPagesI18nTest extends TestCase
   public static function panelPagesProvider(): array
   {
     return [
-      'dashboard-tr' => ['/panel', 'tr', ['Ana Sayfa', 'Hoş geldin', 'CV ve profil', 'CV yükle', 'CV oluştur', 'Henüz CV analizi yok']],
-      'dashboard-en' => ['/panel', 'en', ['Dashboard', 'Welcome', 'CV and profile', 'Upload CV', 'Build CV', 'No CV analysis yet']],
+      'dashboard-tr' => ['/panel', 'tr', ['Ana Sayfa', 'Hoş geldin', 'CV yükle', 'CV oluştur', 'Henüz CV analizi yok']],
+      'dashboard-en' => ['/panel', 'en', ['Dashboard', 'Welcome', 'Upload CV', 'Build CV', 'No CV analysis yet']],
       'account-tr' => ['/panel/hesap', 'tr', ['Hesap', 'Profil bilgileri', 'LinkedIn', 'Profil ve portfolyo bağlantıları', 'Bağlantı ekle', 'Giriş bilgileri', 'CV yükle', 'Abonelik', 'Gizlilik']],
       'account-en' => ['/panel/hesap', 'en', ['Account', 'Profile details', 'LinkedIn', 'Profile and portfolio links', 'Add link', 'Upload CV']],
       'skill-passport-tr' => ['/panel/yetenek-pasaportu', 'tr', ['Yetenek Pasaportu', 'Kanıt skoru', 'Kanıt yüklemek için bir yeteneğe tıkla', 'Onaylandı', 'İnceleniyor', 'Bekleniyor', 'Kanıt eksik']],

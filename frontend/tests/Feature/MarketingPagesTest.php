@@ -172,7 +172,7 @@ class MarketingPagesTest extends TestCase
         $response->assertSee('Ana Sayfa');
         $response->assertSee('Hoş geldin');
         $response->assertSee('Henüz CV analizi yok');
-        $response->assertSee('CV ve profil');
+        $response->assertDontSee('CV ve profil');
         $response->assertSee('Eğitim önerileri');
         $response->assertSee('Bu haftanın görevleri');
         $response->assertDontSee('Google Data Analytics');
