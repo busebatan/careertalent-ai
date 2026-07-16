@@ -162,16 +162,6 @@ return [
         'node_plan' => 'Weekly route',
     ],
 
-    'features' => [
-        'title' => 'Features',
-        'intro' => 'An end-to-end toolkit for career readiness.',
-        'cv' => 'Smart CV parsing (PDF → skill list)',
-        'career' => 'Target role selection and skill gap analysis',
-        'roadmap' => 'Weekly roadmap and readiness percentage',
-        'chat' => 'AI career assistant (chat)',
-        'jobs' => 'Job matching (Phase 2)',
-        'soon' => 'Coming soon',
-    ],
 
     'how' => [
         'title' => 'How It Works',
