@@ -205,7 +205,7 @@
             @if (is_array($currentCv ?? null))
                 <div class="mb-4 flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
                     <div><p class="text-sm text-emerald-700 dark:text-emerald-300">{{ $currentCv['display_name'] }}</p><p class="mt-1 text-xs text-slate-500">{{ __('panel.profile.last_upload', ['date' => \Illuminate\Support\Carbon::parse($currentCv['created_at'])->format('d.m.Y H:i')]) }}</p></div>
-                    <div class="flex items-center gap-3"><a href="{{ route('panel.cv-history.download', $currentCv['id']) }}" class="text-xs text-emerald-600 hover:underline dark:text-emerald-400">{{ __('panel.profile.cv_download_again') }}</a><form method="post" action="{{ route('panel.cv-history.archive-current', $currentCv['id']) }}">@csrf<button type="submit" class="text-xs text-slate-500 hover:text-red-500">{{ __('panel.profile.remove') }}</button></form></div>
+                    <div class="flex items-center gap-3"><a href="{{ route('panel.roadmap') }}" class="text-xs text-emerald-600 hover:underline dark:text-emerald-400">{{ __('panel.profile.cv_go_roadmap') }}</a><form method="post" action="{{ route('panel.cv-history.archive-current', $currentCv['id']) }}">@csrf<button type="submit" class="text-xs text-slate-500 hover:text-red-500">{{ __('panel.profile.remove') }}</button></form></div>
                 </div>
             @endif
 

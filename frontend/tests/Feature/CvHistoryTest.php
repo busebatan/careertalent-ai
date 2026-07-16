@@ -28,6 +28,8 @@ class CvHistoryTest extends TestCase
 
         $this->get('/panel/hesap#cv-yukle')->assertOk()
             ->assertSee('current.pdf')->assertSee('Trendyol CV.pdf')->assertSee('old.pdf')
+            ->assertSee('Kariyer rotasına git')
+            ->assertSee('href="'.route('panel.roadmap').'"', false)
             ->assertSee('Tekrar indir')->assertSee('Aç ve düzenle')->assertSee('Aktif analiz yap')
             ->assertSee('13.07.2026 21:30');
     }

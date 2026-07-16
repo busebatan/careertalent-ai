@@ -88,6 +88,33 @@ class PanelPagesI18nTest extends TestCase
       ->assertSee('Welcome');
   }
 
+  public function test_training_suggestions_do_not_expose_price_distinctions(): void
+  {
+    $response = $this->withSession(['panel_locale' => 'tr'])->view(
+      'app.partials.panel-learning-resources',
+      [
+        'mode' => 'full',
+        'learningResources' => [[
+          'id' => 'course-1',
+          'title' => 'SQL Course',
+          'provider' => 'Example Academy',
+          'url' => 'https://example.com/sql',
+          'price_type' => 'paid',
+          'price_label' => '999 ₺',
+          'price_range' => '500-2000',
+          'has_certificate' => true,
+          'skills' => ['SQL'],
+        ]],
+      ],
+    );
+
+    $response->assertSee('SQL Course', false);
+    $response->assertSee('Example Academy', false);
+    foreach (['Ücretsiz', 'Ücretli', 'Tüm fiyatlar', '999 ₺', 'price_type', 'price_label', 'price_range'] as $removedPricing) {
+      $response->assertDontSee($removedPricing, false);
+    }
+  }
+
   public function test_student_sidebar_uses_consolidated_information_architecture(): void
   {
     $response = $this->withSession(['panel_locale' => 'tr'])->get('/panel');
