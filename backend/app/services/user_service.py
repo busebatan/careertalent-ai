@@ -29,6 +29,10 @@ def create_user(
         hashed_password=hash_password(user.password),
         is_active=True,
         is_admin=False,
+        role="student",
+        admin_permissions=[],
+        must_change_password=False,
+        token_version=0,
     )
 
     db.add(new_user)
@@ -75,6 +79,7 @@ def login_user(
     access_token = create_access_token(
         {
             "sub": user.email,
+            "ver": user.token_version,
         }
     )
 

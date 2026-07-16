@@ -10,6 +10,11 @@ use Illuminate\View\View;
 
 class AdminController extends Controller
 {
+    private const PERMISSION_KEYS = [
+        'dashboard.view', 'career_data.manage', 'students.view', 'readiness.view',
+        'skill_passport.view', 'job_radar.view', 'applications.view', 'interviews.view',
+    ];
+
     /**
      * @var array<string, array{route: string, icon: string}>
      */
@@ -43,6 +48,90 @@ class AdminController extends Controller
             'modules' => $this->modules($data['module_counts'] ?? []),
             'adminError' => $response['ok'] ? null : $this->apiError($response['error']),
         ], $api);
+    }
+
+    public function profile(CareerTalentApiClient $api): View
+    {
+        $response = $api->adminProfile();
+
+        return $this->adminView('admin.profile', [
+            'profile' => $response['ok'] && is_array($response['body']) ? $response['body'] : session('auth.user', []),
+            'adminError' => $response['ok'] ? null : $this->apiError($response['error']),
+        ], $api);
+    }
+
+    public function updateProfile(Request $request, CareerTalentApiClient $api): RedirectResponse
+    {
+        $data = $request->validate([
+            'full_name' => ['required', 'string', 'min:2', 'max:100'],
+            'email' => ['required', 'email'],
+            'current_password' => ['required', 'string', 'min:8', 'max:128'],
+            'new_password' => ['nullable', 'string', 'min:8', 'max:128', 'confirmed'],
+        ]);
+        unset($data['new_password_confirmation']);
+        $oldEmail = (string) session('auth.user.email', '');
+        $response = $api->updateAdminProfile($data);
+        if (! $response['ok']) {
+            return back()->withInput($request->except('current_password', 'new_password', 'new_password_confirmation'))
+                ->withErrors(['profile' => $response['error'] ?? __('admin.errors.api_unavailable_generic')]);
+        }
+
+        $request->session()->put('auth.user', $response['body']);
+        if (! empty($data['new_password']) || $data['email'] !== $oldEmail) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('admin.login')->with('status', __('admin.profile.login_again'));
+        }
+
+        return redirect()->route('admin.profile')->with('status', __('admin.profile.saved'));
+    }
+
+    public function accounts(CareerTalentApiClient $api): View
+    {
+        $response = $api->adminAccounts();
+        $body = $response['ok'] && is_array($response['body']) ? $response['body'] : [];
+
+        return $this->adminView('admin.accounts', [
+            'accounts' => $body['accounts'] ?? [],
+            'permissionKeys' => $body['permission_keys'] ?? self::PERMISSION_KEYS,
+            'adminError' => $response['ok'] ? null : $this->apiError($response['error']),
+        ], $api);
+    }
+
+    public function storeAccount(Request $request, CareerTalentApiClient $api): RedirectResponse
+    {
+        $data = $request->validate([
+            'full_name' => ['required', 'string', 'min:2', 'max:100'],
+            'email' => ['required', 'email'],
+            'temporary_password' => ['required', 'string', 'min:8', 'max:128', 'confirmed'],
+            'permissions' => ['array'],
+            'permissions.*' => ['string', 'in:'.implode(',', self::PERMISSION_KEYS)],
+        ]);
+        unset($data['temporary_password_confirmation']);
+        $response = $api->createAdminAccount($data);
+
+        return $response['ok']
+            ? redirect()->route('admin.accounts')->with('status', __('admin.accounts.created'))
+            : back()->withInput($request->except('temporary_password', 'temporary_password_confirmation'))->withErrors(['accounts' => $response['error']]);
+    }
+
+    public function updateAccount(Request $request, CareerTalentApiClient $api, int $user): RedirectResponse
+    {
+        $data = $request->validate([
+            'full_name' => ['required', 'string', 'min:2', 'max:100'],
+            'email' => ['required', 'email'],
+            'is_active' => ['required', 'boolean'],
+            'temporary_password' => ['nullable', 'string', 'min:8', 'max:128'],
+            'permissions' => ['array'],
+            'permissions.*' => ['string', 'in:'.implode(',', self::PERMISSION_KEYS)],
+        ]);
+        $data['is_active'] = $request->boolean('is_active');
+        $response = $api->updateAdminAccount($user, $data);
+
+        return $response['ok']
+            ? redirect()->route('admin.accounts')->with('status', __('admin.accounts.updated'))
+            : back()->withErrors(['accounts' => $response['error']]);
     }
 
     public function students(CareerTalentApiClient $api) { return $this->page('students', $api); }
@@ -128,6 +217,8 @@ class AdminController extends Controller
     {
         $counts = is_array($counts) ? $counts : [];
 
+        $keys = array_values(array_filter(array_keys(self::MODULE_KEYS), fn (string $key): bool => array_key_exists($key, $counts)));
+
         return array_map(function (string $key) use ($counts): array {
             $module = $this->moduleDefinition($key);
 
@@ -136,7 +227,7 @@ class AdminController extends Controller
                 ...$module,
                 'count' => is_int($counts[$key] ?? null) ? $counts[$key] : 0,
             ];
-        }, array_keys(self::MODULE_KEYS));
+        }, $keys);
     }
 
     /**
@@ -159,9 +250,13 @@ class AdminController extends Controller
      */
     private function adminView(string $view, array $data, CareerTalentApiClient $api)
     {
+        $adminUser = session('auth.user', []);
+
         return view($view, array_merge($data, [
             'apiHealth' => $api->health(),
             'adminNav' => $this->adminNav(),
+            'adminUser' => $adminUser,
+            'isSuperAdmin' => ($adminUser['role'] ?? null) === 'super_admin' || ! array_key_exists('role', $adminUser),
         ]));
     }
 
@@ -170,18 +265,33 @@ class AdminController extends Controller
      */
     private function adminNav(): array
     {
-        return [
-            ['route' => 'admin.dashboard', 'label' => __('admin.nav.dashboard'), 'icon' => 'dashboard'],
-            ['route' => 'admin.career-data', 'label' => __('career-data.title'), 'icon' => 'radar'],
-            ...array_map(
-                fn (string $key): array => [
-                    'route' => self::MODULE_KEYS[$key]['route'],
-                    'label' => __("admin.modules.{$key}.title"),
-                    'icon' => self::MODULE_KEYS[$key]['icon'],
-                ],
+        $user = session('auth.user', []);
+        $super = ($user['role'] ?? null) === 'super_admin' || ! array_key_exists('role', $user);
+        $permissions = $super ? self::PERMISSION_KEYS : ($user['admin_permissions'] ?? []);
+        $item = fn (string $route, string $label, string $icon, string $permission): ?array => in_array($permission, $permissions, true)
+            ? compact('route', 'label', 'icon', 'permission') : null;
+
+        $groups = [
+            ['label' => __('admin.nav_groups.general'), 'items' => array_filter([
+                $item('admin.dashboard', __('admin.nav.dashboard'), 'dashboard', 'dashboard.view'),
+                $super ? ['route' => 'admin.accounts', 'label' => __('admin.nav.accounts'), 'icon' => 'admins'] : null,
+            ])],
+            ['label' => __('admin.nav_groups.data'), 'items' => array_filter([
+                $item('admin.career-data', __('career-data.title'), 'radar', 'career_data.manage'),
+            ])],
+            ['label' => __('admin.nav_groups.students'), 'items' => array_filter(array_map(
+                fn (string $key): ?array => in_array($key, ['students', 'readiness', 'skill-passport'], true)
+                    ? $item(self::MODULE_KEYS[$key]['route'], __("admin.modules.{$key}.title"), self::MODULE_KEYS[$key]['icon'], str_replace('-', '_', $key).'.view') : null,
                 array_keys(self::MODULE_KEYS),
-            ),
+            ))],
+            ['label' => __('admin.nav_groups.operations'), 'items' => array_filter(array_map(
+                fn (string $key): ?array => in_array($key, ['job-radar', 'applications', 'interviews'], true)
+                    ? $item(self::MODULE_KEYS[$key]['route'], __("admin.modules.{$key}.title"), self::MODULE_KEYS[$key]['icon'], str_replace('-', '_', $key).'.view') : null,
+                array_keys(self::MODULE_KEYS),
+            ))],
         ];
+
+        return array_values(array_filter($groups, fn (array $group): bool => $group['items'] !== []));
     }
 
     private function apiError(?string $error): string

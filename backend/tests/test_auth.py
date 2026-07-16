@@ -63,6 +63,9 @@ def test_register_login_and_me_contract(client: TestClient):
         "email": "ogrenci@example.com",
         "is_active": True,
         "is_admin": False,
+        "role": "student",
+        "admin_permissions": [],
+        "must_change_password": False,
     }
     assert "password" not in response.json()
 

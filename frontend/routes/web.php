@@ -53,6 +53,11 @@ Route::middleware('marketing.locale')->group(function () {
 Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin', 'panel.locale'])->group(function () {
     Route::get('/locale/{locale}', [PanelLocaleController::class, 'switch'])->name('locale');
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/profil', [AdminController::class, 'profile'])->name('profile');
+    Route::patch('/profil', [AdminController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/hesaplar', [AdminController::class, 'accounts'])->name('accounts');
+    Route::post('/hesaplar', [AdminController::class, 'storeAccount'])->name('accounts.store');
+    Route::patch('/hesaplar/{user}', [AdminController::class, 'updateAccount'])->name('accounts.update');
     Route::get('/kariyer-veri-merkezi', [AdminController::class, 'careerData'])->name('career-data');
     Route::post('/kariyer-veri-merkezi/{resource}', [AdminController::class, 'storeCareerData'])->name('career-data.store');
     Route::put('/kariyer-veri-merkezi/{resource}/{record}', [AdminController::class, 'updateCareerData'])->name('career-data.update');

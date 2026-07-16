@@ -68,9 +68,11 @@ class AuthController extends Controller
 
         $this->startSession($request, $result['body']['access_token'], $me['body']);
 
-        return $isAdmin
-            ? redirect()->route('admin.dashboard')
-            : redirect()->intended(route('panel.dashboard'));
+        if ($isAdmin) {
+            return redirect()->route(($me['body']['must_change_password'] ?? false) === true ? 'admin.profile' : 'admin.dashboard');
+        }
+
+        return redirect()->intended(route('panel.dashboard'));
     }
 
     public function store(Request $request, CareerTalentApiClient $api): RedirectResponse

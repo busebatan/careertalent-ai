@@ -28,6 +28,9 @@ class UserResponse(BaseModel):
     email: EmailStr
     is_active: bool
     is_admin: bool
+    role: str = "student"
+    admin_permissions: list[str] = Field(default_factory=list)
+    must_change_password: bool = False
 
     model_config = {
         "from_attributes": True

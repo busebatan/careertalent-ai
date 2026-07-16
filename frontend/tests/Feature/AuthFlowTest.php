@@ -196,6 +196,41 @@ class AuthFlowTest extends TestCase
             ->assertSessionHas('auth.user.is_admin', true);
     }
 
+    public function test_admin_with_temporary_password_is_redirected_to_profile(): void
+    {
+        Http::fake([
+            '*/api/v1/auth/login' => Http::response(['access_token' => 'admin-token', 'token_type' => 'bearer']),
+            '*/api/v1/auth/me' => Http::response(array_merge($this->user(true), [
+                'role' => 'admin',
+                'admin_permissions' => ['dashboard.view'],
+                'must_change_password' => true,
+            ])),
+        ]);
+
+        $this->post('/admin/login', [
+            'email' => 'admin@example.com',
+            'password' => 'GeciciParola123!',
+        ])->assertRedirect('/admin/profil');
+    }
+
+    public function test_scoped_admin_can_open_only_permitted_frontend_modules(): void
+    {
+        $admin = array_merge($this->user(true), [
+            'role' => 'admin',
+            'admin_permissions' => ['dashboard.view', 'students.view'],
+            'must_change_password' => false,
+        ]);
+        Http::fake([
+            '*/api/v1/auth/me' => Http::response($admin),
+            '*/api/v1/admin/modules/students' => Http::response(['title' => 'Öğrenciler', 'subtitle' => '', 'total' => 0, 'rows' => []]),
+            '*/health' => Http::response(['status' => 'ok']),
+        ]);
+
+        $this->withSession(['auth.access_token' => 'admin-token'])->get('/admin/ogrenciler')->assertOk();
+        $this->withSession(['auth.access_token' => 'admin-token'])->get('/admin/mulakatlar')->assertForbidden();
+        $this->withSession(['auth.access_token' => 'admin-token'])->get('/admin/hesaplar')->assertForbidden();
+    }
+
     public function test_admin_login_ignores_a_panel_intended_url(): void
     {
         Http::fake([

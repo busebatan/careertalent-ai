@@ -72,6 +72,34 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/admin/dashboard', 10);
     }
 
+    public function adminProfile(): array
+    {
+        return $this->getJson('/api/v1/admin/profile', 10);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateAdminProfile(array $payload): array
+    {
+        return $this->patchJson('/api/v1/admin/profile', $payload, 15);
+    }
+
+    public function adminAccounts(): array
+    {
+        return $this->getJson('/api/v1/admin/accounts', 10);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createAdminAccount(array $payload): array
+    {
+        return $this->postJson('/api/v1/admin/accounts', $payload, 15);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateAdminAccount(int $userId, array $payload): array
+    {
+        return $this->patchJson('/api/v1/admin/accounts/'.$userId, $payload, 15);
+    }
+
     /**
      * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
      */
