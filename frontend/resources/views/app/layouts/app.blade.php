@@ -38,6 +38,13 @@
                 </nav>
                 <div class="mt-auto shrink-0">
                     @include('app.partials.sidebar-user')
+                    @if (session('auth.user.is_admin') === true)
+                        <a data-admin-return href="{{ route('admin.dashboard') }}"
+                            class="mb-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-emerald-600 transition hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:text-emerald-400 dark:hover:bg-emerald-950/30">
+                            <i data-lucide="shield" class="h-4 w-4" aria-hidden="true"></i>
+                            {{ __('panel.nav.return_to_admin') }}
+                        </a>
+                    @endif
                     <div class="border-t border-slate-200 pt-4 dark:border-slate-800">
                         <form method="post" action="{{ route('logout') }}">
                             @csrf

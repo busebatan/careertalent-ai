@@ -26,6 +26,7 @@ return [
         'tasks' => 'My Tasks',
         'chat' => 'Career Assistant',
         'account' => 'Account',
+        'return_to_admin' => 'Return to Admin Panel',
         'logout' => 'Log out',
     ],
     'nav_groups' => [

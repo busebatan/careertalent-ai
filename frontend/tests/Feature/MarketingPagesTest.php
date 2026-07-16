@@ -182,6 +182,30 @@ class MarketingPagesTest extends TestCase
         $response->assertSee('data-lucide="bell"', false);
     }
 
+    public function test_admin_in_student_panel_has_sidebar_return_link(): void
+    {
+        $response = $this->withSession([
+            'auth.user' => [
+                'full_name' => 'Yönetici Kullanıcı',
+                'is_admin' => true,
+            ],
+        ])->get('/panel');
+
+        $response->assertOk()
+            ->assertSee('data-admin-return', false)
+            ->assertSee('href="'.route('admin.dashboard').'"', false)
+            ->assertSee('Admin Panele Dön');
+
+        $this->withSession([
+            'auth.user' => [
+                'full_name' => 'Öğrenci Kullanıcı',
+                'is_admin' => false,
+            ],
+        ])->get('/panel')
+            ->assertOk()
+            ->assertDontSee('data-admin-return', false);
+    }
+
     public function test_panel_kariyer_merdiveni_sayfasi_acilir(): void
     {
         $response = $this->get('/panel/kariyer-rotam');

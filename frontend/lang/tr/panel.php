@@ -26,6 +26,7 @@ return [
         'tasks' => 'Görevlerim',
         'chat' => 'Kariyer Asistanı',
         'account' => 'Hesap',
+        'return_to_admin' => 'Admin Panele Dön',
         'logout' => 'Çıkış yap',
     ],
     'nav_groups' => [

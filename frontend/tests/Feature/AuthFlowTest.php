@@ -67,6 +67,21 @@ class AuthFlowTest extends TestCase
         $response->assertSessionHas('auth.user.id', 7);
     }
 
+    public function test_admin_account_using_panel_login_is_redirected_to_admin_panel(): void
+    {
+        Http::fake([
+            '*/api/v1/auth/login' => Http::response(['access_token' => 'admin-token', 'token_type' => 'bearer']),
+            '*/api/v1/auth/me' => Http::response($this->user(true)),
+        ]);
+
+        $this->withSession(['url.intended' => '/panel'])
+            ->post('/panel/login', [
+                'email' => 'admin@example.com',
+                'password' => 'GucluParola123!',
+            ])->assertRedirect('/admin')
+            ->assertSessionHas('auth.user.is_admin', true);
+    }
+
     public function test_login_validation_and_api_error_are_shown_without_storing_token(): void
     {
         $this->post('/panel/login', ['email' => 'bozuk', 'password' => ''])

@@ -35,7 +35,7 @@ class AuthController extends Controller
         return $this->attemptLogin($request, $api, true);
     }
 
-    private function attemptLogin(Request $request, CareerTalentApiClient $api, bool $admin): RedirectResponse
+    private function attemptLogin(Request $request, CareerTalentApiClient $api, bool $adminPortal): RedirectResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -56,7 +56,9 @@ class AuthController extends Controller
             ]);
         }
 
-        if ($admin && ($me['body']['is_admin'] ?? false) !== true) {
+        $isAdmin = ($me['body']['is_admin'] ?? false) === true;
+
+        if ($adminPortal && ! $isAdmin) {
             $request->session()->forget('auth');
 
             return back()->withInput($request->only('email'))->withErrors([
@@ -66,7 +68,7 @@ class AuthController extends Controller
 
         $this->startSession($request, $result['body']['access_token'], $me['body']);
 
-        return $admin
+        return $isAdmin
             ? redirect()->route('admin.dashboard')
             : redirect()->intended(route('panel.dashboard'));
     }
