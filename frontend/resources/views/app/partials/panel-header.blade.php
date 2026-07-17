@@ -5,8 +5,16 @@
 @endphp
 
 <header class="flex items-center justify-between gap-4 border-b border-slate-200 bg-white/80 px-6 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/80 md:px-10">
-
-    <p class="truncate text-sm font-medium text-slate-600 dark:text-slate-400 md:hidden">{{ __('panel.brand') }}</p>
+    <div class="flex min-w-0 items-center gap-2">
+        <button type="button" @click="sidebarOpen = !sidebarOpen"
+            class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 md:hidden"
+            :aria-expanded="sidebarOpen"
+            aria-controls="panel-sidebar"
+            :aria-label="@js(__('panel.nav.open_menu'))">
+            <i data-lucide="menu" class="h-5 w-5" aria-hidden="true"></i>
+        </button>
+        <p class="truncate text-sm font-medium text-slate-600 dark:text-slate-400 md:hidden">{{ __('panel.brand') }}</p>
+    </div>
 
     <div class="ml-auto flex items-center gap-1 sm:gap-2">
         {{-- API durumu + tarih/saat --}}

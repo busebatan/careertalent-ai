@@ -27,6 +27,7 @@ return [
         'chat' => 'Kariyer Asistanı',
         'account' => 'Hesap',
         'return_to_admin' => 'Admin Panele Dön',
+        'open_menu' => 'Menüyü aç',
         'logout' => 'Çıkış yap',
     ],
     'nav_groups' => [

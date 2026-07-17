@@ -31,7 +31,7 @@
         </p>
     @endif
     @foreach ($group['items'] as $item)
-        <a href="{{ route($item['route']) }}"
+        <a href="{{ route($item['route']) }}" @click="sidebarOpen = false"
             class="panel-nav-link {{ request()->routeIs($item['match']) ? 'panel-nav-link-active' : '' }}">
             @include('app.partials.sidebar-nav-icon', ['icon' => $item['icon']])
             <span class="truncate">{{ __($item['label']) }}</span>

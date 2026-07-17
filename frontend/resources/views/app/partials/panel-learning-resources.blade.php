@@ -14,7 +14,6 @@
     @unless($isPreview)
         x-data="{
             resources: {{ Js::from($visibleResources) }},
-            certificateOnly: false,
             labels: {{ Js::from([
                 'resources' => __('panel.dashboard.resources_count', ['count' => '__COUNT__']),
                 'skills' => __('panel.dashboard.skills'),
@@ -22,12 +21,6 @@
                 'visit' => __('panel.dashboard.visit_site'),
                 'empty' => __('panel.dashboard.no_resources'),
             ]) }},
-            get filtered() {
-                return this.resources.filter(r => {
-                    if (this.certificateOnly && !r.has_certificate) return false;
-                    return true;
-                });
-            },
             resourceLabel(count) {
                 return this.labels.resources.replace('__COUNT__', count);
             }
@@ -37,13 +30,7 @@
     @unless ($isPreview)
         <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <p class="text-sm text-slate-600 dark:text-slate-400">{{ __('panel.dashboard.learning_desc') }}</p>
-            <p class="text-xs text-slate-500" x-text="resourceLabel(filtered.length)"></p>
-        </div>
-
-        <div class="mb-4 flex flex-wrap gap-2">
-            <button type="button" @click="certificateOnly = !certificateOnly"
-                :class="certificateOnly ? 'bg-amber-600/80 text-white' : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'"
-                class="rounded-full px-3 py-1 text-xs transition">{{ __('panel.dashboard.filter_cert') }}</button>
+            <p class="text-xs text-slate-500" x-text="resourceLabel(resources.length)"></p>
         </div>
     @endunless
 
@@ -56,7 +43,7 @@
                 </article>
             @endforeach
         @else
-            <template x-for="item in filtered" :key="item.id">
+            <template x-for="item in resources" :key="item.id">
                 <article class="panel-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="min-w-0">
                         <div class="mb-1 flex flex-wrap items-center gap-2">
@@ -73,7 +60,7 @@
                     </a>
                 </article>
             </template>
-            <p x-show="filtered.length === 0" class="rounded-xl border border-dashed border-slate-300 py-8 text-center text-sm text-slate-500 dark:border-slate-700" x-text="labels.empty"></p>
+            <p x-show="resources.length === 0" class="rounded-xl border border-dashed border-slate-300 py-8 text-center text-sm text-slate-500 dark:border-slate-700" x-text="labels.empty"></p>
         @endif
     </div>
 

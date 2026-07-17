@@ -239,7 +239,7 @@
                                     <span x-show="historyLoadingId === @js($document['id'])" x-cloak>{{ __('panel.profile.cv_analyze_active_working') }}</span>
                                 </button>
                                 @if (($document['kind'] ?? '') === 'generated')<a href="{{ route('panel.cv-builder', ['cvDocument' => $document['id']]) }}" class="text-sky-600 hover:underline dark:text-sky-400">{{ __('panel.profile.cv_restore') }}</a>@endif
-                                <a href="{{ route('panel.cv-history.download', $document['id']) }}" class="text-emerald-600 hover:underline dark:text-emerald-400">{{ __('panel.profile.cv_download_again') }}</a>
+                                <a href="{{ route('panel.roadmap') }}" class="text-emerald-600 hover:underline dark:text-emerald-400">{{ __('panel.profile.cv_go_roadmap') }}</a>
                                 <form method="post" action="{{ route('panel.cv-history.destroy', $document['id']) }}" onsubmit='return confirm(@json(__('panel.profile.cv_delete_confirm')))'>@csrf @method('DELETE')<button type="submit" class="text-red-600 hover:underline dark:text-red-400">{{ __('panel.profile.cv_delete') }}</button></form>
                             </div>
                         </li>

@@ -19,6 +19,16 @@ class DashboardCvRadarTest extends TestCase
             ->assertDontSee('id="yetenek-radari"', false);
     }
 
+    public function test_dashboard_includes_mobile_navigation_shell(): void
+    {
+        $this->get(route('panel.dashboard'))
+            ->assertOk()
+            ->assertSee('id="panel-sidebar"', false)
+            ->assertSee('panel-mobile-sidebar', false)
+            ->assertSee('data-lucide="menu"', false)
+            ->assertSee(__('panel.nav.open_menu'), false);
+    }
+
     public function test_dashboard_shows_api_radar_after_cv_analysis(): void
     {
         Http::fake([

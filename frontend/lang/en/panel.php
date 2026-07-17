@@ -27,6 +27,7 @@ return [
         'chat' => 'Career Assistant',
         'account' => 'Account',
         'return_to_admin' => 'Return to Admin Panel',
+        'open_menu' => 'Open menu',
         'logout' => 'Log out',
     ],
     'nav_groups' => [

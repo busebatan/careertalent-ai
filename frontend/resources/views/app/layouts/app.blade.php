@@ -18,6 +18,7 @@
 </head>
 <body class="min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100"
     x-data="{
+        sidebarOpen: false,
         theme: localStorage.getItem('panel-theme') || 'dark',
         init() { this.applyTheme(); },
         applyTheme() {
@@ -27,10 +28,18 @@
         toggleTheme() {
             this.theme = this.theme === 'dark' ? 'light' : 'dark';
             this.applyTheme();
+        },
+        closeSidebar() {
+            this.sidebarOpen = false;
         }
-    }">
+    }"
+    @keydown.escape.window="closeSidebar()">
     <div class="panel-shell">
-        <aside class="panel-sidebar" aria-label="{{ __('panel.brand') }}">
+        <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false"
+            class="fixed inset-0 z-30 bg-slate-950/50 backdrop-blur-sm md:hidden" aria-hidden="true"></div>
+        <aside id="panel-sidebar" class="panel-sidebar panel-mobile-sidebar"
+            :class="sidebarOpen ? 'panel-mobile-sidebar-open' : ''"
+            aria-label="{{ __('panel.brand') }}">
             <div class="flex h-full min-h-0 flex-col p-6">
                 <a href="{{ route('panel.dashboard') }}" class="mb-8 block shrink-0 text-lg font-bold text-emerald-600 dark:text-emerald-400">{{ __('panel.brand') }}</a>
                 <nav class="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain text-sm">
@@ -39,7 +48,7 @@
                 <div class="mt-auto shrink-0">
                     @include('app.partials.sidebar-user')
                     @if (session('auth.user.is_admin') === true)
-                        <a data-admin-return href="{{ route('admin.dashboard') }}"
+                        <a data-admin-return href="{{ route('admin.dashboard') }}" @click="sidebarOpen = false"
                             class="mb-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-emerald-600 transition hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:text-emerald-400 dark:hover:bg-emerald-950/30">
                             <i data-lucide="shield" class="h-4 w-4" aria-hidden="true"></i>
                             {{ __('panel.nav.return_to_admin') }}
