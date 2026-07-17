@@ -47,6 +47,7 @@ def start_interview(db: Session, user_id: int) -> CareerInterview:
         "purpose": "Adayın hedef mesleğine ve CV boşluklarına özel mülakat soruları üret",
         "target_role": target_role, "career_context": context,
         "rules": [
+            "Tüm sorular ve yönergeler KESİNLİKLE TÜRKÇE olmalıdır. İngilizce CV bağlamında olsak bile, mülakat simülasyonu Türkçe gerçekleştirilecektir.",
             "Davranışsal ve teknik soruları dengeli dağıt", 
             "Her soru farklı yetkinliği ölçsün",
             "Mülakatın zorluk seviyesini, 'career_context' içindeki profile bakarak adayın tecrübe süresine ve kıdemine göre dinamik olarak belirle.",
@@ -71,12 +72,12 @@ def evaluate_interview_answer(db: Session, user_id: int, interview: CareerInterv
         "career_context": career_context(db, user_id), "target_role": interview.target_role,
         "question": question, "answer": answer,
         "rules": [
-            "Uzunluğa göre puan verme", 
-            "Somutluk, doğruluk, yapı ve role uygunluğu değerlendir", 
-            "CV'de olmayan iddiaları güçlü yan sayma",
-            "Adayın cevabını spesifik anahtar kelimelere göre değil, problem çözme yaklaşımına ve algoritmik mantığına göre değerlendir.",
+            "Uzunluğa göre puan verme, içeriğin kalitesine ve problem çözme mantığına odaklan.",
+            "Somutluk, doğruluk, yapı ve role uygunluğu değerlendir.",
+            "CV'de olmayan iddiaları güçlü yan sayma.",
+            "Adayın cevabını spesifik teknik terimlere (örn: BLEU, Perplexity, Transformer, Tokenization) boğulmadan değerlendir. Adayın bu terimleri kullanmamış olması, o konuyu bilmediği anlamına gelmez; cevabın genel mühendislik yaklaşımını değerlendir.",
+            "Asla 'Şu terimleri kullanmadın' veya 'Şu terimlere değinilmemiş' şeklinde teknik terim listesi çıkarma. Bunun yerine, eğer çok kritik bir eksiklik varsa bunu 'Gelişim Alanları'nda kavramsal olarak öner.",
             "Acımasız bir sınav okuyucusu gibi değil, adayın potansiyelini ölçen deneyimli bir takım lideri (Mentör) gibi davran.",
-            "Aday mantığı doğru kurmuş ama bazı teknik terimleri unutmuşsa puanı sert kırma, bu eksikleri 'improvements' (gelişim alanları) kısmında yapıcı bir dille hatırlat.",
             "Cevapta STAR (Durum, Görev, Eylem, Sonuç) metodolojisinin izlerini ara ve problemi adım adım çözmesini ödüllendir."
         ],
     }, ensure_ascii=False), InterviewEvaluationAI)
