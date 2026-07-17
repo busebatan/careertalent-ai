@@ -126,7 +126,14 @@
                 </div>
             </template>
 
-            <label class="panel-upload-zone" :class="loading ? 'pointer-events-none opacity-60' : ''">
+            <label class="panel-upload-zone"
+                :class="[
+                    loading ? 'pointer-events-none opacity-60' : '',
+                    dragOver ? 'panel-upload-zone-active' : '',
+                ]"
+                @dragover.prevent="onDragOver($event)"
+                @dragleave.prevent="onDragLeave($event)"
+                @drop.prevent="onDrop($event)">
                 <i data-lucide="file-text" class="mb-2 h-8 w-8 text-emerald-500" aria-hidden="true"></i>
                 <span class="mb-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ __('panel.profile.upload_drag') }}</span>
                 <span class="text-xs text-slate-500">{{ __('panel.profile.upload_hint') }}</span>
