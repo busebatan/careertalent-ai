@@ -43,21 +43,23 @@ def answer_chat(db: Session, user_id: int, message: str) -> CareerChatMessage:
 def start_interview(db: Session, user_id: int, language: str = "tr") -> CareerInterview:
     context = career_context(db, user_id)
     target_role = (context.get("selected_target") or {}).get("title") or context.get("current_role") or "Genel kariyer görüşmesi"
-    
-    # Seçilen dile göre yapay zekaya kesin bir talimat hazırlıyoruz
-    lang_instruction = "Tüm soruları KESİNLİKLE Türkçe üret." if language == "tr" else "Tüm soruları KESİNLİKLE İngilizce (English) üret."
+    lang_instruction = (
+        "Tüm soruları ve yönergeleri Türkçe üret."
+        if language == "tr"
+        else "Produce every question and instruction in English."
+    )
 
     output = _invoke(json.dumps({
         "purpose": "Adayın hedef mesleğine ve CV boşluklarına özel mülakat soruları üret",
-        "target_role": target_role, 
+        "target_role": target_role,
         "career_context": context,
         "rules": [
-            "Davranışsal ve teknik soruları dengeli dağıt", 
+            lang_instruction,
+            "Davranışsal ve teknik soruları dengeli dağıt",
             "Her soru farklı yetkinliği ölçsün",
-            lang_instruction # Dil kuralını buraya ekliyoruz
         ],
     }, ensure_ascii=False), InterviewQuestionsAI)
-    
+
     row = CareerInterview(id=str(uuid4()), user_id=user_id, target_role=target_role, status="active", questions=output.model_dump(mode="json")["questions"])
     db.add(row); db.commit(); db.refresh(row)
     return row
@@ -71,7 +73,15 @@ def evaluate_interview_answer(db: Session, user_id: int, interview: CareerInterv
         "purpose": "Mülakat cevabını hedef rol ve adayın gerçek CV bağlamına göre değerlendir",
         "career_context": career_context(db, user_id), "target_role": interview.target_role,
         "question": question, "answer": answer,
-        "rules": ["Uzunluğa göre puan verme", "Somutluk, doğruluk, yapı ve role uygunluğu değerlendir", "CV'de olmayan iddiaları güçlü yan sayma"],
+        "rules": [
+            "Uzunluğa göre puan verme, içeriğin kalitesine ve problem çözme mantığına odaklan.",
+            "Somutluk, doğruluk, yapı ve role uygunluğu değerlendir.",
+            "CV'de olmayan iddiaları güçlü yan sayma.",
+            "Adayın cevabını spesifik teknik terimlere (örn: BLEU, Perplexity, Transformer, Tokenization) boğulmadan değerlendir. Adayın bu terimleri kullanmamış olması, o konuyu bilmediği anlamına gelmez; cevabın genel mühendislik yaklaşımını değerlendir.",
+            "Asla 'Şu terimleri kullanmadın' veya 'Şu terimlere değinilmemiş' şeklinde teknik terim listesi çıkarma. Bunun yerine, eğer çok kritik bir eksiklik varsa bunu 'Gelişim Alanları'nda kavramsal olarak öner.",
+            "Acımasız bir sınav okuyucusu gibi değil, adayın potansiyelini ölçen deneyimli bir takım lideri (Mentör) gibi davran.",
+            "Cevapta STAR (Durum, Görev, Eylem, Sonuç) metodolojisinin izlerini ara ve problemi adım adım çözmesini ödüllendir."
+        ],
     }, ensure_ascii=False), InterviewEvaluationAI)
     row = CareerInterviewAnswer(id=str(uuid4()), interview_id=interview.id, user_id=user_id, question_id=question_id, answer=answer, **output.model_dump(mode="json"))
     db.add(row); db.commit(); db.refresh(row)
