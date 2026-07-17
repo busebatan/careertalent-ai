@@ -130,6 +130,11 @@ def _build_analysis_localizations(
             if not isinstance(role, dict):
                 raise AIOutputError("Kariyer rolü beklenen nesne yapısında değil")
             role_text = localized.roles[index]
+            source_swot = role.get("swot") if isinstance(role.get("swot"), dict) else {}
+            for field in ("strengths", "weaknesses", "opportunities", "threats"):
+                source_items = source_swot.get(field) if isinstance(source_swot.get(field), list) else []
+                if len(getattr(role_text, field)) != len(source_items):
+                    raise AIOutputError("Yerelleştirilmiş SWOT madde sayısı kaynak analizle uyuşmuyor")
             localized_roles.append({
                 "tier": role.get("tier"),
                 "title": role_text.title,
@@ -202,17 +207,35 @@ def _localize_plan(source: dict[str, Any]) -> CareerPlanLocalizationsAI:
     return output
 
 
-def ensure_career_localizations(db: Session, user_id: int) -> None:
-    analysis = db.scalar(
-        select(CareerAnalysis)
-        .where(CareerAnalysis.user_id == user_id, CareerAnalysis.status == "ready")
-        .order_by(CareerAnalysis.created_at.desc())
-    )
-    targets = db.scalars(
-        select(CareerTarget)
-        .where(CareerTarget.user_id == user_id)
-        .order_by(CareerTarget.created_at.desc())
-    ).all()
+def ensure_career_localizations(
+    db: Session,
+    user_id: int,
+    *,
+    analysis_id: str | None = None,
+    target_id: str | None = None,
+    include_analysis: bool = True,
+    include_targets: bool = True,
+) -> None:
+    analysis = None
+    if include_analysis:
+        analysis_query = select(CareerAnalysis).where(
+            CareerAnalysis.user_id == user_id,
+            CareerAnalysis.status == "ready",
+        )
+        if analysis_id is not None:
+            analysis_query = analysis_query.where(CareerAnalysis.id == analysis_id)
+        else:
+            analysis_query = analysis_query.order_by(CareerAnalysis.created_at.desc())
+        analysis = db.scalar(analysis_query)
+
+    targets: list[CareerTarget] = []
+    if include_targets:
+        target_query = select(CareerTarget).where(CareerTarget.user_id == user_id)
+        if target_id is not None:
+            target_query = target_query.where(CareerTarget.id == target_id)
+        else:
+            target_query = target_query.order_by(CareerTarget.created_at.desc())
+        targets = list(db.scalars(target_query).all())
 
     analysis_missing = analysis is not None and not _has_complete_localizations(analysis.localizations)
     target_rows: list[tuple[CareerTarget, list[CareerTask]]] = []
@@ -222,8 +245,6 @@ def ensure_career_localizations(db: Session, user_id: int) -> None:
             .where(CareerTask.user_id == user_id, CareerTask.target_id == target.id)
             .order_by(CareerTask.created_at)
         ).all())
-        if target.status == "queued" and not tasks:
-            continue
         target_missing = not _has_complete_localizations(target.localizations)
         tasks_missing = any(not _has_complete_localizations(task.localizations) for task in tasks)
         if target_missing or tasks_missing:
@@ -581,15 +602,47 @@ def _delete_target_plan(db: Session, user_id: int) -> dict[str, int]:
 
 
 def _find_skill_task(db: Session, user_id: int, target_id: str, skill: str) -> CareerTask | None:
-    needle = skill.strip().lower()
+    needle = skill.strip().casefold()
     if needle == "":
         return None
     rows = db.scalars(select(CareerTask).where(CareerTask.user_id == user_id, CareerTask.target_id == target_id)).all()
     for row in rows:
-        impacts = [str(item).lower() for item in (row.skill_impacts or [])]
+        impacts = [str(item).casefold() for item in (row.skill_impacts or [])]
+        for localized in (row.localizations or {}).values():
+            if isinstance(localized, dict):
+                impacts.extend(str(item).casefold() for item in (localized.get("skill_impacts") or []))
         if needle in impacts:
             return row
     return None
+
+
+def _localized_skill_names(db: Session, user_id: int, skill: str) -> dict[str, str]:
+    fallback = skill.strip()
+    names = {locale: fallback for locale in SUPPORTED_PANEL_LOCALES}
+    needle = fallback.casefold()
+    analysis = db.scalar(
+        select(CareerAnalysis)
+        .where(CareerAnalysis.user_id == user_id, CareerAnalysis.status == "ready")
+        .order_by(CareerAnalysis.created_at.desc())
+    )
+    if analysis is None or not _has_complete_localizations(analysis.localizations):
+        return names
+
+    for collection, key in (("skills", "name"), ("radar", "label")):
+        localized_items = {
+            locale: (analysis.localizations[locale].get(collection) or [])
+            for locale in SUPPORTED_PANEL_LOCALES
+        }
+        count = min(len(localized_items[locale]) for locale in SUPPORTED_PANEL_LOCALES)
+        for index in range(count):
+            values = {
+                locale: str(localized_items[locale][index].get(key, "")).strip()
+                for locale in SUPPORTED_PANEL_LOCALES
+                if isinstance(localized_items[locale][index], dict)
+            }
+            if any(value.casefold() == needle for value in values.values()):
+                return {locale: values.get(locale) or fallback for locale in SUPPORTED_PANEL_LOCALES}
+    return names
 
 
 def ensure_skill_evidence_task(db: Session, user_id: int, target_id: str, skill: str) -> CareerTask:
@@ -599,18 +652,18 @@ def ensure_skill_evidence_task(db: Session, user_id: int, target_id: str, skill:
     target = db.scalar(select(CareerTarget).where(CareerTarget.id == target_id, CareerTarget.user_id == user_id))
     if target is None:
         raise ValueError("Hedef bulunamadı")
-    skill_name = skill.strip()
+    skill_names = _localized_skill_names(db, user_id, skill)
     localizations = {
         "tr": {
-            "title": f"{skill_name} kanıtı",
-            "hint": f"{skill_name} yeteneğini kanıtlayan GitHub, sertifika, portföy veya doğrulanabilir bağlantı yükle.",
-            "skill_impacts": [skill_name],
+            "title": f"{skill_names['tr']} kanıtı",
+            "hint": f"{skill_names['tr']} yeteneğini kanıtlayan GitHub, sertifika, portföy veya doğrulanabilir bağlantı yükle.",
+            "skill_impacts": [skill_names["tr"]],
             "feedback": None,
         },
         "en": {
-            "title": f"{skill_name} evidence",
-            "hint": f"Upload a GitHub link, certificate, portfolio, or verifiable URL that proves your {skill_name} skill.",
-            "skill_impacts": [skill_name],
+            "title": f"{skill_names['en']} evidence",
+            "hint": f"Upload a GitHub link, certificate, portfolio, or verifiable URL that proves your {skill_names['en']} skill.",
+            "skill_impacts": [skill_names["en"]],
             "feedback": None,
         },
     }
@@ -623,7 +676,7 @@ def ensure_skill_evidence_task(db: Session, user_id: int, target_id: str, skill:
         status="pending",
         evidence_required=False,
         evidence_types=["link", "file"],
-        skill_impacts=[skill_name],
+        skill_impacts=localizations["tr"]["skill_impacts"],
         training_suggestions=[],
         localizations=localizations,
     )
@@ -640,7 +693,11 @@ def clear_skill_evidence(db: Session, user_id: int, target_id: str, skill: str) 
     db.execute(delete(Evidence).where(Evidence.task_id == task.id, Evidence.user_id == user_id))
     task.status = "pending"
     task.feedback = None
-    task.localizations = {}
+    localizations = deepcopy(task.localizations or {})
+    for localized in localizations.values():
+        if isinstance(localized, dict):
+            localized["feedback"] = None
+    task.localizations = localizations
     db.commit()
     db.refresh(task)
     return task

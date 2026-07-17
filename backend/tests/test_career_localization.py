@@ -1,4 +1,8 @@
-from app.models.career_engine import CareerAnalysis, CareerTask, CareerTarget
+from datetime import datetime, timezone
+
+import pytest
+
+from app.models.career_engine import CareerAnalysis, CareerTask, CareerTarget, Evidence
 from app.models.user import User
 from app.schemas.career import (
     CareerAnalysisAI,
@@ -7,7 +11,7 @@ from app.schemas.career import (
     CareerPlanLocalizationsAI,
 )
 from app.services import career_engine
-from app.services.ai_factory import AIProviderError
+from app.services.ai_factory import AIOutputError, AIProviderError
 
 
 def register_and_headers(client, email="locale@example.com"):
@@ -374,3 +378,204 @@ def test_localization_failure_returns_explicit_error_instead_of_wrong_language(c
     assert response.json()["detail"]["code"] == "career_localization_failed"
     assert client.get("/api/v1/auth/me", headers=auth).json()["preferred_locale"] == "tr"
     assert client.get("/api/v1/career/analysis/current", headers=auth).status_code == 503
+
+
+def test_archived_analysis_is_localized_lazily_by_its_own_endpoint(client, monkeypatch):
+    auth = register_and_headers(client)
+    db = db_session()
+    db.add_all([
+        CareerAnalysis(
+            id="legacy-archived-analysis",
+            user_id=1,
+            status="ready",
+            source="upload",
+            cv_text="English CV",
+            current_role="Data Analyst",
+            profile={"seniority": "Mid-level"},
+            skills=[{"name": "SQL", "score": 80}],
+            radar=[{"label": "Communication", "score": 70, "target": 85}],
+            career_ladder=analysis_payload()["roles"],
+            localizations={},
+            created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        ),
+        CareerAnalysis(
+            id="latest-localized-analysis",
+            user_id=1,
+            status="ready",
+            source="upload",
+            cv_text="Current CV",
+            current_role="Veri Analisti",
+            profile={},
+            skills=[],
+            radar=[],
+            career_ladder=[],
+            localizations={
+                "tr": {"current_role": "Veri Analisti", "profile": {}, "skills": [], "radar": [], "career_ladder": []},
+                "en": {"current_role": "Data Analyst", "profile": {}, "skills": [], "radar": [], "career_ladder": []},
+            },
+            created_at=datetime(2026, 2, 1, tzinfo=timezone.utc),
+        ),
+    ])
+    db.commit()
+    db.close()
+    calls = []
+
+    def fake_invoke(_prompt, schema):
+        calls.append(schema)
+        return CareerAnalysisLocalizationsAI.model_validate(analysis_localizations_payload())
+
+    monkeypatch.setattr(career_engine, "_invoke", fake_invoke)
+
+    response = client.get("/api/v1/career/analysis/legacy-archived-analysis", headers=auth)
+
+    assert response.status_code == 200
+    assert response.json()["current_role"] == "Veri Analisti"
+    assert calls == [CareerAnalysisLocalizationsAI]
+
+
+def test_localized_swot_keeps_source_item_counts():
+    localized = analysis_localizations_payload()
+    localized["en"]["roles"][0]["strengths"] = []
+
+    with pytest.raises(AIOutputError, match="SWOT"):
+        career_engine._build_analysis_localizations(
+            {
+                "current_role": analysis_payload()["current_role"],
+                "profile": analysis_payload()["profile"],
+                "skills": analysis_payload()["skills"],
+                "radar": analysis_payload()["radar"],
+                "roles": analysis_payload()["roles"],
+            },
+            CareerAnalysisLocalizationsAI.model_validate(localized),
+        )
+
+
+def test_skill_task_matches_localized_impact_without_creating_duplicate(client):
+    register_and_headers(client)
+    db = db_session()
+    target = CareerTarget(
+        id="localized-skill-target",
+        user_id=1,
+        title="İletişim Uzmanı",
+        source="custom",
+        status="active",
+    )
+    task = CareerTask(
+        id="localized-skill-task",
+        user_id=1,
+        target_id=target.id,
+        title="İletişim pratiği yap",
+        hint="Bir sunum hazırla",
+        status="pending",
+        evidence_types=["link"],
+        skill_impacts=["İletişim"],
+        localizations={
+            "tr": {"title": "İletişim pratiği yap", "hint": "Bir sunum hazırla", "skill_impacts": ["İletişim"], "feedback": None},
+            "en": {"title": "Practice communication", "hint": "Prepare a presentation", "skill_impacts": ["Communication"], "feedback": None},
+        },
+    )
+    db.add_all([target, task])
+    db.commit()
+
+    matched = career_engine.ensure_skill_evidence_task(db, 1, target.id, "Communication")
+
+    assert matched.id == task.id
+    assert db.query(CareerTask).filter_by(target_id=target.id).count() == 1
+    db.close()
+
+
+def test_new_skill_evidence_task_uses_analysis_skill_names_in_both_languages(client):
+    register_and_headers(client)
+    db = db_session()
+    analysis = CareerAnalysis(
+        id="skill-name-analysis",
+        user_id=1,
+        status="ready",
+        source="upload",
+        current_role="Veri Analisti",
+        profile={},
+        skills=[],
+        radar=[{"label": "İletişim", "score": 70, "target": 85}],
+        career_ladder=[],
+        localizations={
+            "tr": {"current_role": "Veri Analisti", "profile": {}, "skills": [], "radar": [{"label": "İletişim", "score": 70, "target": 85}], "career_ladder": []},
+            "en": {"current_role": "Data Analyst", "profile": {}, "skills": [], "radar": [{"label": "Communication", "score": 70, "target": 85}], "career_ladder": []},
+        },
+    )
+    target = CareerTarget(id="new-skill-target", user_id=1, title="Veri Analisti", source="custom", status="active")
+    db.add_all([analysis, target])
+    db.commit()
+
+    task = career_engine.ensure_skill_evidence_task(db, 1, target.id, "Communication")
+
+    assert career_engine.serialize_task(task, db, "tr")["title"] == "İletişim kanıtı"
+    assert career_engine.serialize_task(task, db, "en")["title"] == "Communication evidence"
+    db.close()
+
+
+def test_task_mutation_and_evidence_feedback_follow_database_locale(client):
+    auth = register_and_headers(client)
+    db = db_session()
+    user = db.get(User, 1)
+    user.preferred_locale = "en"
+    target = CareerTarget(
+        id="mutation-locale-target",
+        user_id=1,
+        title="Veri Mühendisi",
+        source="custom",
+        status="active",
+        localizations={
+            "tr": {"title": "Veri Mühendisi", "task_titles": {"mutation-locale-task": "Bir veri hattı geliştir"}},
+            "en": {"title": "Data Engineer", "task_titles": {"mutation-locale-task": "Build a data pipeline"}},
+        },
+    )
+    task = CareerTask(
+        id="mutation-locale-task",
+        user_id=1,
+        target_id=target.id,
+        title="Bir veri hattı geliştir",
+        hint="Python ve SQL kullan",
+        status="pending",
+        evidence_types=["link"],
+        skill_impacts=["Veri modelleme"],
+        feedback="Tekrar dene",
+        localizations={
+            "tr": {"title": "Bir veri hattı geliştir", "hint": "Python ve SQL kullan", "skill_impacts": ["Veri modelleme"], "feedback": "Tekrar dene"},
+            "en": {"title": "Build a data pipeline", "hint": "Use Python and SQL", "skill_impacts": ["Data modeling"], "feedback": "Try again"},
+        },
+    )
+    evidence = Evidence(
+        id="localized-evidence",
+        user_id=1,
+        task_id=task.id,
+        kind="link",
+        url="https://example.com/proof",
+        status="revision_required",
+        feedback="Tekrar dene",
+    )
+    pending_evidence = Evidence(
+        id="pending-localized-evidence",
+        user_id=1,
+        task_id=task.id,
+        kind="link",
+        url="https://example.com/new-proof",
+        status="pending",
+    )
+    db.add_all([target, task, evidence, pending_evidence])
+    db.commit()
+    db.close()
+
+    updated = client.patch(
+        "/api/v1/career/tasks/mutation-locale-task",
+        headers=auth,
+        json={"status": "completed"},
+    )
+    evidence_response = client.get("/api/v1/career/evidence/localized-evidence", headers=auth)
+    pending_response = client.get("/api/v1/career/evidence/pending-localized-evidence", headers=auth)
+
+    assert updated.status_code == 200
+    assert updated.json()["title"] == "Build a data pipeline"
+    assert evidence_response.status_code == 200
+    assert evidence_response.json()["feedback"] == "Try again"
+    assert pending_response.status_code == 200
+    assert pending_response.json()["feedback"] is None

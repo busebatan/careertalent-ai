@@ -49,9 +49,24 @@ def _not_found() -> HTTPException:
     return HTTPException(status_code=404, detail="Kariyer kaydı bulunamadı")
 
 
-def _localized_locale(db: Session, user: User) -> str:
+def _localized_locale(
+    db: Session,
+    user: User,
+    *,
+    analysis_id: str | None = None,
+    target_id: str | None = None,
+    include_analysis: bool = True,
+    include_targets: bool = True,
+) -> str:
     try:
-        ensure_career_localizations(db, user.id)
+        ensure_career_localizations(
+            db,
+            user.id,
+            analysis_id=analysis_id,
+            target_id=target_id,
+            include_analysis=include_analysis,
+            include_targets=include_targets,
+        )
     except CareerLocalizationError as exc:
         raise HTTPException(
             status_code=503,
@@ -130,7 +145,7 @@ def current_analysis(db: DB, user: CurrentUser):
         .where(CareerAnalysis.user_id == user.id, CareerAnalysis.status == "ready")
         .order_by(CareerAnalysis.created_at.desc())
     )
-    return serialize_analysis(row, _localized_locale(db, user)) if row else None
+    return serialize_analysis(row, _localized_locale(db, user, include_targets=False)) if row else None
 
 
 @router.get("/analysis/{analysis_id}", response_model=CareerAnalysisResponse)
@@ -138,7 +153,12 @@ def analysis_status(analysis_id: str, db: DB, user: CurrentUser):
     row = db.scalar(select(CareerAnalysis).where(CareerAnalysis.id == analysis_id, CareerAnalysis.user_id == user.id))
     if row is None:
         raise _not_found()
-    locale = _localized_locale(db, user) if row.status == "ready" else user.preferred_locale
+    locale = _localized_locale(
+        db,
+        user,
+        analysis_id=row.id,
+        include_targets=False,
+    ) if row.status == "ready" else user.preferred_locale
     return serialize_analysis(row, locale)
 
 
@@ -152,7 +172,7 @@ def create_target(request: CareerTargetRequest, db: DB, user: CurrentUser):
 
 @router.get("/targets", response_model=list[CareerTargetResponse])
 def list_targets(db: DB, user: CurrentUser):
-    locale = _localized_locale(db, user)
+    locale = _localized_locale(db, user, include_analysis=False)
     rows = db.scalars(select(CareerTarget).where(CareerTarget.user_id == user.id).order_by(CareerTarget.created_at.desc())).all()
     return [serialize_target(row, locale) for row in rows]
 
@@ -162,7 +182,7 @@ def target_status(target_id: str, db: DB, user: CurrentUser):
     row = db.scalar(select(CareerTarget).where(CareerTarget.id == target_id, CareerTarget.user_id == user.id))
     if row is None:
         raise _not_found()
-    return serialize_target(row, _localized_locale(db, user))
+    return serialize_target(row, _localized_locale(db, user, target_id=row.id, include_analysis=False))
 
 
 @router.get("/targets/{target_id}/tasks", response_model=list[CareerTaskResponse])
@@ -170,7 +190,7 @@ def list_tasks(target_id: str, db: DB, user: CurrentUser):
     target = db.scalar(select(CareerTarget).where(CareerTarget.id == target_id, CareerTarget.user_id == user.id))
     if target is None:
         raise _not_found()
-    locale = _localized_locale(db, user)
+    locale = _localized_locale(db, user, target_id=target.id, include_analysis=False)
     rows = db.scalars(select(CareerTask).where(CareerTask.target_id == target_id, CareerTask.user_id == user.id).order_by(CareerTask.created_at)).all()
     return [serialize_task(row, db, locale) for row in rows]
 
@@ -180,7 +200,11 @@ def task_status(task_id: str, db: DB, user: CurrentUser):
     row = db.scalar(select(CareerTask).where(CareerTask.id == task_id, CareerTask.user_id == user.id))
     if row is None:
         raise _not_found()
-    return serialize_task(row, db, _localized_locale(db, user))
+    return serialize_task(
+        row,
+        db,
+        _localized_locale(db, user, target_id=row.target_id, include_analysis=False),
+    )
 
 
 @router.post("/tasks/{task_id}/evidence", response_model=EvidenceResponse, status_code=201)
@@ -218,7 +242,13 @@ def evidence_status(evidence_id: str, db: DB, user: CurrentUser):
     evidence = db.scalar(select(Evidence).where(Evidence.id == evidence_id, Evidence.user_id == user.id))
     if evidence is None:
         raise _not_found()
-    return _serialize_evidence(evidence)
+    task = db.scalar(select(CareerTask).where(CareerTask.id == evidence.task_id, CareerTask.user_id == user.id))
+    if task is None:
+        raise _not_found()
+    locale = _localized_locale(db, user, target_id=task.target_id, include_analysis=False)
+    response = _serialize_evidence(evidence)
+    response["feedback"] = None if evidence.status == "pending" else serialize_task(task, db, locale)["feedback"]
+    return response
 
 
 @router.post("/reset")
