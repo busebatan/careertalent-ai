@@ -51,6 +51,7 @@ def test_panel_dashboard_endpoint():
 def test_panel_feature_endpoints():
     checks = {
         "/api/v1/panel/skill-passport": "passport",
+        "/api/v1/panel/interview": "interview",
         "/api/v1/panel/applications": "applications",
         "/api/v1/panel/job-radar": "radar",
         "/api/v1/panel/mentors": "mentors",
@@ -63,13 +64,6 @@ def test_panel_feature_endpoints():
         response = client.get(path)
         assert response.status_code == 200, path
         assert response.json()[key], path
-
-
-def test_legacy_panel_interview_endpoint_is_removed():
-    response = client.get("/api/v1/panel/interview")
-
-    assert response.status_code == 404
-    assert "/api/v1/panel/interview" not in client.get("/openapi.json").json()["paths"]
 
 
 def test_panel_job_match_analyze_endpoint():

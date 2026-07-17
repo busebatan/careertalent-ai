@@ -28,8 +28,7 @@
     @endunless
 >
     @unless ($isPreview)
-        <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <p class="text-sm text-slate-600 dark:text-slate-400">{{ __('panel.dashboard.learning_desc') }}</p>
+        <div class="mb-4 flex justify-end">
             <p class="text-xs text-slate-500" x-text="resourceLabel(resources.length)"></p>
         </div>
     @endunless

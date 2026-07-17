@@ -107,6 +107,10 @@ return [
         'plan_failed' => 'AI görev ve eğitim planını oluşturamadı. Hedefi yeniden seçerek tekrar deneyin.',
         'plan_status_error' => 'Plan durumu alınamadı.',
         'plan_timeout' => 'Plan hazırlanması beklenenden uzun sürdü. Sayfayı yenileyerek tekrar kontrol edin.',
+        'analysis_in_progress' => 'Analiz ediliyor…',
+        'analysis_failed' => 'CV analizi tamamlanamadı. PDF geçerli mi kontrol et veya biraz sonra tekrar dene.',
+        'analysis_status_error' => 'Analiz durumu alınamadı.',
+        'analysis_timeout' => 'CV analizi beklenenden uzun sürdü. Sayfayı yenileyerek tekrar kontrol edin.',
     ],
     'tasks' => [
         'title' => 'Görevlerim',

@@ -29,6 +29,23 @@ class RoadmapController extends PanelController
         ]);
     }
 
+    public function analysisStatus(CareerTalentApiClient $api): JsonResponse
+    {
+        $result = $api->currentCareerAnalysis();
+        if (! ($result['ok'] ?? false) || ! is_array($result['body'] ?? null)) {
+            return response()->json([
+                'message' => $result['error'] ?? __('panel.roadmap.analysis_status_error'),
+            ], $result['status'] ?? 502);
+        }
+
+        $analysis = $result['body'];
+
+        return response()->json([
+            'status' => $analysis['status'] ?? 'queued',
+            'message' => $analysis['error_message'] ?? null,
+        ]);
+    }
+
     public function show(CareerTalentApiClient $api)
     {
         $analysisResult = $api->currentCareerAnalysis();
@@ -42,6 +59,10 @@ class RoadmapController extends PanelController
         }
 
         $readinessStats = TaskReadinessCalculator::summary($tasks, $target, $analysis);
+        $analysisStatus = (string) ($analysis['status'] ?? '');
+        $isAnalysisPending = in_array($analysisStatus, ['queued', 'running'], true);
+        $isPlanPending = is_array($target) && in_array($target['status'] ?? null, ['queued', 'running'], true);
+
         return $this->panelView('app.roadmap', [
             'stats' => [
                 'career' => (string) ($target['title'] ?? ($analysis['current_role'] ?? '')),
@@ -58,6 +79,9 @@ class RoadmapController extends PanelController
             'fromApi' => $ladder !== [],
             'learningResources' => $this->trainingResources($tasks),
             'careerEngineError' => $analysis['error_message'] ?? ($analysisResult['error'] ?? null),
+            'analysisStatus' => $analysisStatus,
+            'isAnalysisPending' => $isAnalysisPending,
+            'isPlanPending' => $isPlanPending,
         ]);
     }
 

@@ -107,6 +107,10 @@ return [
         'plan_failed' => 'AI could not create the task and training plan. Select the target again to retry.',
         'plan_status_error' => 'Could not retrieve plan status.',
         'plan_timeout' => 'Plan generation took longer than expected. Refresh the page to check again.',
+        'analysis_in_progress' => 'Analyzing…',
+        'analysis_failed' => 'CV analysis could not complete. Check the PDF or try again shortly.',
+        'analysis_status_error' => 'Could not retrieve analysis status.',
+        'analysis_timeout' => 'CV analysis took longer than expected. Refresh the page to check again.',
     ],
     'tasks' => [
         'title' => 'My Tasks',

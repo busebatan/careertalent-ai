@@ -9,16 +9,16 @@ use Tests\TestCase;
 class PanelCareerTargetTest extends TestCase
 {
     /** @param list<array<string, mixed>> $roles */
-    private function fakeCareerApi(array $roles = [], string $targetStatus = 'active'): void
+    private function fakeCareerApi(array $roles = [], string $targetStatus = 'active', string $analysisStatus = 'ready'): void
     {
         $target = null;
-        Http::fake(function (Request $request) use (&$target, $roles, $targetStatus) {
+        Http::fake(function (Request $request) use (&$target, $roles, $targetStatus, $analysisStatus) {
             $url = $request->url();
             if (str_ends_with($url, '/health')) {
                 return Http::response(['status' => 'ok'], 200);
             }
             if (str_ends_with($url, '/api/v1/career/analysis/current')) {
-                return Http::response(['status' => 'ready', 'current_role' => 'Analyst', 'radar' => [], 'career_ladder' => $roles], 200);
+                return Http::response(['status' => $analysisStatus, 'current_role' => 'Analyst', 'radar' => [], 'career_ladder' => $roles], 200);
             }
             if (str_ends_with($url, '/api/v1/career/targets') && $request->method() === 'POST') {
                 $data = $request->data();
@@ -55,6 +55,9 @@ class PanelCareerTargetTest extends TestCase
                     'training_suggestions' => [],
                     'feedback' => null,
                 ], 200);
+            }
+            if (str_contains($url, '/api/v1/career/personal-tasks')) {
+                return Http::response([], 200);
             }
             if (str_contains($url, '/api/v1/panel/job-listings/parse')) {
                 return Http::response(['url' => 'https://www.linkedin.com/jobs/view/junior-product-analyst-123', 'title' => 'Junior Product Analyst', 'required_skills' => ['SQL', 'Product Analytics']], 200);
@@ -109,7 +112,7 @@ class PanelCareerTargetTest extends TestCase
             ->assertSee('data-selected-role-id="data-scientist"', false)
             ->assertSee('data-swot-toggleable="true"', false)
             ->assertSee('expandedRoles[', false)
-            ->assertSee('careerPlanWatcher', false)
+            ->assertDontSee('careerPlanWatcher', false)
             ->assertSee('Deep learning', false);
         $response->assertSeeInOrder(['id="kariyer-merdiveni"', 'id="gorevler"'], false);
     }
@@ -128,6 +131,41 @@ class PanelCareerTargetTest extends TestCase
             ->assertSee('careerPlanWatcher', false)
             ->assertSee(__('panel.roadmap.plan_generating'), false)
             ->assertDontSee(__('panel.dashboard.tasks_empty'), false);
+    }
+
+    public function test_roadmap_shows_analysis_in_progress_while_cv_analysis_is_running(): void
+    {
+        $this->fakeCareerApi([], 'active', 'running');
+
+        $this->get(route('panel.roadmap'))
+            ->assertOk()
+            ->assertSee(__('panel.roadmap.analysis_in_progress'), false)
+            ->assertSee('careerAnalysisWatcher', false)
+            ->assertDontSee('AI kariyer merdiveni henüz hazır değil', false);
+    }
+
+    public function test_tasks_page_shows_plan_generating_for_queued_target(): void
+    {
+        $this->fakeCareerApi([[
+            'id' => 'ml-engineer', 'tier' => 'C', 'title' => 'ML Engineer', 'readiness' => 35,
+            'swot' => ['strengths' => ['Python'], 'weaknesses' => ['ML'], 'opportunities' => [], 'threats' => []],
+        ]], 'queued');
+
+        $this->post(route('panel.career-ladder.select'), ['mode' => 'role', 'role_id' => 'ml-engineer'])->assertRedirect();
+        $this->get(route('panel.tasks'))
+            ->assertOk()
+            ->assertSee(__('panel.roadmap.plan_generating'), false)
+            ->assertSee('careerPlanWatcher', false)
+            ->assertDontSee(__('panel.dashboard.tasks_empty'), false);
+    }
+
+    public function test_analysis_status_proxy_returns_current_backend_state(): void
+    {
+        $this->fakeCareerApi([], 'active', 'running');
+
+        $this->getJson(route('panel.roadmap.analysis-status'))
+            ->assertOk()
+            ->assertJsonPath('status', 'running');
     }
 
     public function test_plan_status_proxy_returns_current_target_state_and_task_count(): void

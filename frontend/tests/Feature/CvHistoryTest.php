@@ -155,6 +155,6 @@ class CvHistoryTest extends TestCase
             ->assertSee('CV: Trendyol Veri Analisti CV.pdf')
             ->assertSee('Kaynak: CV geçmişi · oluşturulan CV')
             ->assertSee('Analiz: 13.07.2026 22:56')
-            ->assertSee('Analiz ID: analysis-123');
+            ->assertDontSee('Analiz ID: analysis-123');
     }
 }

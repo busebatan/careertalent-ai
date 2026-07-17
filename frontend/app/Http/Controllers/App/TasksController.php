@@ -27,6 +27,7 @@ class TasksController extends PanelController
         $analysisResult = app(CareerTalentApiClient::class)->currentCareerAnalysis();
         $analysis = ($analysisResult['ok'] ?? false) && is_array($analysisResult['body'] ?? null) ? $analysisResult['body'] : null;
         $readinessStats = TaskReadinessCalculator::summary($allTasks, $target, $analysis);
+        $isPlanPending = is_array($target) && in_array($target['status'] ?? null, ['queued', 'running'], true);
 
         return $this->panelView('app.tasks', [
             'weeklyTasks' => $weeklyTasks,
@@ -42,6 +43,7 @@ class TasksController extends PanelController
             'selectedTarget' => $target,
             'taskStorageKey' => PanelTargetRoleStore::storageKey(),
             'careerEngineError' => $taskError,
+            'isPlanPending' => $isPlanPending,
         ]);
     }
 
