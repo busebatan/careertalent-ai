@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class CvUploadTest extends TestCase
 {
-    public function test_cv_analyze_route_proxies_to_api_and_stores_session(): void
+    public function test_cv_analyze_route_proxies_to_api_without_local_analysis_state(): void
     {
         $this->withoutMiddleware();
 
@@ -52,18 +52,17 @@ class CvUploadTest extends TestCase
             ->assertJsonPath('status', 'ready')
             ->assertJsonPath('career_ladder.0.title', 'Veri Analisti');
 
-        $this->assertNotNull(session('cv_analysis.career_ladder'));
+        $this->assertNull(session('cv_analysis'));
     }
     public function test_uploaded_cv_career_ladder_page_uses_cv_swot(): void
     {
-        session([
-            'cv_analysis' => [
-                'file_name' => 'disaridan-yuklenen-cv.pdf',
-                'source' => 'upload',
-                'skill_radar' => null,
+        Http::fake([
+            'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
+            'http://localhost:8000/api/v1/career/analysis/current' => Http::response([
+                'status' => 'ready',
                 'career_ladder' => [[
                     'id' => 'data-analyst',
-                    'tier' => 'near',
+                    'tier' => 'B',
                     'tier_label' => 'B — Yakın',
                     'title' => 'Veri Analisti',
                     'readiness' => 64,
@@ -78,13 +77,14 @@ class CvUploadTest extends TestCase
                         'threats' => ['CVde Python kanıtı eksik kalırsa kısa listeye girme riski artar'],
                     ],
                 ]],
-            ],
+            ], 200),
+            'http://localhost:8000/api/v1/career/targets' => Http::response([], 200),
+            'http://localhost:8000/*' => Http::response([], 200),
         ]);
 
-        $response = $this->get(route('panel.career-ladder'));
+        $response = $this->get(route('panel.roadmap'));
 
         $response->assertOk()
-            ->assertSee(__('panel.career_ladder.from_cv_analysis'), false)
             ->assertSee('CVdeki SQL güçlü yönünü Python eksiğiyle tamamlayınca', false)
             ->assertSee('CVde Python kanıtı eksik kalırsa', false)
             ->assertDontSee('Yoğun aday rekabeti', false);

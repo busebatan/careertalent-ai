@@ -13,6 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            'auth.api' => \App\Http\Middleware\EnsureApiAuthenticated::class,
+            'auth.api.admin' => \App\Http\Middleware\EnsureApiAdmin::class,
             'panel.locale' => \App\Http\Middleware\SetPanelLocale::class,
             'marketing.locale' => \App\Http\Middleware\SetMarketingLocale::class,
         ]);

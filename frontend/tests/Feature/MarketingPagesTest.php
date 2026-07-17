@@ -15,19 +15,18 @@ class MarketingPagesTest extends TestCase
         Http::fake([
             'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
             'http://localhost:8000/api/v1/panel/ilan-eslestirme/analyze' => Http::response([], 404),
-            'http://localhost:8000/api/v1/panel/job-matches/analyze' => Http::response([
-                'job' => [
+            'http://localhost:8000/api/v1/career/jobs/analyze' => Http::response([
                     'id' => 'api-kariyer-bi-analisti',
+                    'status' => 'queued',
                     'title' => 'BI Analisti',
                     'company' => 'Perakende AI',
                     'source' => 'kariyer.net',
-                    'url' => 'https://www.kariyer.net/is-ilani/bi-analisti-perakende',
+                    'source_url' => 'https://www.kariyer.net/is-ilani/bi-analisti-perakende',
                     'match_score' => 82,
                     'matched_skills' => ['SQL'],
                     'missing_skills' => ['Power BI'],
                     'recommendation' => 'prepare',
                     'analyzed_at' => '2026-07-07T00:00:00+00:00',
-                ],
             ], 200),
             'http://localhost:8000/*' => Http::response([], 200),
         ]);
@@ -117,20 +116,18 @@ class MarketingPagesTest extends TestCase
         $this->get('/iletisim')->assertStatus(200)->assertSee('İletişim');
     }
 
-    public function test_giris_sayfasi_acilir(): void
+    public function test_giris_sayfasi_panel_girisine_yonlenir(): void
     {
         $this->get('/giris')
-            ->assertStatus(200)
-            ->assertSee('Giriş Yap')
-            ->assertSee('Demo paneline git');
+            ->assertStatus(301)
+            ->assertRedirect('/panel/login');
     }
 
-    public function test_kayit_sayfasi_acilir(): void
+    public function test_kayit_sayfasi_panel_kaydina_yonlenir(): void
     {
         $this->get('/kayit')
-            ->assertStatus(200)
-            ->assertSee('Kayıt Ol')
-            ->assertSee('Hesap Oluştur');
+            ->assertStatus(301)
+            ->assertRedirect('/panel/register');
     }
 
     public function test_nasil_calisir_sayfasi_acilir(): void
@@ -172,29 +169,50 @@ class MarketingPagesTest extends TestCase
         $response = $this->get('/panel');
 
         $response->assertStatus(200);
-        $response->assertSee('Gösterge Paneli');
+        $response->assertSee('Ana Sayfa');
         $response->assertSee('Hoş geldin');
         $response->assertSee('Henüz CV analizi yok');
         $response->assertDontSee('CV ve profil');
         $response->assertSee('Eğitim önerileri');
         $response->assertSee('Bu haftanın görevleri');
-        $response->assertSee('Google Data Analytics');
+        $response->assertDontSee('Google Data Analytics');
         $response->assertSee('CV oluştur');
         $response->assertSee('API bağlı', false);
         $response->assertSee('data-lucide="layout-dashboard"', false);
         $response->assertSee('data-lucide="bell"', false);
     }
 
+    public function test_admin_in_student_panel_has_sidebar_return_link(): void
+    {
+        $response = $this->withSession([
+            'auth.user' => [
+                'full_name' => 'Yönetici Kullanıcı',
+                'is_admin' => true,
+            ],
+        ])->get('/panel');
+
+        $response->assertOk()
+            ->assertSee('data-admin-return', false)
+            ->assertSee('href="'.route('admin.dashboard').'"', false)
+            ->assertSee('Admin Panele Dön');
+
+        $this->withSession([
+            'auth.user' => [
+                'full_name' => 'Öğrenci Kullanıcı',
+                'is_admin' => false,
+            ],
+        ])->get('/panel')
+            ->assertOk()
+            ->assertDontSee('data-admin-return', false);
+    }
+
     public function test_panel_kariyer_merdiveni_sayfasi_acilir(): void
     {
-        $response = $this->get('/panel/kariyer-merdiveni');
+        $response = $this->get('/panel/kariyer-rotam');
 
         $response->assertStatus(200);
         $response->assertSee('Kariyer merdiveni');
-        $response->assertSee('Junior Veri Analisti');
-        $response->assertSee('A — Hazır');
-        $response->assertSee('BI Analisti');
-        $response->assertSee('SWOT göster');
+        $response->assertSee('AI kariyer merdiveni henüz hazır değil');
     }
 
     public function test_panel_ingilizce_locale(): void
@@ -205,17 +223,17 @@ class MarketingPagesTest extends TestCase
         $response->assertSee('Welcome');
         $response->assertSee('No CV analysis yet');
         $response->assertSee('Learning resources');
-        $response->assertSee('Build CV');
+        $response->assertSee('CV Center');
         $response->assertSee('API connected', false);
     }
 
     public function test_panel_kariyer_merdiveni_ingilizce(): void
     {
-        $response = $this->withSession(['panel_locale' => 'en'])->get('/panel/kariyer-merdiveni');
+        $response = $this->withSession(['panel_locale' => 'en'])->get('/panel/kariyer-rotam');
 
         $response->assertStatus(200);
         $response->assertSee('Career ladder');
-        $response->assertSee('Show SWOT');
+        $response->assertSee('AI career ladder is not ready.');
     }
 
     public function test_panel_locale_switch_route(): void
@@ -225,60 +243,63 @@ class MarketingPagesTest extends TestCase
             ->assertSessionHas('panel_locale', 'en');
     }
 
-    public function test_panel_profil_sayfasi_acilir(): void
+    public function test_panel_profil_url_hesaba_yonlendirir(): void
     {
-        $response = $this->get('/panel/profil');
+        $this->get('/panel/kariyer-profilim')
+            ->assertRedirect('/panel/hesap');
+
+        $response = $this->get('/panel/hesap');
 
         $response->assertStatus(200);
         $response->assertSee('Profil bilgileri');
         $response->assertSee('Giriş bilgileri');
         $response->assertSee('CV yükle');
         $response->assertSee('Şifre değiştir');
-        $response->assertSee('AI ile düzenle');
+        $response->assertDontSee('AI ile düzenle');
     }
 
     public function test_panel_cv_olustur_sayfasi_acilir(): void
     {
-        $response = $this->get('/panel/cv-olustur');
+        $response = $this->get('/panel/cv-merkezi');
 
         $response->assertStatus(200);
-        $response->assertSee('CV Oluştur');
+        $response->assertSee('CV Merkezi');
         $response->assertSee('CV içerik dili');
         $response->assertSee('PDF hangi dilde indirilsin?');
-        $response->assertSee('İstanbul Üniversitesi');
-        $response->assertSee('Istanbul University');
-        $response->assertSee('Ayşe Yılmaz');
+        $response->assertDontSee('İstanbul Üniversitesi');
+        $response->assertDontSee('Istanbul University');
+        $response->assertDontSee('Ayşe Yılmaz');
+        $response->assertSee('enabledOptional', false);
     }
 
     public function test_panel_ilan_eslestirme_sayfasi_acilir(): void
     {
-        $response = $this->get('/panel/ilan-eslestirme');
+        $response = $this->get('/panel/ilan-analizi');
 
         $response->assertStatus(200);
-        $response->assertSee('İlan Eşleştirme');
-        $response->assertSee('İlan linki ekle');
-        $response->assertSee('Junior Veri Analisti');
-        $response->assertSee('Data Analyst (Remote)');
+        $response->assertSee('İş Fırsatları');
+        $response->assertSee('İş ilanını analiz et');
+        $response->assertSee('CV için öneriler');
         $response->assertSee('Analiz et');
     }
 
     public function test_panel_ilan_eslestirme_analiz_endpoint(): void
     {
-        $response = $this->postJson('/panel/ilan-eslestirme/analiz', [
-            'url' => 'https://www.kariyer.net/is-ilani/bi-analisti-perakende',
+        $response = $this->postJson('/panel/ilan-analizi/analiz', [
+            'source_url' => 'https://www.kariyer.net/is-ilani/bi-analisti-perakende',
         ]);
 
         $response->assertOk();
-        $response->assertJsonPath('job.title', 'BI Analisti');
-        $response->assertJsonPath('job.source', 'kariyer.net');
+        $response->assertJsonPath('title', 'BI Analisti');
+        $response->assertJsonPath('source', 'kariyer.net');
     }
 
     public function test_panel_ilan_eslestirme_ingilizce(): void
     {
-        $response = $this->withSession(['panel_locale' => 'en'])->get('/panel/ilan-eslestirme');
+        $response = $this->withSession(['panel_locale' => 'en'])->get('/panel/ilan-analizi');
 
         $response->assertStatus(200);
-        $response->assertSee('Job Matching');
+        $response->assertSee('Job Opportunities');
         $response->assertSee('Analyze');
     }
 }

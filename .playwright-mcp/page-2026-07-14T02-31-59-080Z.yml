@@ -1,0 +1,141 @@
+- generic [ref=f5e1]:
+  - generic [ref=f5e2]:
+    - complementary [ref=f5e3]:
+      - generic [ref=f5e4]: CareerTalent
+      - paragraph [ref=f5e5]: Yönetim alanı
+      - navigation [ref=f5e6]:
+        - link "Genel bakış" [ref=f5e7] [cursor=pointer]:
+          - /url: "#"
+        - link "Kurumlar" [ref=f5e8] [cursor=pointer]:
+          - /url: "#"
+        - link "Kariyer Veri Merkezi" [ref=f5e9] [cursor=pointer]:
+          - /url: "#"
+        - link "Yapay Zekâ ve Analiz" [ref=f5e10] [cursor=pointer]:
+          - /url: "#"
+        - link "Kullanıcılar 2" [ref=f5e11] [cursor=pointer]:
+          - /url: "#"
+          - text: Kullanıcılar
+          - generic [ref=f5e12]: "2"
+      - paragraph [ref=f5e13]: Veri merkezi
+      - navigation [ref=f5e14]:
+        - link "Meslekler" [ref=f5e15] [cursor=pointer]:
+          - /url: "#"
+        - link "Yetenekler" [ref=f5e16] [cursor=pointer]:
+          - /url: "#"
+        - link "Gereksinimler" [ref=f5e17] [cursor=pointer]:
+          - /url: "#"
+        - link "Geçişler" [ref=f5e18] [cursor=pointer]:
+          - /url: "#"
+        - link "Eğitimler" [ref=f5e19] [cursor=pointer]:
+          - /url: "#"
+        - link "Kaynaklar" [ref=f5e20] [cursor=pointer]:
+          - /url: "#"
+      - generic [ref=f5e21]:
+        - text: Süper Yönetici
+        - strong [ref=f5e22]: Platform yönetimi
+    - main [ref=f5e23]:
+      - generic [ref=f5e24]:
+        - generic [ref=f5e25]:
+          - generic [ref=f5e26]: Kariyer Veri Merkezi / Önizleme
+          - heading "Meslekler ve pozisyonlar" [level=1] [ref=f5e27]
+          - paragraph [ref=f5e28]: Analiz motorunun kullandığı kanonik meslek kaynağı. Bu önizlemedeki içerik yayımlanmış veri değildir.
+        - generic [ref=f5e29]:
+          - button "İçe aktar" [ref=f5e30] [cursor=pointer]
+          - button "Yeni meslek" [active] [ref=f5e31] [cursor=pointer]
+      - generic [ref=f5e32]:
+        - generic [ref=f5e33]:
+          - generic [ref=f5e34]: "24"
+          - text: Yayımlanmış meslek
+        - generic [ref=f5e35]:
+          - generic [ref=f5e36]: "168"
+          - text: Bağlı yetenek
+        - generic [ref=f5e37]:
+          - generic [ref=f5e38]: 91%
+          - text: Kaynak doğrulaması
+        - generic [ref=f5e39]:
+          - generic [ref=f5e40]: "3"
+          - text: Gözden geçirme bekliyor
+      - generic [ref=f5e41]:
+        - button "Kayıtlar" [ref=f5e42] [cursor=pointer]
+        - button "Taslaklar 3" [ref=f5e43] [cursor=pointer]:
+          - text: Taslaklar
+          - generic [ref=f5e44]: "3"
+        - button "Değişiklik günlüğü" [ref=f5e45] [cursor=pointer]
+      - generic [ref=f5e46]:
+        - generic [ref=f5e47]:
+          - generic [ref=f5e48]:
+            - textbox "Meslek, alternatif unvan veya beceri ara" [ref=f5e49]
+            - generic [ref=f5e50]: "Durum: Tümü · Sıralama: Son güncelleme"
+          - generic [ref=f5e51]:
+            - generic [ref=f5e52]:
+              - generic [ref=f5e53]: Meslek
+              - generic [ref=f5e54]: Seviye
+              - generic [ref=f5e55]: Kapsam
+              - generic [ref=f5e56]: Durum
+            - generic [ref=f5e57] [cursor=pointer]:
+              - generic [ref=f5e58]:
+                - generic [ref=f5e59]: Finansal Analist
+                - generic [ref=f5e60]: Financial Analyst · Finans
+              - generic [ref=f5e61]: Başlangıç–Orta
+              - generic [ref=f5e62]: 12 yetenek
+              - generic [ref=f5e63]: Yayımlandı
+              - generic [ref=f5e65]: ⋯
+            - generic [ref=f5e66] [cursor=pointer]:
+              - generic [ref=f5e67]:
+                - generic [ref=f5e68]: Veri Analisti
+                - generic [ref=f5e69]: Data Analyst · Veri
+              - generic [ref=f5e70]: Başlangıç–Orta
+              - generic [ref=f5e71]: 14 yetenek
+              - generic [ref=f5e72]: Yayımlandı
+              - generic [ref=f5e74]: ⋯
+            - generic [ref=f5e75] [cursor=pointer]:
+              - generic [ref=f5e76]:
+                - generic [ref=f5e77]: Ürün Analisti
+                - generic [ref=f5e78]: Product Analyst · Ürün
+              - generic [ref=f5e79]: Orta
+              - generic [ref=f5e80]: 11 yetenek
+              - generic [ref=f5e81]: Taslak
+              - generic [ref=f5e83]: ⋯
+            - generic [ref=f5e84] [cursor=pointer]:
+              - generic [ref=f5e85]:
+                - generic [ref=f5e86]: İş Zekâsı Analisti
+                - generic [ref=f5e87]: BI Analyst · Veri
+              - generic [ref=f5e88]: Orta
+              - generic [ref=f5e89]: 13 yetenek
+              - generic [ref=f5e90]: Yayımlandı
+              - generic [ref=f5e92]: ⋯
+        - complementary [ref=f5e93]:
+          - generic [ref=f5e94]:
+            - strong [ref=f5e95]: Kayıt özeti
+            - button "Düzenle" [ref=f5e96] [cursor=pointer]
+          - generic [ref=f5e97]:
+            - generic [ref=f5e98]: Seçili meslek
+            - heading "Finansal Analist" [level=2] [ref=f5e99]
+            - paragraph [ref=f5e100]: Finansal performansı modelleyen, raporlayan ve karar destek çıktısı üreten analist.
+            - separator [ref=f5e101]
+            - generic [ref=f5e102]: Çekirdek yetenekler
+            - generic [ref=f5e103]:
+              - generic [ref=f5e104]: Excel
+              - generic [ref=f5e105]: Finansal modelleme
+              - generic [ref=f5e106]: SQL
+              - generic [ref=f5e107]: Power BI
+            - separator [ref=f5e108]
+            - generic [ref=f5e109]: Kaynak kanıtı
+            - generic [ref=f5e110]:
+              - generic [ref=f5e111]: ESKO meslek profili
+              - text: Yüksek güven · 12 Haz 2026
+            - generic [ref=f5e112]:
+              - generic [ref=f5e113]: İlan örneklemi
+              - text: 42 ilan · 03 Tem 2026
+  - generic [ref=f5e115]:
+    - heading "Yeni meslek taslağı" [level=2] [ref=f5e116]
+    - text: Meslek adı
+    - textbox "Örn. Risk Analisti" [ref=f5e117]
+    - text: Alan
+    - combobox [ref=f5e118]:
+      - option "Finans" [selected]
+      - option "Veri"
+      - option "Teknoloji"
+    - generic [ref=f5e119]:
+      - button "Vazgeç" [ref=f5e120] [cursor=pointer]
+      - button "Taslak oluştur" [ref=f5e121] [cursor=pointer]

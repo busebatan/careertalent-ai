@@ -16,6 +16,7 @@
         'tasks' => 'list-checks',
         'chat' => 'message-circle',
         'profile' => 'user-round',
+        'admins' => 'users-round',
     ][$icon ?? 'dashboard'] ?? 'menu';
 @endphp
 

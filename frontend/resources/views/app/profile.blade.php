@@ -65,10 +65,6 @@
                 <button type="button" disabled class="panel-btn-disabled">
                     {{ __('panel.profile.save_soon') }}
                 </button>
-                <button type="button" @click="alert(@js(__('panel.profile.feature_coming_soon')))"
-                    class="rounded-xl border border-violet-500/50 px-4 py-2 text-sm text-violet-600 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10">
-                    {{ __('panel.profile.ai_edit') }}
-                </button>
             </div>
         </form>
     </section>
@@ -109,7 +105,7 @@
         </form>
     </section>
 
-    <section id="cv-yukle" x-show="tab === 'cv'" x-cloak x-data="profileCvUpload(@js(app()->getLocale()), @js(route('panel.cv.analyze')))">
+    <section id="cv-yukle" x-show="tab === 'cv'" x-cloak x-data="profileCvUpload(@js(app()->getLocale()), @js(route('panel.cv.analyze')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), @js(route('panel.career-ladder')))">
         <div class="panel-card p-6">
             <h2 class="mb-2 font-semibold">{{ __('panel.profile.cv_file_title') }}</h2>
             <p class="mb-6 text-sm text-slate-600 dark:text-slate-400">
@@ -130,7 +126,14 @@
                 </div>
             </template>
 
-            <label class="panel-upload-zone" :class="loading ? 'pointer-events-none opacity-60' : ''">
+            <label class="panel-upload-zone"
+                :class="[
+                    loading ? 'pointer-events-none opacity-60' : '',
+                    dragOver ? 'panel-upload-zone-active' : '',
+                ]"
+                @dragover.prevent="onDragOver($event)"
+                @dragleave.prevent="onDragLeave($event)"
+                @drop.prevent="onDrop($event)">
                 <i data-lucide="file-text" class="mb-2 h-8 w-8 text-emerald-500" aria-hidden="true"></i>
                 <span class="mb-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ __('panel.profile.upload_drag') }}</span>
                 <span class="text-xs text-slate-500">{{ __('panel.profile.upload_hint') }}</span>

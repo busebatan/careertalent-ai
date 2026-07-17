@@ -82,8 +82,28 @@ html:not(.dark) { color-scheme: light; }
         @apply rounded-xl bg-slate-100 p-3 dark:bg-slate-950/80;
     }
 
+    .panel-card-ladder-active {
+        @apply border-slate-200 dark:border-slate-800;
+    }
+
+    .panel-card-ladder-selected {
+        @apply border-sky-500/40 ring-1 ring-sky-500/25;
+    }
+
+    .panel-card-ladder-collapsed {
+        @apply border-slate-200/80 bg-slate-50/80 dark:border-slate-800/80 dark:bg-slate-900/60;
+    }
+
+    .panel-btn-ladder-selected {
+        @apply bg-sky-600 text-white;
+    }
+
     .panel-upload-zone {
-        @apply flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center hover:border-emerald-500/50 dark:border-slate-600 dark:bg-slate-950/50;
+        @apply flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition-colors hover:border-emerald-500/50 dark:border-slate-600 dark:bg-slate-950/50;
+    }
+
+    .panel-upload-zone-active {
+        @apply border-emerald-500 bg-emerald-500/5 dark:border-emerald-400 dark:bg-emerald-500/10;
     }
 
     .panel-btn-secondary {
@@ -92,6 +112,46 @@ html:not(.dark) { color-scheme: light; }
 
     .panel-btn-disabled {
         @apply cursor-not-allowed rounded-xl bg-slate-200 px-5 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400;
+    }
+
+    .panel-platform-combobox {
+        @apply relative;
+    }
+
+    .panel-platform-trigger {
+        @apply pr-9;
+    }
+
+    .panel-platform-toggle {
+        @apply absolute top-1/2 right-2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200;
+    }
+
+    .panel-platform-menu {
+        @apply absolute z-[80] max-h-52 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900;
+    }
+
+    .panel-platform-menu-down {
+        @apply top-full mt-1;
+    }
+
+    .panel-platform-menu-up {
+        @apply bottom-full mb-1;
+    }
+
+    .panel-platform-option {
+        @apply flex w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800;
+    }
+
+    .panel-platform-option-active {
+        @apply bg-slate-100 font-medium text-slate-900 dark:bg-slate-800 dark:text-white;
+    }
+
+    .panel-profile-links-stack {
+        @apply relative z-20;
+    }
+
+    .panel-profile-save-row {
+        @apply relative z-0;
     }
 
     .panel-shell {
@@ -108,8 +168,175 @@ html:not(.dark) { color-scheme: light; }
         @apply hidden min-h-0 shrink-0 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 md:flex;
     }
 
+    .panel-shell .panel-mobile-sidebar {
+        @apply fixed inset-y-0 left-0 z-40 w-64 -translate-x-full transition-transform md:relative md:z-auto md:w-auto md:translate-x-0;
+    }
+
+    .panel-shell .panel-mobile-sidebar.panel-mobile-sidebar-open {
+        @apply flex translate-x-0;
+    }
+
     .panel-main {
         @apply flex min-h-screen min-w-0 flex-col md:min-h-0 md:overflow-y-auto md:overscroll-y-contain;
+    }
+
+    .admin-shell {
+        --admin-accent: #ffbd72;
+        --admin-accent-hover: #e8a85a;
+        --admin-accent-ink: #9a5e1c;
+        --admin-accent-ink-dark: #ffbd72;
+        --admin-accent-soft: rgb(255 189 114 / 0.15);
+        --admin-accent-soft-strong: rgb(255 189 114 / 0.22);
+        --admin-accent-border: rgb(255 189 114 / 0.28);
+        --admin-accent-border-soft: rgb(255 189 114 / 0.18);
+        --admin-accent-surface: rgb(255 189 114 / 0.08);
+    }
+
+    .admin-shell .panel-sidebar {
+        border-right: 1px solid var(--admin-accent-border);
+    }
+
+    .admin-shell .admin-sidebar {
+        @apply fixed inset-y-0 left-0 z-40 w-64 -translate-x-full transition-transform md:relative md:z-auto md:w-auto md:translate-x-0;
+    }
+
+    .admin-shell .admin-sidebar.admin-sidebar-open {
+        @apply flex translate-x-0;
+    }
+
+    .admin-shell .panel-nav-link-active {
+        background: var(--admin-accent-soft);
+        color: var(--admin-accent-ink);
+        font-weight: 500;
+    }
+
+    :is(.dark) .admin-shell .panel-nav-link-active {
+        background: var(--admin-accent-soft-strong);
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-brand {
+        color: var(--admin-accent-ink);
+    }
+
+    :is(.dark) .admin-shell .admin-brand {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-kicker {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--admin-accent-ink);
+    }
+
+    :is(.dark) .admin-shell .admin-kicker {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-accent-text {
+        color: var(--admin-accent-ink);
+    }
+
+    :is(.dark) .admin-shell .admin-accent-text {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-accent-link {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--admin-accent-ink);
+    }
+
+    .admin-shell .admin-accent-link:hover {
+        text-decoration: underline;
+    }
+
+    :is(.dark) .admin-shell .admin-accent-link {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-accent-badge {
+        border-radius: 9999px;
+        background: var(--admin-accent-soft);
+        padding: 0.25rem 0.625rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--admin-accent-ink);
+    }
+
+    :is(.dark) .admin-shell .admin-accent-badge {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-accent-bar {
+        height: 100%;
+        border-radius: 9999px;
+        background: var(--admin-accent);
+    }
+
+    .admin-shell .admin-btn-primary {
+        border-radius: 0.75rem;
+        background: var(--admin-accent);
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #10172b;
+    }
+
+    .admin-shell .admin-btn-primary:hover {
+        background: var(--admin-accent-hover);
+    }
+
+    .admin-shell .admin-card-hover {
+        transition: color 150ms, background-color 150ms, border-color 150ms;
+    }
+
+    .admin-shell .admin-card-hover:hover {
+        border-color: var(--admin-accent-border);
+        background: var(--admin-accent-surface);
+    }
+
+    .admin-shell .panel-outline-btn:hover {
+        border-color: var(--admin-accent-border);
+        color: var(--admin-accent-ink);
+    }
+
+    :is(.dark) .admin-shell .panel-outline-btn:hover {
+        color: var(--admin-accent-ink-dark);
+    }
+
+    .admin-shell .admin-header {
+        border-bottom: 1px solid var(--admin-accent-border-soft);
+    }
+
+    .admin-shell .admin-accent-dot {
+        background: var(--admin-accent);
+    }
+
+    .admin-shell .admin-accent-pill {
+        background: var(--admin-accent);
+        color: #10172b;
+    }
+
+    .admin-shell .admin-lang-active {
+        background: var(--admin-accent-soft);
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    :is(.dark) .admin-shell .admin-lang-active {
+        background: var(--admin-accent-soft-strong);
+        color: #fff;
+    }
+
+    .admin-shell .admin-accent-check {
+        color: var(--admin-accent);
+    }
+
+    .admin-shell .admin-sidebar-footer {
+        border-top: 1px solid var(--admin-accent-border-soft);
     }
 }
 

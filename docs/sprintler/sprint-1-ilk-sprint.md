@@ -213,6 +213,31 @@ Sprint 1'de Plan A mimarisi kuruldu: FastAPI backend ve Laravel frontend ayrı r
 - Demo URL (canlı): https://careertalent.ygtlabs.ai/ · https://careertalent.ygtlabs.ai/panel
 - Demo URL (lokal): http://localhost:8080 · http://localhost:8080/panel
 - Video linki (varsa): _
+- Ekran görüntüleri (10 Temmuz 2026): `screenshots/sprint-1/` (aşağıdaki bölüm)
+
+---
+
+## Ürün durumu görselleri (Sprint 1 teslimi)
+
+> Mentor geri bildirimi: Sprint 1 tablosu ve backlog değiştirilmedi; canlı ürün ekranları eklendi. `/admin` Sprint 2 kapsamında.
+
+**Tanıtım sitesi** — https://careertalent.ygtlabs.ai/
+
+![Sprint 1 tanıtım ana sayfa](screenshots/sprint-1/marketing-ana-sayfa.png)
+
+**Öğrenci paneli** — https://careertalent.ygtlabs.ai/panel
+
+![Sprint 1 panel gösterge paneli](screenshots/sprint-1/panel-dashboard.png)
+
+![Sprint 1 panel CV oluştur](screenshots/sprint-1/panel-cv-olustur.png)
+
+| Ekran | URL | Sprint |
+|-------|-----|--------|
+| Ana sayfa | `/` | Sprint 1 |
+| Özellikler | `/ozellikler` | Sprint 1 |
+| Panel dashboard | `/panel` | Sprint 1 |
+| CV oluştur | `/panel/cv-olustur` | Sprint 1 |
+| Admin paneli | `/admin` | Sprint 2 (planlandı) |
 
 ---
 

@@ -1,0 +1,89 @@
+- generic [ref=f7e1]:
+  - generic [ref=f7e2]:
+    - complementary [ref=f7e3]:
+      - generic [ref=f7e4]: C
+      - link "⌂" [ref=f7e5] [cursor=pointer]:
+        - /url: "#"
+      - link "⌘" [ref=f7e6] [cursor=pointer]:
+        - /url: "#"
+      - link "◌" [ref=f7e7] [cursor=pointer]:
+        - /url: "#"
+      - link "◫" [ref=f7e8] [cursor=pointer]:
+        - /url: "#"
+      - link "⚙" [ref=f7e9] [cursor=pointer]:
+        - /url: "#"
+    - main [ref=f7e10]:
+      - generic [ref=f7e11]:
+        - generic [ref=f7e12]:
+          - generic [ref=f7e13]: Kariyer Veri Merkezi / İlişki Çalışma Alanı
+          - heading "Finansal Analist" [level=2] [ref=f7e14]
+          - paragraph [ref=f7e15]: Bir mesleğin hazır oluş skorunu besleyen kanonik gereksinim haritası.
+        - button "+ İlişki ekle" [active] [ref=f7e16] [cursor=pointer]
+      - generic [ref=f7e17]:
+        - generic [ref=f7e18]:
+          - strong [ref=f7e19]: 1 · Tanımla
+          - text: Meslek ve seviye kanonik
+        - generic [ref=f7e20]:
+          - strong [ref=f7e21]: 2 · Bağla
+          - text: Yetenek, ağırlık, kanıt kaynağı
+        - generic [ref=f7e22]:
+          - strong [ref=f7e23]: 3 · Yayımla
+          - text: Analiz motoru bu sürümü kullanır
+      - generic [ref=f7e24]:
+        - generic [ref=f7e25]:
+          - generic [ref=f7e26]: Gereksinim haritası
+          - generic [ref=f7e27]: "Turuncu: meslek · Yeşil: yetenek · Çizgi: etkin gereksinim"
+        - article [ref=f7e32]:
+          - generic [ref=f7e33]: Teknik · Zorunlu
+          - strong [ref=f7e34]: Finansal modelleme
+          - emphasis [ref=f7e35]: Ağırlık 0.92
+        - article [ref=f7e36]:
+          - generic [ref=f7e37]: Teknik · Zorunlu
+          - strong [ref=f7e38]: Excel
+          - emphasis [ref=f7e39]: Ağırlık 0.88
+        - article [ref=f7e40]:
+          - generic [ref=f7e41]: Kanonik meslek
+          - strong [ref=f7e42]: Finansal Analist
+          - emphasis [ref=f7e43]: Başlangıç → Orta
+        - article [ref=f7e44]:
+          - generic [ref=f7e45]: Teknik · Tercihli
+          - strong [ref=f7e46]: SQL
+          - emphasis [ref=f7e47]: Ağırlık 0.58
+        - article [ref=f7e48]:
+          - generic [ref=f7e49]: Davranışsal · Zorunlu
+          - strong [ref=f7e50]: Paydaş iletişimi
+          - emphasis [ref=f7e51]: Ağırlık 0.64
+      - generic [ref=f7e52]:
+        - article [ref=f7e53]:
+          - generic [ref=f7e54]:
+            - heading "Etkin gereksinimler" [level=3] [ref=f7e55]
+            - generic [ref=f7e56]: 12 kayıt
+          - generic [ref=f7e57]:
+            - generic [ref=f7e58]: Finansal modelleme
+            - generic [ref=f7e59]: Zorunlu
+            - generic [ref=f7e60]: "0.92"
+          - generic [ref=f7e61]:
+            - generic [ref=f7e62]: Excel
+            - generic [ref=f7e63]: Zorunlu
+            - generic [ref=f7e64]: "0.88"
+          - generic [ref=f7e65]:
+            - generic [ref=f7e66]: SQL
+            - generic [ref=f7e67]: Tercihli
+            - generic [ref=f7e68]: "0.58"
+        - article [ref=f7e69]:
+          - generic [ref=f7e70]:
+            - heading "Yayın kanıtı" [level=3] [ref=f7e71]
+            - generic [ref=f7e72]: 2 kaynak
+          - generic [ref=f7e73]:
+            - text: ESKO — Financial analyst
+            - paragraph [ref=f7e74]: Yüksek güven · Son doğrulama 12 Haz 2026
+          - generic [ref=f7e75]:
+            - text: İlan örneklemi
+            - paragraph [ref=f7e76]: 42 ilan · Kaynak sahibi Platform Ekibi
+  - generic [ref=f7e78]:
+    - heading "Yetenek bağla" [level=3] [ref=f7e79]
+    - text: Yetenek
+    - textbox "Örn. Power BI" [ref=f7e80]
+    - text: Önem ağırlığı
+    - spinbutton "0.65" [ref=f7e81]
+    - button "Taslak ekle" [ref=f7e82] [cursor=pointer]

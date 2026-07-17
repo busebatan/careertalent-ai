@@ -13,7 +13,8 @@ from app.services.llm import ai_configured, get_active_model_name
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
+    if settings.AUTO_CREATE_TABLES:
+        init_db()
     yield
 
 

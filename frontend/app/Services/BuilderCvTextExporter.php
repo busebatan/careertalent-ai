@@ -9,6 +9,35 @@ use Illuminate\Support\Str;
  */
 class BuilderCvTextExporter
 {
+    /** @param array<string, array<string, mixed>> $locales */
+    public static function hasCareerContent(array $locales, string $locale = 'tr'): bool
+    {
+        $cv = $locales[$locale] ?? $locales['tr'] ?? [];
+        $personal = $cv['personal'] ?? [];
+        if (mb_strlen(trim((string) ($personal['summary'] ?? ''))) >= 30) {
+            return true;
+        }
+
+        foreach (['experience', 'education', 'skills', 'projects', 'certificates'] as $section) {
+            foreach ($cv[$section] ?? [] as $item) {
+                if (! is_array($item)) {
+                    continue;
+                }
+                $values = $item;
+                if ($section === 'experience') {
+                    $values[] = implode(' ', array_filter($item['bullets'] ?? [], 'is_string'));
+                }
+                foreach ($values as $value) {
+                    if (is_string($value) && trim($value) !== '') {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
     /**
      * @param  array<string, array<string, mixed>>  $locales
      */

@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 from app.schemas.panel import (
@@ -33,8 +33,9 @@ from app.schemas.panel import (
 )
 from app.services.job_listing_parser import parse_job_listing
 from app.services.panel_target_store import get_target, put_target
+from app.core.security import get_current_user
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 class JobMatchRequest(BaseModel):

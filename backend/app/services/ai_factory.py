@@ -11,6 +11,18 @@ AIProvider = Literal["deepseek", "gemini", "groq"]
 SUPPORTED_PROVIDERS: tuple[AIProvider, ...] = ("deepseek", "gemini", "groq")
 
 
+class AIUnavailableError(RuntimeError):
+    """Aktif sağlayıcı için anahtar yok."""
+
+
+class AIProviderError(RuntimeError):
+    """Sağlayıcı veya model yanıtı kullanılamadı."""
+
+
+class AIOutputError(RuntimeError):
+    """Model yanıtı beklenen JSON sözleşmesine uymuyor."""
+
+
 def _provider() -> str:
     return settings.AI_PROVIDER.strip().lower()
 
@@ -45,6 +57,7 @@ def _build_deepseek() -> BaseChatModel:
         api_key=settings.DEEPSEEK_API_KEY,
         base_url=settings.DEEPSEEK_BASE_URL,
         temperature=settings.AI_TEMPERATURE,
+        model_kwargs={"response_format": {"type": "json_object"}},
     )
 
 

@@ -1,4 +1,42 @@
 export const PANEL_CV_STORAGE_KEY = 'panel-cv-state';
+const CV_ANALYSIS_MAX_POLLS = 180;
+const CV_MAX_BYTES = 5 * 1024 * 1024;
+
+const CV_UPLOAD_MESSAGES = {
+    tr: {
+        invalid: 'Yalnızca PDF dosyası yükleyebilirsin.',
+        tooLarge: 'Dosya en fazla 5 MB olabilir.',
+    },
+    en: {
+        invalid: 'Only PDF files are allowed.',
+        tooLarge: 'File must be 5 MB or smaller.',
+    },
+};
+
+export function isPdfCvFile(file) {
+    if (!file) {
+        return false;
+    }
+
+    const name = String(file.name || '').toLowerCase();
+    const type = String(file.type || '').toLowerCase();
+
+    return type === 'application/pdf' || name.endsWith('.pdf');
+}
+
+export function validateCvUploadFile(file, locale = 'tr') {
+    const messages = CV_UPLOAD_MESSAGES[locale === 'en' ? 'en' : 'tr'];
+
+    if (!isPdfCvFile(file)) {
+        return messages.invalid;
+    }
+
+    if (file.size > CV_MAX_BYTES) {
+        return messages.tooLarge;
+    }
+
+    return null;
+}
 
 function formatAnalyzedAt(locale) {
     const d = new Date();
@@ -7,38 +45,6 @@ function formatAnalyzedAt(locale) {
     }
 
     return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-/** Demo AI radar verisi — görsel şölen; gerçek analiz API'si bağlanınca güncellenecek. */
-export function demoSkillAnalysis(locale) {
-    const lang = locale === 'en' ? 'en' : 'tr';
-
-    return {
-        overall_match: 72,
-        analyzed_at: formatAnalyzedAt(lang),
-        target_role: lang === 'en' ? 'Junior Data Analyst' : 'Junior Veri Analisti',
-        skills: lang === 'en'
-            ? [
-                { label: 'SQL', score: 85, target: 90 },
-                { label: 'Python', score: 72, target: 85 },
-                { label: 'Excel', score: 88, target: 80 },
-                { label: 'Statistics', score: 68, target: 75 },
-                { label: 'Visualization', score: 45, target: 70 },
-                { label: 'Communication', score: 76, target: 80 },
-                { label: 'English', score: 62, target: 75 },
-                { label: 'Domain knowledge', score: 58, target: 65 },
-            ]
-            : [
-                { label: 'SQL', score: 85, target: 90 },
-                { label: 'Python', score: 72, target: 85 },
-                { label: 'Excel', score: 88, target: 80 },
-                { label: 'İstatistik', score: 68, target: 75 },
-                { label: 'Görselleştirme', score: 45, target: 70 },
-                { label: 'İletişim', score: 76, target: 80 },
-                { label: 'İngilizce', score: 62, target: 75 },
-                { label: 'Alan bilgisi', score: 58, target: 65 },
-            ],
-    };
 }
 
 function readState() {
@@ -55,6 +61,20 @@ function writeState(state) {
     window.dispatchEvent(new CustomEvent('panel-cv-updated', { detail: state }));
 }
 
+export async function pollCvAnalysis(analysisId, statusUrl, locale, onProgress = null) {
+    const url = statusUrl.replace('__ANALYSIS_ID__', encodeURIComponent(analysisId));
+    for (let attempt = 0; attempt < CV_ANALYSIS_MAX_POLLS; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 0 : 1000));
+        const response = await fetch(url, { headers: { Accept: 'application/json' } });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.message || 'CV analizi başarısız');
+        onProgress?.(payload);
+        if (payload.status === 'ready') return payload;
+        if (payload.status === 'failed') throw new Error(payload.error_message || payload.message || 'CV analizi başarısız');
+    }
+    throw new Error(locale === 'en' ? 'CV analysis is still running. Refresh this page to check again.' : 'CV analizi hâlâ sürüyor. Durumu kontrol etmek için sayfayı yenile.');
+}
+
 export const PanelCvStore = {
     get: readState,
 
@@ -66,18 +86,6 @@ export const PanelCvStore = {
             source: 'builder',
             fileName,
             locales: persistedLocales,
-            savedAt: new Date().toISOString(),
-        };
-        writeState(state);
-
-        return state;
-    },
-
-    saveUpload(fileName, locale) {
-        const state = {
-            source: 'upload',
-            fileName,
-            skillRadar: demoSkillAnalysis(locale),
             savedAt: new Date().toISOString(),
         };
         writeState(state);
@@ -112,24 +120,19 @@ export function panelCvRadar(labels, serverHasCv = false, serverFileName = '', c
         hasCv: Boolean(serverHasCv),
         cvFileName: serverFileName || '',
         clearUrl,
+        resetOpen: false,
+        resetScope: 'all',
+        resetWorking: false,
+        resetError: '',
 
         init() {
-            if (serverHasCv) {
-                this.hasCv = true;
-                this.cvFileName = serverFileName || this.cvFileName;
-                return;
-            }
-
-            const state = PanelCvStore.get();
-            this.hasCv = Boolean(state?.skillRadar);
-            this.cvFileName = state?.fileName ?? '';
-            window.addEventListener('panel-cv-updated', () => this.refresh());
+            this.hasCv = Boolean(serverHasCv);
+            this.cvFileName = serverFileName || '';
         },
 
         refresh() {
-            const state = PanelCvStore.get();
-            this.hasCv = Boolean(state?.skillRadar);
-            this.cvFileName = state?.fileName ?? '';
+            this.hasCv = Boolean(serverHasCv);
+            this.cvFileName = serverFileName || '';
         },
 
         cvFileDisplay() {
@@ -137,42 +140,94 @@ export function panelCvRadar(labels, serverHasCv = false, serverFileName = '', c
         },
 
         async clearCv() {
-            if (this.clearUrl) {
-                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                try {
-                    await fetch(this.clearUrl, {
-                        method: 'POST',
-                        headers: token ? { 'X-CSRF-TOKEN': token, Accept: 'application/json' } : { Accept: 'application/json' },
-                    });
-                } catch {
-                    // session clear best-effort
-                }
+            if (!this.clearUrl || this.resetWorking) return;
+            this.resetWorking = true;
+            this.resetError = '';
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            try {
+                const response = await fetch(this.clearUrl, {
+                    method: 'POST',
+                    headers: { ...(token ? { 'X-CSRF-TOKEN': token } : {}), 'Content-Type': 'application/json', Accept: 'application/json' },
+                    body: JSON.stringify({ scope: this.resetScope }),
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(payload.message || 'Kariyer verileri temizlenemedi');
+                PanelCvStore.clear();
+                window.location.reload();
+            } catch (error) {
+                this.resetError = error?.message || 'Kariyer verileri temizlenemedi';
+                this.resetWorking = false;
             }
-
-            PanelCvStore.clear();
-            window.location.reload();
         },
     };
 }
 
-export function profileCvUpload(locale, analyzeUrl) {
+export function profileCvUpload(locale, analyzeUrl, statusUrl = '', redirectUrl = '', historyAnalyzeUrl = '') {
     return {
         fileName: null,
         locale,
         analyzeUrl,
+        statusUrl,
+        redirectUrl,
+        historyAnalyzeUrl,
         loading: false,
+        historyLoadingId: null,
+        dragOver: false,
         error: null,
 
         init() {
-            const state = PanelCvStore.get();
-            if (state?.fileName) {
-                this.fileName = state.fileName;
+            this.fileName = null;
+        },
+
+        onDragOver(event) {
+            event.preventDefault();
+            if (this.loading) {
+                return;
+            }
+
+            if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = 'copy';
+            }
+
+            this.dragOver = true;
+        },
+
+        onDragLeave(event) {
+            event.preventDefault();
+            const related = event.relatedTarget;
+            if (!event.currentTarget.contains(related)) {
+                this.dragOver = false;
+            }
+        },
+
+        async onDrop(event) {
+            event.preventDefault();
+            this.dragOver = false;
+            if (this.loading) {
+                return;
+            }
+
+            const file = event.dataTransfer?.files?.[0];
+            if (file) {
+                await this.handleCvFile(file);
             }
         },
 
         async onFileSelect(event) {
             const file = event.target.files?.[0];
             if (!file) {
+                return;
+            }
+
+            await this.handleCvFile(file);
+            event.target.value = '';
+        },
+
+        async handleCvFile(file) {
+            const validationError = validateCvUploadFile(file, this.locale);
+            if (validationError) {
+                this.error = validationError;
+                this.fileName = null;
                 return;
             }
 
@@ -197,19 +252,57 @@ export function profileCvUpload(locale, analyzeUrl) {
                     throw new Error(payload.message || 'CV analizi başarısız');
                 }
 
-                const radar = payload.skill_radar ?? demoSkillAnalysis(this.locale);
-                PanelCvStore.saveFromAnalysis(file.name, this.locale, radar);
+                if (payload.status === 'queued' && payload.analysis_id && this.statusUrl) {
+                    this.loading = true;
+                    const completed = await pollCvAnalysis(payload.analysis_id, this.statusUrl, this.locale);
+                    const completedRadar = completed.skill_radar || {
+                        overall_match: completed.radar?.reduce((sum, item) => sum + Number(item.score || 0), 0) / Math.max(completed.radar?.length || 1, 1),
+                        target_role: completed.current_role || '',
+                        skills: completed.radar || [],
+                    };
+                    PanelCvStore.saveFromAnalysis(file.name, this.locale, completedRadar);
+                    if (this.redirectUrl) window.location.href = this.redirectUrl;
+                    return;
+                }
+
+                const radar = payload.skill_radar || (payload.status === 'ready' && payload.radar ? {
+                    overall_match: payload.radar.reduce((sum, item) => sum + Number(item.score || 0), 0) / Math.max(payload.radar.length, 1),
+                    target_role: payload.current_role || '',
+                    skills: payload.radar,
+                } : null);
+                if (radar) PanelCvStore.saveFromAnalysis(file.name, this.locale, radar);
 
                 if (payload.redirect) {
                     window.location.href = payload.redirect;
-                    return;
                 }
             } catch (err) {
                 this.error = err?.message || 'CV analizi başarısız';
                 this.fileName = null;
             } finally {
                 this.loading = false;
-                event.target.value = '';
+            }
+        },
+
+        async analyzeHistory(documentId) {
+            if (!this.historyAnalyzeUrl || this.historyLoadingId) return;
+            this.error = null;
+            this.historyLoadingId = documentId;
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            try {
+                const response = await fetch(this.historyAnalyzeUrl.replace('__DOCUMENT_ID__', encodeURIComponent(documentId)), {
+                    method: 'POST', headers: { ...(token ? { 'X-CSRF-TOKEN': token } : {}), Accept: 'application/json' },
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(payload.message || 'CV analizi başlatılamadı');
+                const completed = await pollCvAnalysis(payload.analysis_id, this.statusUrl, this.locale);
+                PanelCvStore.saveFromAnalysis(completed.file_name || 'cv', this.locale, {
+                    overall_match: completed.radar?.reduce((sum, item) => sum + Number(item.score || 0), 0) / Math.max(completed.radar?.length || 1, 1),
+                    target_role: completed.current_role || '', skills: completed.radar || [], analyzed_at: completed.created_at,
+                });
+                window.location.href = this.redirectUrl || '/panel';
+            } catch (err) {
+                this.error = err?.message || 'CV analizi başlatılamadı';
+                this.historyLoadingId = null;
             }
         },
 

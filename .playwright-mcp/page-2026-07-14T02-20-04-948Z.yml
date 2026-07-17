@@ -1,0 +1,647 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - generic [ref=e6]:
+    - generic [ref=e8]:
+      - navigation "Sidebar":
+        - generic:
+          - generic:
+            - generic:
+              - button "Open sidebar"
+        - generic:
+          - generic:
+            - link "New chat":
+              - /url: /
+          - generic: Search chats
+          - generic:
+            - link "Images":
+              - /url: /images
+        - generic:
+          - generic:
+            - button "Open profile menu"
+      - generic [ref=e9]:
+        - heading "Chat history" [level=2] [ref=e10]
+        - navigation "Chat history" [ref=e12]:
+          - generic [ref=e15]:
+            - link "Home" [ref=e16] [cursor=pointer]:
+              - /url: /
+            - button "Close sidebar" [expanded] [ref=e20]
+          - list [ref=e24]:
+            - listitem [ref=e25]:
+              - link "New chat Control Shift O" [ref=e26] [cursor=pointer]:
+                - /url: /
+                - generic [ref=e27]: New chat
+                - generic [ref=e35]:
+                  - generic "Control" [ref=e36]:
+                    - generic [ref=e37]: Ctrl
+                    - text: +
+                  - generic "Shift" [ref=e38]: +
+                  - generic [ref=e40]: O
+            - listitem
+            - listitem [ref=e42]:
+              - generic [ref=e43] [cursor=pointer]: Search chats
+          - link "Images" [ref=e49] [cursor=pointer]:
+            - /url: /images
+          - generic [ref=e56]:
+            - link "Apps" [ref=e57] [cursor=pointer]:
+              - /url: /apps
+            - generic [ref=e63] [cursor=pointer]: Deep research
+          - generic [ref=e70]:
+            - link [ref=e71] [cursor=pointer]:
+              - /url: https://openai.com/chatgpt/pricing/
+            - generic [ref=e79] [cursor=pointer]: Settings
+            - generic [ref=e83] [cursor=pointer]: Help
+          - generic [ref=e93]:
+            - generic [ref=e94]:
+              - paragraph [ref=e95]: Get responses tailored to you
+              - paragraph [ref=e96]: Log in to get answers based on saved chats, plus create images and upload files.
+            - button "Log in" [ref=e98] [cursor=pointer]
+    - generic [ref=e102]:
+      - generic [ref=e103]:
+        - banner:
+          - button "Model selector" [ref=e105] [cursor=pointer]:
+            - generic [ref=e106]: ChatGPT
+          - generic [ref=e114]:
+            - button "Log in" [ref=e115] [cursor=pointer]
+            - button "Sign up for free" [ref=e117] [cursor=pointer]
+      - main [ref=e120]:
+        - generic [ref=e121]:
+          - generic [ref=e168]:
+            - paragraph [ref=e170]: This is a copy of a shared ChatGPT conversation
+            - button "Report conversation" [ref=e172] [cursor=pointer]
+            - generic [ref=e173]:
+              - generic [ref=e176]:
+                - button "Prompt 1" [ref=e177] [cursor=pointer]
+                - button "Prompt 2" [ref=e178] [cursor=pointer]
+                - button "Prompt 3" [ref=e179] [cursor=pointer]
+                - button "Prompt 4" [ref=e180] [cursor=pointer]
+                - button "Prompt 5" [ref=e181] [cursor=pointer]
+                - button "Prompt 6" [ref=e182] [cursor=pointer]
+                - button "Prompt 7" [ref=e183] [cursor=pointer]
+                - button "Prompt 8" [ref=e184] [cursor=pointer]
+                - button "Prompt 9" [ref=e185] [cursor=pointer]
+                - button "Prompt 10" [ref=e186] [cursor=pointer]
+                - button "Prompt 11" [ref=e187] [cursor=pointer]
+                - button "Prompt 12" [ref=e188] [cursor=pointer]
+                - button "Prompt 13" [ref=e189] [cursor=pointer]
+                - button "Prompt 14" [ref=e190] [cursor=pointer]
+                - button "Prompt 15" [ref=e191] [cursor=pointer]
+                - button "Prompt 16" [ref=e192] [cursor=pointer]
+                - button "Prompt 17" [ref=e193] [cursor=pointer]
+                - button "Prompt 18" [ref=e194] [cursor=pointer]
+                - button "Prompt 19" [ref=e195] [cursor=pointer]
+                - button "Prompt 20" [ref=e196] [cursor=pointer]
+                - button "Prompt 21" [ref=e197] [cursor=pointer]
+              - separator "Friday 4:44 PM" [ref=e199]
+              - separator "Saturday 12:34 AM" [ref=e204]
+              - generic [ref=e242]:
+                - heading "ChatGPT said:" [level=4] [ref=e243]
+                - generic [ref=e249]:
+                  - paragraph [ref=e250]:
+                    - text: Katılıyorum.
+                    - strong [ref=e251]: Birim detay sayfasını ilk sürümden çıkarıyoruz.
+                  - paragraph [ref=e252]: "Şimdilik birimler, kurum detayında basit bir yönetim tablosu olarak kalacak:"
+                  - list [ref=e253]:
+                    - listitem [ref=e254]:
+                      - paragraph [ref=e255]: Birim adı ve durumu
+                    - listitem [ref=e256]:
+                      - paragraph [ref=e257]: Bağlı öğrenci sayısı
+                    - listitem [ref=e258]:
+                      - paragraph [ref=e259]: Yetkili kurum personeli
+                    - listitem [ref=e260]:
+                      - paragraph [ref=e261]: Birim oluşturma ve düzenleme
+                    - listitem [ref=e262]:
+                      - paragraph [ref=e263]: Öğrencileri birime bağlama veya başka birime taşıma
+                    - listitem [ref=e264]:
+                      - paragraph [ref=e265]: Birimi pasife alma
+                  - paragraph [ref=e266]:
+                    - text: Ayrı bir
+                    - strong [ref=e267]: Birim Detayı
+                    - text: ", birim bazında daha kapsamlı raporlama veya operasyon ihtiyacı doğduğunda yol haritasına eklenir."
+                  - 'heading "Sıradaki temel bölüm: Kariyer Veri Merkezi" [level=2] [ref=e268]'
+                  - paragraph [ref=e269]: "Bu alan yapay zekânın doğru analiz üretmesi için kullanılan ana veri tabanını yönetecek:"
+                  - generic [ref=e278]:
+                    - button "Copy" [ref=e279] [cursor=pointer]
+                    - code [ref=e288]: Kariyer Veri Merkezi ├── Meslekler ve Pozisyonlar ├── Yetenekler ├── Meslek–Yetenek Gereksinimleri ├── Kariyer Geçişleri ├── Eğitim ve Sertifikalar └── Veri Kaynakları
+                  - paragraph [ref=e289]: "Burada iki yaklaşım var:"
+                  - paragraph [ref=e290]:
+                    - strong [ref=e291]: A)
+                    - text: Meslekler, yetenekler, eğitimler ve kariyer geçişleri yönetim menüsünde ayrı ayrı sayfalar olsun.
+                  - paragraph [ref=e292]:
+                    - strong [ref=e293]: B)
+                    - text: Tek bir
+                    - strong [ref=e294]: Kariyer Veri Merkezi
+                    - text: modülü olsun; ilgili alanlar içeride sekmelerle yönetilsin.
+                  - paragraph [ref=e295]:
+                    - text: Benim önerim
+                    - strong [ref=e296]: B
+                    - text: . Bunlar birbirine bağlı veriler olduğu için aynı merkezde tutulması hem daha anlaşılır hem de ana menüyü sade bırakır.
+              - generic [ref=e299]:
+                - heading "You said:" [level=4] [ref=e300]
+                - generic [ref=e301]: b olur
+              - generic [ref=e310]:
+                - heading "ChatGPT said:" [level=4] [ref=e311]
+                - generic [ref=e317]:
+                  - paragraph [ref=e318]: Karar kesinleşti.
+                  - heading "Kariyer Veri Merkezi" [level=2] [ref=e319]
+                  - paragraph [ref=e320]: "Tek modül olacak, içeride sekmeler bulunacak:"
+                  - generic [ref=e329]:
+                    - button "Copy" [ref=e330] [cursor=pointer]
+                    - code [ref=e339]: Kariyer Veri Merkezi ├── Meslekler ve Pozisyonlar ├── Yetenekler ├── Meslek–Yetenek Gereksinimleri ├── Kariyer Geçişleri ├── Eğitim ve Sertifikalar └── Veri Kaynakları
+                  - heading "Meslekler ve Pozisyonlar" [level=3] [ref=e340]
+                  - list [ref=e341]:
+                    - listitem [ref=e342]:
+                      - paragraph [ref=e343]: Meslek veya pozisyon adı
+                    - listitem [ref=e344]:
+                      - paragraph [ref=e345]: Açıklama
+                    - listitem [ref=e346]:
+                      - paragraph [ref=e347]: Alan ve kategori
+                    - listitem [ref=e348]:
+                      - paragraph [ref=e349]: "Seviye: stajyer, başlangıç, orta, kıdemli"
+                    - listitem [ref=e350]:
+                      - paragraph [ref=e351]: Alternatif unvanlar
+                    - listitem [ref=e352]:
+                      - paragraph [ref=e353]: Görev ve sorumluluklar
+                    - listitem [ref=e354]:
+                      - paragraph [ref=e355]: Eğitim beklentileri
+                    - listitem [ref=e356]:
+                      - paragraph [ref=e357]: Deneyim beklentisi
+                    - listitem [ref=e358]:
+                      - paragraph [ref=e359]: İlgili meslekler
+                    - listitem [ref=e360]:
+                      - paragraph [ref=e361]: Aktif/pasif durumu
+                  - paragraph [ref=e362]: “Yazılım geliştirici” ile “başlangıç düzeyi yazılım geliştirici” gibi seviyeleri tamamen ayrı meslek kayıtları yapmak yerine, mümkün olduğunca aynı meslek altında seviyelendirmek daha doğru olur.
+                  - heading "Yetenekler" [level=3] [ref=e363]
+                  - list [ref=e364]:
+                    - listitem [ref=e365]:
+                      - paragraph [ref=e366]: Yetenek adı
+                    - listitem [ref=e367]:
+                      - paragraph [ref=e368]: Yetenek türü
+                    - listitem [ref=e369]:
+                      - paragraph [ref=e370]: Teknik veya davranışsal sınıflandırma
+                    - listitem [ref=e371]:
+                      - paragraph [ref=e372]: Açıklama
+                    - listitem [ref=e373]:
+                      - paragraph [ref=e374]: Alternatif isimler
+                    - listitem [ref=e375]:
+                      - paragraph [ref=e376]: İlişkili yetenekler
+                    - listitem [ref=e377]:
+                      - paragraph [ref=e378]: Seviye tanımları
+                    - listitem [ref=e379]:
+                      - paragraph [ref=e380]: Aktif/pasif durumu
+                  - paragraph [ref=e381]: "Aynı yeteneğin farklı yazımlarla çoğalmasını önlemek için eş anlamlılar tutulmalı:"
+                  - generic [ref=e390]:
+                    - button "Copy" [ref=e391] [cursor=pointer]
+                    - code [ref=e400]: JavaScript ├── Javascript ├── JS └── ECMAScript
+                  - heading "Meslek–Yetenek Gereksinimleri" [level=3] [ref=e401]
+                  - paragraph [ref=e402]: Yapay zekâ analizinin en önemli yönetim alanlarından biri olacak.
+                  - list [ref=e403]:
+                    - listitem [ref=e404]:
+                      - paragraph [ref=e405]: Meslek
+                    - listitem [ref=e406]:
+                      - paragraph [ref=e407]: Yetenek
+                    - listitem [ref=e408]:
+                      - paragraph [ref=e409]: Zorunlu veya tercih edilen
+                    - listitem [ref=e410]:
+                      - paragraph [ref=e411]: Önem ağırlığı
+                    - listitem [ref=e412]:
+                      - paragraph [ref=e413]: Beklenen seviye
+                    - listitem [ref=e414]:
+                      - paragraph [ref=e415]: Deneyim seviyesine göre farklı gereksinimler
+                    - listitem [ref=e416]:
+                      - paragraph [ref=e417]: Gereksinimin kaynağı
+                    - listitem [ref=e418]:
+                      - paragraph [ref=e419]: Son doğrulama tarihi
+                  - paragraph [ref=e420]: Hazırlık skoru doğrudan bu verileri kullanacak.
+                  - heading "Kariyer Geçişleri" [level=3] [ref=e421]
+                  - list [ref=e422]:
+                    - listitem [ref=e423]:
+                      - paragraph [ref=e424]: Mevcut meslek
+                    - listitem [ref=e425]:
+                      - paragraph [ref=e426]: Hedef meslek
+                    - listitem [ref=e427]:
+                      - paragraph [ref=e428]: Geçiş zorluğu
+                    - listitem [ref=e429]:
+                      - paragraph [ref=e430]: Ortak yetenekler
+                    - listitem [ref=e431]:
+                      - paragraph [ref=e432]: Eksik yetenekler
+                    - listitem [ref=e433]:
+                      - paragraph [ref=e434]: Önerilen geçiş adımları
+                    - listitem [ref=e435]:
+                      - paragraph [ref=e436]: Tahmini gelişim sırası
+                    - listitem [ref=e437]:
+                      - paragraph [ref=e438]: Alternatif ara roller
+                  - paragraph [ref=e439]: Bu bölüm ilk sürümde çok kapsamlı olmak zorunda değil. Başlangıçta yalnızca sistemde desteklenen temel meslekler arasındaki ilişkiler tutulabilir.
+                  - heading "Eğitim ve Sertifikalar" [level=3] [ref=e440]
+                  - paragraph [ref=e441]: "İlk sürümde ayrı öğrenci sayfası olmayacak olsa da kariyer rotasında öneri üretmek için veri tutulabilir:"
+                  - list [ref=e442]:
+                    - listitem [ref=e443]:
+                      - paragraph [ref=e444]: Eğitim veya sertifika adı
+                    - listitem [ref=e445]:
+                      - paragraph [ref=e446]: Sağlayıcı
+                    - listitem [ref=e447]:
+                      - paragraph [ref=e448]: Bağlantı
+                    - listitem [ref=e449]:
+                      - paragraph [ref=e450]: Ücretsiz veya ücretli
+                    - listitem [ref=e451]:
+                      - paragraph [ref=e452]: İlgili yetenekler
+                    - listitem [ref=e453]:
+                      - paragraph [ref=e454]: Seviye
+                    - listitem [ref=e455]:
+                      - paragraph [ref=e456]: Tahmini süre
+                    - listitem [ref=e457]:
+                      - paragraph [ref=e458]: Dil
+                    - listitem [ref=e459]:
+                      - paragraph [ref=e460]: Yayın durumu
+                  - paragraph [ref=e461]: Burayı eğitim pazaryerine dönüştürmemeliyiz. İlk aşamada yalnızca öneri kaynağıdır.
+                  - heading "Veri Kaynakları" [level=3] [ref=e462]
+                  - paragraph [ref=e463]: "Yönetim açısından önemli bir güven ve denetim alanıdır:"
+                  - list [ref=e464]:
+                    - listitem [ref=e465]:
+                      - paragraph [ref=e466]: Kaynak adı
+                    - listitem [ref=e467]:
+                      - paragraph [ref=e468]: Kaynak türü
+                    - listitem [ref=e469]:
+                      - paragraph [ref=e470]: Bağlantı veya belge
+                    - listitem [ref=e471]:
+                      - paragraph [ref=e472]: İlgili meslek ve yetenekler
+                    - listitem [ref=e473]:
+                      - paragraph [ref=e474]: Veri eklenme tarihi
+                    - listitem [ref=e475]:
+                      - paragraph [ref=e476]: Son kontrol tarihi
+                    - listitem [ref=e477]:
+                      - paragraph [ref=e478]: Güven düzeyi
+                    - listitem [ref=e479]:
+                      - paragraph [ref=e480]: Kaynağı ekleyen yönetici
+                    - listitem [ref=e481]:
+                      - paragraph [ref=e482]: Güncellik durumu
+                  - paragraph [ref=e483]: Bu sayede sistemdeki meslek gereksinimlerinin rastgele mı yoksa doğrulanmış verilere mi dayandığı izlenebilir.
+                  - heading "Yetkilendirme" [level=2] [ref=e484]
+                  - list [ref=e485]:
+                    - listitem [ref=e486]:
+                      - paragraph [ref=e487]: "Süper Yönetici: tüm alanları yönetebilir."
+                    - listitem [ref=e488]:
+                      - paragraph [ref=e489]: "Yetkili Platform Personeli: verilen sekmeleri yönetebilir."
+                    - listitem [ref=e490]:
+                      - paragraph [ref=e491]: "Kurum Yöneticisi: varsayılan olarak yalnızca görüntüleyebilir veya hiç erişemez."
+                    - listitem [ref=e492]:
+                      - paragraph [ref=e493]: "Kurum Personeli: erişemez."
+                    - listitem [ref=e494]:
+                      - paragraph [ref=e495]: "Öğrenci: yönetim bölümüne erişemez."
+                  - paragraph [ref=e496]: Kurumların kendi meslek ve yetenek verilerini değiştirmesine ilk sürümde izin vermemek daha doğru olur. Aksi hâlde aynı pozisyon için kurumdan kuruma farklı ve denetimsiz skorlar oluşabilir.
+                  - 'heading "Sıradaki bölüm: CV ve yapay zekâ analiz yönetimi" [level=2] [ref=e497]'
+                  - paragraph [ref=e498]: "Burada iki farklı yaklaşım var:"
+                  - paragraph [ref=e499]:
+                    - strong [ref=e500]: A)
+                    - text: CV analiz ölçütleri, hazırlık skoru, ilan analizi ve mülakat değerlendirmesi Kariyer Veri Merkezi içinde yer alsın.
+                  - paragraph [ref=e501]:
+                    - strong [ref=e502]: B)
+                    - text: Ayrı bir
+                    - strong [ref=e503]: Yapay Zekâ ve Analiz Yönetimi
+                    - text: "modülü olsun:"
+                  - generic [ref=e512]:
+                    - button "Copy" [ref=e513] [cursor=pointer]
+                    - code [ref=e522]: Yapay Zekâ ve Analiz Yönetimi ├── Analiz Türleri ├── Değerlendirme Ölçütleri ├── İstem ve Sürüm Yönetimi ├── Model Ayarları ├── Analiz Kayıtları ├── Hatalı Sonuç Bildirimleri └── Kullanım ve Maliyet
+                  - paragraph [ref=e523]:
+                    - text: Benim önerim
+                    - strong [ref=e524]: B
+                    - text: . Kariyer Veri Merkezi “doğru bilgi nedir?” sorusunu, bu modül ise “sistem bu bilgiyi nasıl analiz ediyor?” sorusunu yönetmeli.
+              - generic [ref=e527]:
+                - heading "You said:" [level=4] [ref=e528]
+                - generic [ref=e529]: b
+              - generic [ref=e538]:
+                - heading "ChatGPT said:" [level=4] [ref=e539]
+                - generic [ref=e545]:
+                  - paragraph [ref=e546]: Karar kesinleşti.
+                  - heading "Yapay Zekâ ve Analiz Yönetimi" [level=1] [ref=e547]
+                  - paragraph [ref=e548]: "Kariyer verilerinden ayrı, tek bir yönetim modülü olacak:"
+                  - generic [ref=e557]:
+                    - button "Copy" [ref=e558] [cursor=pointer]
+                    - code [ref=e567]: Yapay Zekâ ve Analiz Yönetimi ├── Genel Durum ├── Analiz Türleri ├── Değerlendirme Ölçütleri ├── İstem ve Sürüm Yönetimi ├── Model Ayarları ├── Analiz Kayıtları ├── Hatalı Sonuç Bildirimleri └── Kullanım ve Maliyet
+                  - heading "1. Genel Durum" [level=2] [ref=e568]
+                  - paragraph [ref=e569]: "Yapay zekâ sisteminin günlük sağlık ekranı:"
+                  - list [ref=e570]:
+                    - listitem [ref=e571]:
+                      - paragraph [ref=e572]: Toplam analiz sayısı
+                    - listitem [ref=e573]:
+                      - paragraph [ref=e574]: Başarılı ve hatalı işlem oranı
+                    - listitem [ref=e575]:
+                      - paragraph [ref=e576]: Ortalama yanıt süresi
+                    - listitem [ref=e577]:
+                      - paragraph [ref=e578]: Kullanılan toplam belirteç
+                    - listitem [ref=e579]:
+                      - paragraph [ref=e580]: Günlük ve aylık tahmini maliyet
+                    - listitem [ref=e581]:
+                      - paragraph [ref=e582]: Analiz türlerine göre kullanım
+                    - listitem [ref=e583]:
+                      - paragraph [ref=e584]: Bekleyen işlemler
+                    - listitem [ref=e585]:
+                      - paragraph [ref=e586]: Son sistem hataları
+                    - listitem [ref=e587]:
+                      - paragraph [ref=e588]: Kullanım sınırına yaklaşan kurumlar
+                    - listitem [ref=e589]:
+                      - paragraph [ref=e590]: Etkin model ve sürüm bilgileri
+                  - paragraph [ref=e591]: Bu sayfa teknik ayrıntıya boğulmamalı; sorun varsa yöneticiyi ilgili kayda götürmeli.
+                  - heading "2. Analiz Türleri" [level=2] [ref=e592]
+                  - paragraph [ref=e593]: "Sistemin sunduğu yapay zekâ işlemleri burada tanımlanır:"
+                  - list [ref=e594]:
+                    - listitem [ref=e595]:
+                      - paragraph [ref=e596]: CV ayrıştırma
+                    - listitem [ref=e597]:
+                      - paragraph [ref=e598]: CV kalite analizi
+                    - listitem [ref=e599]:
+                      - paragraph [ref=e600]: CV güçlendirme önerileri
+                    - listitem [ref=e601]:
+                      - paragraph [ref=e602]: Kariyer profili oluşturma
+                    - listitem [ref=e603]:
+                      - paragraph [ref=e604]: Hedef meslek önerisi
+                    - listitem [ref=e605]:
+                      - paragraph [ref=e606]: Hazırlık skoru açıklaması
+                    - listitem [ref=e607]:
+                      - paragraph [ref=e608]: Yetenek açığı analizi
+                    - listitem [ref=e609]:
+                      - paragraph [ref=e610]: Kariyer rotası oluşturma
+                    - listitem [ref=e611]:
+                      - paragraph [ref=e612]: İlan–CV uyum analizi
+                    - listitem [ref=e613]:
+                      - paragraph [ref=e614]: İlana özel CV önerisi
+                    - listitem [ref=e615]:
+                      - paragraph [ref=e616]: Ön yazı oluşturma
+                    - listitem [ref=e617]:
+                      - paragraph [ref=e618]: Mülakat sorusu oluşturma
+                    - listitem [ref=e619]:
+                      - paragraph [ref=e620]: Mülakat yanıtı değerlendirme
+                  - paragraph [ref=e621]: "Her analiz türünde:"
+                  - list [ref=e622]:
+                    - listitem [ref=e623]:
+                      - paragraph [ref=e624]: Etkin veya pasif durumu
+                    - listitem [ref=e625]:
+                      - paragraph [ref=e626]: Kullanılan model
+                    - listitem [ref=e627]:
+                      - paragraph [ref=e628]: Kullanılan istem sürümü
+                    - listitem [ref=e629]:
+                      - paragraph [ref=e630]: Azami giriş ve çıktı uzunluğu
+                    - listitem [ref=e631]:
+                      - paragraph [ref=e632]: Zaman aşımı süresi
+                    - listitem [ref=e633]:
+                      - paragraph [ref=e634]: Yeniden deneme kuralı
+                    - listitem [ref=e635]:
+                      - paragraph [ref=e636]: Kullanım hakkından düşülecek miktar
+                    - listitem [ref=e637]:
+                      - paragraph [ref=e638]: Sonuç saklama süresi
+                    - listitem [ref=e639]:
+                      - paragraph [ref=e640]: Kişisel veri işleme durumu
+                  - paragraph [ref=e641]: bulunmalı.
+                  - heading "3. Değerlendirme Ölçütleri" [level=2] [ref=e642]
+                  - paragraph [ref=e643]: Bu alan yapay zekâ istemlerinden ayrı tutulmalı. Çünkü değerlendirme mantığının tamamı yalnızca modele bırakılmamalı.
+                  - paragraph [ref=e644]: "Örnek ölçüt grupları:"
+                  - heading "CV kalitesi" [level=3] [ref=e645]
+                  - list [ref=e646]:
+                    - listitem [ref=e647]:
+                      - paragraph [ref=e648]: İletişim bilgileri
+                    - listitem [ref=e649]:
+                      - paragraph [ref=e650]: Eğitim bilgileri
+                    - listitem [ref=e651]:
+                      - paragraph [ref=e652]: Deneyim anlatımı
+                    - listitem [ref=e653]:
+                      - paragraph [ref=e654]: Ölçülebilir başarılar
+                    - listitem [ref=e655]:
+                      - paragraph [ref=e656]: Projeler
+                    - listitem [ref=e657]:
+                      - paragraph [ref=e658]: Yeteneklerin tutarlılığı
+                    - listitem [ref=e659]:
+                      - paragraph [ref=e660]: Yazım ve okunabilirlik
+                    - listitem [ref=e661]:
+                      - paragraph [ref=e662]: Hedef role uygunluk
+                  - heading "Hazırlık skoru" [level=3] [ref=e663]
+                  - list [ref=e664]:
+                    - listitem [ref=e665]:
+                      - paragraph [ref=e666]: Teknik yetenek uyumu
+                    - listitem [ref=e667]:
+                      - paragraph [ref=e668]: Davranışsal yetenek uyumu
+                    - listitem [ref=e669]:
+                      - paragraph [ref=e670]: Eğitim uyumu
+                    - listitem [ref=e671]:
+                      - paragraph [ref=e672]: Deneyim
+                    - listitem [ref=e673]:
+                      - paragraph [ref=e674]: Proje ve uygulama kanıtı
+                    - listitem [ref=e675]:
+                      - paragraph [ref=e676]: Sertifikalar
+                    - listitem [ref=e677]:
+                      - paragraph [ref=e678]: Dil yeterliliği
+                    - listitem [ref=e679]:
+                      - paragraph [ref=e680]: CV kalitesi
+                  - heading "İlan uyumu" [level=3] [ref=e681]
+                  - list [ref=e682]:
+                    - listitem [ref=e683]:
+                      - paragraph [ref=e684]: Zorunlu şartların karşılanması
+                    - listitem [ref=e685]:
+                      - paragraph [ref=e686]: Tercih edilen şartların karşılanması
+                    - listitem [ref=e687]:
+                      - paragraph [ref=e688]: Deneyim seviyesi
+                    - listitem [ref=e689]:
+                      - paragraph [ref=e690]: Eğitim şartı
+                    - listitem [ref=e691]:
+                      - paragraph [ref=e692]: Teknik yetenekler
+                    - listitem [ref=e693]:
+                      - paragraph [ref=e694]: Dil ve konum koşulları
+                    - listitem [ref=e695]:
+                      - paragraph [ref=e696]: CV’de kanıt bulunma durumu
+                  - paragraph [ref=e697]: Her ölçüt için ağırlık, alt sınır, açıklama ve sürüm bilgisi tutulmalı.
+                  - heading "4. İstem ve Sürüm Yönetimi" [level=2] [ref=e698]
+                  - paragraph [ref=e699]: "Her yapay zekâ işlemi için:"
+                  - list [ref=e700]:
+                    - listitem [ref=e701]:
+                      - paragraph [ref=e702]: Sistem talimatı
+                    - listitem [ref=e703]:
+                      - paragraph [ref=e704]: Girdi şablonu
+                    - listitem [ref=e705]:
+                      - paragraph [ref=e706]: Beklenen çıktı biçimi
+                    - listitem [ref=e707]:
+                      - paragraph [ref=e708]: Yapılandırılmış çıktı şeması
+                    - listitem [ref=e709]:
+                      - paragraph [ref=e710]: Kullanılan değişkenler
+                    - listitem [ref=e711]:
+                      - paragraph [ref=e712]: Sürüm numarası
+                    - listitem [ref=e713]:
+                      - paragraph [ref=e714]: Taslak, deneme veya yayımlanmış durum
+                    - listitem [ref=e715]:
+                      - paragraph [ref=e716]: Değişiklik açıklaması
+                    - listitem [ref=e717]:
+                      - paragraph [ref=e718]: Değişikliği yapan kişi
+                    - listitem [ref=e719]:
+                      - paragraph [ref=e720]: Yayın tarihi
+                    - listitem [ref=e721]:
+                      - paragraph [ref=e722]: Önceki sürüme dönüş
+                  - paragraph [ref=e723]: bulunmalı.
+                  - paragraph [ref=e724]: "Önemli kural:"
+                  - blockquote [ref=e725]:
+                    - paragraph [ref=e726]: Yayımdaki istem doğrudan düzenlenmemeli. Yeni sürüm oluşturulmalı, test edilmeli ve daha sonra yayımlanmalı.
+                  - heading "5. Model Ayarları" [level=2] [ref=e727]
+                  - list [ref=e728]:
+                    - listitem [ref=e729]:
+                      - paragraph [ref=e730]: Sağlayıcı
+                    - listitem [ref=e731]:
+                      - paragraph [ref=e732]: Model adı
+                    - listitem [ref=e733]:
+                      - paragraph [ref=e734]: Analiz türüne göre model seçimi
+                    - listitem [ref=e735]:
+                      - paragraph [ref=e736]: Yaratıcılık düzeyi
+                    - listitem [ref=e737]:
+                      - paragraph [ref=e738]: Azami çıktı uzunluğu
+                    - listitem [ref=e739]:
+                      - paragraph [ref=e740]: Zaman aşımı
+                    - listitem [ref=e741]:
+                      - paragraph [ref=e742]: Yeniden deneme sayısı
+                    - listitem [ref=e743]:
+                      - paragraph [ref=e744]: Yedek model
+                    - listitem [ref=e745]:
+                      - paragraph [ref=e746]: Maliyet sınırı
+                    - listitem [ref=e747]:
+                      - paragraph [ref=e748]: Günlük kullanım sınırı
+                  - paragraph [ref=e749]: API anahtarları arayüzde düz metin olarak gösterilmemeli. Yönetici yalnızca anahtarın tanımlı olup olmadığını ve son dört karakterini görebilmeli.
+                  - heading "6. Analiz Kayıtları" [level=2] [ref=e750]
+                  - paragraph [ref=e751]: "Her işlem için:"
+                  - list [ref=e752]:
+                    - listitem [ref=e753]:
+                      - paragraph [ref=e754]: Analiz türü
+                    - listitem [ref=e755]:
+                      - paragraph [ref=e756]: Kullanıcı
+                    - listitem [ref=e757]:
+                      - paragraph [ref=e758]: Kurum
+                    - listitem [ref=e759]:
+                      - paragraph [ref=e760]: Kullanılan model
+                    - listitem [ref=e761]:
+                      - paragraph [ref=e762]: İstem sürümü
+                    - listitem [ref=e763]:
+                      - paragraph [ref=e764]: Başlangıç ve bitiş zamanı
+                    - listitem [ref=e765]:
+                      - paragraph [ref=e766]: İşlem durumu
+                    - listitem [ref=e767]:
+                      - paragraph [ref=e768]: Belirteç kullanımı
+                    - listitem [ref=e769]:
+                      - paragraph [ref=e770]: Tahmini maliyet
+                    - listitem [ref=e771]:
+                      - paragraph [ref=e772]: Hata kodu
+                    - listitem [ref=e773]:
+                      - paragraph [ref=e774]: Yeniden deneme sayısı
+                    - listitem [ref=e775]:
+                      - paragraph [ref=e776]: Sonuç kalitesi bildirimi
+                  - paragraph [ref=e777]: bulunmalı.
+                  - paragraph [ref=e778]: CV metni, kişisel bilgiler ve tam yapay zekâ girdileri bu listede doğrudan gösterilmemeli. Yalnızca özel denetim yetkisi olan kullanıcı, gerekçe kaydı oluşturarak ayrıntıya erişebilmeli.
+                  - heading "7. Hatalı Sonuç Bildirimleri" [level=2] [ref=e779]
+                  - paragraph [ref=e780]: "Öğrencinin analiz sonucunda:"
+                  - list [ref=e781]:
+                    - listitem [ref=e782]:
+                      - paragraph [ref=e783]: Yanlış bilgi çıkarıldı
+                    - listitem [ref=e784]:
+                      - paragraph [ref=e785]: Yeteneğim yanlış değerlendirildi
+                    - listitem [ref=e786]:
+                      - paragraph [ref=e787]: Öneri hedefimle ilgisiz
+                    - listitem [ref=e788]:
+                      - paragraph [ref=e789]: Eksik bilgi var
+                    - listitem [ref=e790]:
+                      - paragraph [ref=e791]: Uygunsuz içerik üretildi
+                    - listitem [ref=e792]:
+                      - paragraph [ref=e793]: Sonuç anlaşılmıyor
+                  - paragraph [ref=e794]: şeklinde bildirim yapabileceği alan.
+                  - paragraph [ref=e795]: "Yönetim tarafında:"
+                  - list [ref=e796]:
+                    - listitem [ref=e797]:
+                      - paragraph [ref=e798]: Bildirimin türü
+                    - listitem [ref=e799]:
+                      - paragraph [ref=e800]: İlgili analiz kaydı
+                    - listitem [ref=e801]:
+                      - paragraph [ref=e802]: Kullanılan istem ve model sürümü
+                    - listitem [ref=e803]:
+                      - paragraph [ref=e804]: İnceleme durumu
+                    - listitem [ref=e805]:
+                      - paragraph [ref=e806]: Çözüm notu
+                    - listitem [ref=e807]:
+                      - paragraph [ref=e808]: Yeniden analiz
+                    - listitem [ref=e809]:
+                      - paragraph [ref=e810]: Düzeltme sonrası sonuç
+                  - paragraph [ref=e811]: izlenir.
+                  - paragraph [ref=e812]: Bu bölüm yapay zekâ sisteminin gerçek kullanıcı verileriyle iyileştirilmesinde kritik olacak.
+                  - heading "8. Kullanım ve Maliyet" [level=2] [ref=e813]
+                  - list [ref=e814]:
+                    - listitem [ref=e815]:
+                      - paragraph [ref=e816]: Günlük ve aylık analiz sayıları
+                    - listitem [ref=e817]:
+                      - paragraph [ref=e818]: Analiz türüne göre maliyet
+                    - listitem [ref=e819]:
+                      - paragraph [ref=e820]: Model bazında maliyet
+                    - listitem [ref=e821]:
+                      - paragraph [ref=e822]: Kullanıcı başına ortalama maliyet
+                    - listitem [ref=e823]:
+                      - paragraph [ref=e824]: Kurum başına kullanım
+                    - listitem [ref=e825]:
+                      - paragraph [ref=e826]: Başarısız işlemlerin maliyeti
+                    - listitem [ref=e827]:
+                      - paragraph [ref=e828]: Yeniden deneme maliyetleri
+                    - listitem [ref=e829]:
+                      - paragraph [ref=e830]: Paket gelirine karşı yapay zekâ maliyeti
+                    - listitem [ref=e831]:
+                      - paragraph [ref=e832]: Kullanım sınırı uyarıları
+                  - paragraph [ref=e833]: Burada faturalandırma değil, yapay zekâ kullanım ekonomisi izlenecek.
+                  - heading "İlk sürüm için sadeleştirme" [level=1] [ref=e834]
+                  - paragraph [ref=e835]: "İlk sürümde tüm ayarları yönetim panelinden değiştirilebilir yapmak riskli olur. Ben şu ayrımı öneriyorum:"
+                  - paragraph [ref=e836]:
+                    - strong [ref=e837]: "Yönetilebilir:"
+                  - list [ref=e838]:
+                    - listitem [ref=e839]:
+                      - paragraph [ref=e840]: Analiz türünü açma ve kapatma
+                    - listitem [ref=e841]:
+                      - paragraph [ref=e842]: Aktif model seçme
+                    - listitem [ref=e843]:
+                      - paragraph [ref=e844]: İstem sürümü yayımlama
+                    - listitem [ref=e845]:
+                      - paragraph [ref=e846]: Değerlendirme ağırlıklarını değiştirme
+                    - listitem [ref=e847]:
+                      - paragraph [ref=e848]: Kullanım sınırları
+                    - listitem [ref=e849]:
+                      - paragraph [ref=e850]: Analiz ve hata kayıtları
+                  - paragraph [ref=e851]:
+                    - strong [ref=e852]: "Kod veya ortam ayarında kalacak:"
+                  - list [ref=e853]:
+                    - listitem [ref=e854]:
+                      - paragraph [ref=e855]: API anahtarları
+                    - listitem [ref=e856]:
+                      - paragraph [ref=e857]: Sağlayıcı bağlantı adresleri
+                    - listitem [ref=e858]:
+                      - paragraph [ref=e859]: Kritik güvenlik kuralları
+                    - listitem [ref=e860]:
+                      - paragraph [ref=e861]: Kişisel veri maskeleme mantığı
+                    - listitem [ref=e862]:
+                      - paragraph [ref=e863]: Arka plan işleme altyapısı
+                  - heading "Sıradaki karar" [level=2] [ref=e864]
+                  - paragraph [ref=e865]: İstemleri ve değerlendirme ağırlıklarını kim değiştirebilsin?
+                  - paragraph [ref=e866]:
+                    - strong [ref=e867]: A)
+                    - text: Yalnızca Süper Yönetici
+                    - strong [ref=e868]: B)
+                    - text: Süper Yönetici ve özel olarak yetkilendirilmiş Yapay Zekâ Yöneticisi
+                    - strong [ref=e869]: C)
+                    - text: Tüm Platform Personeli
+                  - paragraph [ref=e870]:
+                    - text: Benim önerim
+                    - strong [ref=e871]: B
+                    - text: . Günlük operasyonu tek kişiye bağlamayız, ancak kritik analiz mantığını genel platform personeline de açmayız.
+          - generic:
+            - generic:
+              - generic:
+                - button
+            - generic: ChatGPT is AI and can make mistakes.
+            - generic [ref=e127]:
+              - generic [ref=e131]:
+                - button "Add files and more" [ref=e134] [cursor=pointer]
+                - textbox "Chat with ChatGPT" [ref=e137]:
+                  - paragraph [ref=e138]: Message ChatGPT
+                - generic [ref=e140]:
+                  - button "Start dictation" [ref=e141] [cursor=pointer]
+                  - button "Start Voice" [ref=e145] [cursor=pointer]:
+                    - generic [ref=e149]: Voice
+              - button [ref=e150]
+              - button [ref=e151]
+  - alert [ref=e166]
+  - status [ref=e167]

@@ -1,7 +1,7 @@
-import { PanelCvStore, panelCvRadar, profileCvUpload } from './panel-cv-store';
-import { JobMatchesStore, panelJobMatches } from './panel-job-matches';
+import { PanelCvStore, panelCvRadar, profileCvUpload, pollCvAnalysis } from './panel-cv-store';
+import { panelJobMatches } from './panel-job-matches';
 import { WeeklyTasksStore, dashboardWeeklyPlan } from './panel-weekly-tasks';
-import { exportHarvardCvPdf } from './cv-pdf-export';
+import { downloadPdfBlob, exportHarvardCvPdf, renderHarvardCvPdf } from './cv-pdf-export';
 import {
     CV_OPTIONAL_SECTION_KEYS,
     createOptionalEntry,
@@ -11,16 +11,33 @@ import {
     removeOptionalSectionFromBothLocales,
 } from './cv-optional-sections';
 import { initCareersWizard } from './careers-wizard';
-import { initMarketingMotion } from './marketing-motion';
+import { bootPanelShell } from './panel-shell';
+import { careerTasks } from './panel-career-tasks';
+import { skillPassport } from './panel-skill-passport';
+import { careerAnalysisWatcher, careerPlanWatcher } from './panel-career-plan';
+import { profileSocialLinks } from './panel-profile-links';
+import { careerChat } from './panel-career-chat';
+import { careerInterview } from './panel-career-interview';
+import { careerApplications } from './panel-applications';
 
 window.PanelCvStore = PanelCvStore;
 window.panelCvRadar = panelCvRadar;
 window.profileCvUpload = profileCvUpload;
+window.pollCvAnalysis = pollCvAnalysis;
 window.WeeklyTasksStore = WeeklyTasksStore;
 window.dashboardWeeklyPlan = dashboardWeeklyPlan;
-window.JobMatchesStore = JobMatchesStore;
+window.careerTasks = careerTasks;
+window.skillPassport = skillPassport;
+window.careerPlanWatcher = careerPlanWatcher;
+window.careerAnalysisWatcher = careerAnalysisWatcher;
+window.profileSocialLinks = profileSocialLinks;
+window.careerChat = careerChat;
+window.careerInterview = careerInterview;
+window.careerApplications = careerApplications;
 window.panelJobMatches = panelJobMatches;
 window.exportHarvardCvPdf = exportHarvardCvPdf;
+window.renderHarvardCvPdf = renderHarvardCvPdf;
+window.downloadPdfBlob = downloadPdfBlob;
 window.initCareersWizard = initCareersWizard;
 window.CvOptionalSections = {
     keys: CV_OPTIONAL_SECTION_KEYS,
@@ -32,7 +49,7 @@ window.CvOptionalSections = {
 };
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initMarketingMotion, { once: true });
+    document.addEventListener('DOMContentLoaded', bootPanelShell, { once: true });
 } else {
-    initMarketingMotion();
+    bootPanelShell();
 }
