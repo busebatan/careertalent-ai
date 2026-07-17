@@ -40,14 +40,24 @@ def answer_chat(db: Session, user_id: int, message: str) -> CareerChatMessage:
     return assistant_row
 
 
-def start_interview(db: Session, user_id: int) -> CareerInterview:
+def start_interview(db: Session, user_id: int, language: str = "tr") -> CareerInterview:
     context = career_context(db, user_id)
     target_role = (context.get("selected_target") or {}).get("title") or context.get("current_role") or "Genel kariyer görüşmesi"
+    
+    # Seçilen dile göre yapay zekaya kesin bir talimat hazırlıyoruz
+    lang_instruction = "Tüm soruları KESİNLİKLE Türkçe üret." if language == "tr" else "Tüm soruları KESİNLİKLE İngilizce (English) üret."
+
     output = _invoke(json.dumps({
         "purpose": "Adayın hedef mesleğine ve CV boşluklarına özel mülakat soruları üret",
-        "target_role": target_role, "career_context": context,
-        "rules": ["Davranışsal ve teknik soruları dengeli dağıt", "Her soru farklı yetkinliği ölçsün"],
+        "target_role": target_role, 
+        "career_context": context,
+        "rules": [
+            "Davranışsal ve teknik soruları dengeli dağıt", 
+            "Her soru farklı yetkinliği ölçsün",
+            lang_instruction # Dil kuralını buraya ekliyoruz
+        ],
     }, ensure_ascii=False), InterviewQuestionsAI)
+    
     row = CareerInterview(id=str(uuid4()), user_id=user_id, target_role=target_role, status="active", questions=output.model_dump(mode="json")["questions"])
     db.add(row); db.commit(); db.refresh(row)
     return row
