@@ -25,7 +25,7 @@ function installBrowserMocks() {
 
 installBrowserMocks();
 
-const { PanelCvStore, PANEL_CV_STORAGE_KEY, panelCvRadar, pollCvAnalysis, profileCvUpload } = await import('../../resources/js/panel-cv-store.js');
+const { PanelCvStore, PANEL_CV_STORAGE_KEY, panelCvRadar, pollCvAnalysis, profileCvUpload, isPdfCvFile, validateCvUploadFile } = await import('../../resources/js/panel-cv-store.js');
 
 function sampleLocales() {
     return {
@@ -142,6 +142,56 @@ describe('panelCvRadar career reset', () => {
         assert.equal(state.resetWorking, false);
         assert.notEqual(PanelCvStore.get(), null);
         assert.equal(reloads, 0);
+    });
+});
+
+describe('profileCvUpload drag and drop', () => {
+    beforeEach(() => {
+        storage.clear();
+    });
+
+    it('accepts PDF files dropped onto the upload zone', async () => {
+        globalThis.fetch = async () => ({
+            ok: true,
+            json: async () => ({ status: 'ready', skill_radar: { overall_match: 70, skills: [] } }),
+        });
+        const state = profileCvUpload('tr', '/upload');
+        const file = new File(['pdf'], 'cv.pdf', { type: 'application/pdf' });
+
+        await state.onDrop({ preventDefault() {}, dataTransfer: { files: [file] } });
+
+        assert.equal(state.fileName, 'cv.pdf');
+        assert.equal(state.error, null);
+        assert.equal(PanelCvStore.get().fileName, 'cv.pdf');
+    });
+
+    it('rejects non-pdf drops with a localized error', async () => {
+        const state = profileCvUpload('tr', '/upload');
+        const file = new File(['txt'], 'notes.txt', { type: 'text/plain' });
+
+        await state.onDrop({ preventDefault() {}, dataTransfer: { files: [file] } });
+
+        assert.equal(state.error, 'Yalnızca PDF dosyası yükleyebilirsin.');
+        assert.equal(state.fileName, null);
+    });
+
+    it('toggles dragOver while dragging over the upload zone', () => {
+        const state = profileCvUpload('en', '/upload');
+        const zone = { contains() { return false; } };
+
+        state.onDragOver({ preventDefault() {}, currentTarget: zone, dataTransfer: { dropEffect: '' } });
+        assert.equal(state.dragOver, true);
+
+        state.onDragLeave({ preventDefault() {}, currentTarget: zone, relatedTarget: null });
+        assert.equal(state.dragOver, false);
+    });
+});
+
+describe('validateCvUploadFile', () => {
+    it('flags oversized PDF files', () => {
+        const file = new File([new Uint8Array((5 * 1024 * 1024) + 1)], 'big.pdf', { type: 'application/pdf' });
+        assert.equal(validateCvUploadFile(file, 'en'), 'File must be 5 MB or smaller.');
+        assert.equal(isPdfCvFile(file), true);
     });
 });
 

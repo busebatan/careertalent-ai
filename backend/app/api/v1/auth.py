@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.schemas.user import (UserCreate,UserLogin,UserResponse,TokenResponse,)
+from app.schemas.user import TokenResponse, UserCreate, UserLocaleUpdate, UserResponse
 from app.services import user_service
+from app.services.career_engine import CareerLocalizationError, ensure_career_localizations
 
 router = APIRouter()
 
@@ -44,4 +45,26 @@ def login(
 
 @router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.patch("/me/locale", response_model=UserResponse)
+def update_locale(
+    body: UserLocaleUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        ensure_career_localizations(db, current_user.id)
+    except CareerLocalizationError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "career_localization_failed",
+                "message": "Kariyer içerikleri seçilen panel dilinde hazırlanamadı. Lütfen tekrar deneyin.",
+            },
+        ) from exc
+    current_user.preferred_locale = body.preferred_locale
+    db.commit()
+    db.refresh(current_user)
     return current_user

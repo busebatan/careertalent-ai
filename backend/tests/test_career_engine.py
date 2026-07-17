@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -25,6 +26,25 @@ def fake_model(content):
     return Model()
 
 
+def analysis_localizations(data):
+    def localized():
+        return {
+            "current_role": data.get("current_role"),
+            "profile": data.get("profile", {}),
+            "skill_names": [item["name"] for item in data.get("skills", [])],
+            "radar_labels": [item["label"] for item in data.get("radar", [])],
+            "roles": [{
+                "title": item["title"],
+                "strengths": item["swot"]["strengths"],
+                "weaknesses": item["swot"]["weaknesses"],
+                "opportunities": item["swot"]["opportunities"],
+                "threats": item["swot"]["threats"],
+            } for item in data.get("roles", [])],
+        }
+
+    return {"tr": localized(), "en": localized()}
+
+
 def test_invoke_sends_schema_and_accepts_fenced_content_blocks(monkeypatch):
     captured = {}
     payload = '```json\n{"decision":"revise","confidence":0.6,"feedback":"Sahiplik kanıtı eksik"}\n```'
@@ -39,6 +59,26 @@ def test_invoke_sends_schema_and_accepts_fenced_content_blocks(monkeypatch):
     assert '"decision"' in captured["prompt"]
     assert '"confidence"' in captured["prompt"]
     assert "Zorunlu JSON Schema" in captured["prompt"]
+
+
+def test_invoke_retries_once_when_first_structured_output_is_invalid(monkeypatch):
+    responses = iter([
+        SimpleNamespace(content='{"decision":"revise"}'),
+        SimpleNamespace(content='{"decision":"revise","confidence":0.6,"feedback":"Kanıtı güçlendir"}'),
+    ])
+    calls = []
+
+    def invoke(_messages):
+        calls.append(True)
+        return next(responses)
+
+    monkeypatch.setattr(career_engine, "ai_configured", lambda: True)
+    monkeypatch.setattr(career_engine, "create_chat_model", lambda: SimpleNamespace(invoke=invoke))
+
+    result = career_engine._invoke("kanıtı incele", career_engine.EvidenceReviewAI)
+
+    assert result.feedback == "Kanıtı güçlendir"
+    assert len(calls) == 2
 
 
 def test_cv_text_is_authenticated_and_queued(client, monkeypatch):
@@ -134,21 +174,23 @@ def test_analysis_strict_ai_contains_all_tiers_and_null_current_role(client, mon
     db.add(row)
     db.commit()
     monkeypatch.setattr(career_engine, "ai_configured", lambda: True)
-    captured = {}
+    captured = {"prompts": []}
     response = '{"current_role":null,"profile":{},"skills":[{"name":"SQL","score":80}],"radar":[{"label":"SQL","score":80,"target":90}],"roles":[{"tier":"A","title":"Junior Analyst","readiness":75,"swot":{"strengths":["SQL"],"weaknesses":[],"opportunities":["Portfolio"],"threats":["Competition"]}},{"tier":"B","title":"BI Analyst","readiness":55,"swot":{"strengths":["SQL"],"weaknesses":["Power BI"],"opportunities":["Course"],"threats":["Gap"]}},{"tier":"C","title":"ML Engineer","readiness":25,"swot":{"strengths":[],"weaknesses":["ML"],"opportunities":["Bootcamp"],"threats":["Depth"]}}]}'
     def invoke(messages):
-        captured["prompt"] = messages[-1].content
-        return SimpleNamespace(content=response)
+        prompt = messages[-1].content
+        captured["prompts"].append(prompt)
+        content = json.dumps(analysis_localizations(json.loads(response))) if '"skill_names"' in prompt else response
+        return SimpleNamespace(content=content)
     monkeypatch.setattr(career_engine, "create_chat_model", lambda: SimpleNamespace(invoke=invoke))
     evidence = [{"task_title": "SQL portfolio", "skill_impacts": ["SQL"], "confidence": 0.94}]
     career_engine.analyze_row(db, row, evidence)
     assert row.status == "ready"
     assert row.current_role is None
     assert {item["tier"] for item in row.career_ladder} == {"A", "B", "C"}
-    assert "kronolojik olarak en son iş deneyiminin meslek unvanıdır" in captured["prompt"]
-    assert "ulaşılabilecek en yüksek zirve rollerdir" in captured["prompt"]
-    assert "SQL portfolio" in captured["prompt"]
-    assert '"confidence": 0.94' in captured["prompt"]
+    assert "kronolojik olarak en son iş deneyiminin meslek unvanıdır" in captured["prompts"][0]
+    assert "ulaşılabilecek en yüksek zirve rollerdir" in captured["prompts"][0]
+    assert "SQL portfolio" in captured["prompts"][0]
+    assert '"confidence": 0.94' in captured["prompts"][0]
     db.close()
 
 
@@ -161,7 +203,7 @@ def test_archived_cv_analysis_clears_old_target_only_after_ai_succeeds(client, m
     task = CareerTask(id="old-task", user_id=1, target_id=target.id, title="Eski görev", hint="", status="pending", evidence_required=True, evidence_types=["link"], skill_impacts=["SQL"], training_suggestions=[])
     evidence = Evidence(id="old-evidence", user_id=1, task_id=task.id, kind="link", url="https://example.com/work", status="accepted")
     db.add_all([row, target, task, evidence]); db.commit()
-    monkeypatch.setattr(career_engine, "_invoke", lambda _prompt, _schema: career_engine.CareerAnalysisAI.model_validate({
+    analysis_data = {
         "current_role": "Veri Analisti", "profile": {}, "skills": [{"name": "SQL", "score": 80}],
         "radar": [{"label": "SQL", "score": 80, "target": 90}],
         "roles": [
@@ -169,7 +211,12 @@ def test_archived_cv_analysis_clears_old_target_only_after_ai_succeeds(client, m
             {"tier": "B", "title": "BI Analyst", "readiness": 60, "swot": {"strengths": ["SQL"], "weaknesses": [], "opportunities": [], "threats": []}},
             {"tier": "C", "title": "Data Scientist", "readiness": 30, "swot": {"strengths": [], "weaknesses": ["ML"], "opportunities": [], "threats": []}},
         ],
-    }))
+    }
+    monkeypatch.setattr(career_engine, "_invoke", lambda _prompt, schema: (
+        career_engine.CareerAnalysisAI.model_validate(analysis_data)
+        if schema is career_engine.CareerAnalysisAI
+        else career_engine.CareerAnalysisLocalizationsAI.model_validate(analysis_localizations(analysis_data))
+    ))
 
     career_engine.analyze_row(db, row)
 
@@ -195,7 +242,22 @@ def test_current_analysis_keeps_last_ready_result_while_new_analysis_is_not_read
     auth = headers(client)
     override = __import__("app.main", fromlist=["app"]).app.dependency_overrides
     db = next(override[__import__("app.core.database", fromlist=["get_db"]).get_db]())
-    ready = CareerAnalysis(id="ready-analysis", user_id=1, status="ready", source="upload", file_name="working.pdf", cv_text="SQL", profile={}, skills=[], radar=[], career_ladder=[])
+    ready = CareerAnalysis(
+        id="ready-analysis",
+        user_id=1,
+        status="ready",
+        source="upload",
+        file_name="working.pdf",
+        cv_text="SQL",
+        profile={},
+        skills=[],
+        radar=[],
+        career_ladder=[],
+        localizations={
+            "tr": {"current_role": None, "profile": {}, "skills": [], "radar": [], "career_ladder": []},
+            "en": {"current_role": None, "profile": {}, "skills": [], "radar": [], "career_ladder": []},
+        },
+    )
     failed = CareerAnalysis(id="failed-analysis", user_id=1, status="failed", source="archive_generated", file_name="broken.pdf", cv_text="SQL", profile={}, skills=[], radar=[], career_ladder=[])
     db.add_all([ready, failed]); db.commit(); db.close()
 
@@ -239,14 +301,34 @@ def test_target_status_is_owned_and_closed_target_cannot_publish_stale_ai_plan(c
     auth = headers(client)
     override = __import__("app.main", fromlist=["app"]).app.dependency_overrides
     db = next(override[__import__("app.core.database", fromlist=["get_db"]).get_db]())
-    analysis = CareerAnalysis(id="plan-analysis", user_id=1, status="ready", source="text", cv_text="SQL analyst", current_role="Analyst", skills=[{"name": "SQL", "score": 80}], radar=[])
-    target = CareerTarget(id="stale-target", user_id=1, title="Data Scientist", source="ladder", status="queued")
+    analysis = CareerAnalysis(
+        id="plan-analysis",
+        user_id=1,
+        status="ready",
+        source="text",
+        cv_text="SQL analyst",
+        current_role="Analyst",
+        skills=[{"name": "SQL", "score": 80}],
+        radar=[],
+        localizations={
+            "tr": {"current_role": "Analist", "profile": {}, "skills": [{"name": "SQL", "score": 80}], "radar": [], "career_ladder": []},
+            "en": {"current_role": "Analyst", "profile": {}, "skills": [{"name": "SQL", "score": 80}], "radar": [], "career_ladder": []},
+        },
+    )
+    target = CareerTarget(
+        id="stale-target",
+        user_id=1,
+        title="Data Scientist",
+        source="ladder",
+        status="queued",
+        localizations={"tr": {"title": "Veri Bilimci"}, "en": {"title": "Data Scientist"}},
+    )
     db.add_all([analysis, target]); db.commit()
 
     def close_during_ai(_prompt, _schema):
         target.status = "closed"
         db.commit()
-        return career_engine.CareerPlanAI.model_validate({"tasks": [{
+        return career_engine.CareerPlanAI.model_validate({"target_title": "Data Scientist", "tasks": [{
             "title": "ML projesi", "hint": "Portfolyoya ekle", "evidence_required": True,
             "evidence_types": ["link"], "skill_impacts": ["ML"],
             "training_queries": [],
@@ -272,13 +354,18 @@ def test_ai_plan_prompt_and_tasks_change_with_new_target(client, monkeypatch):
     db.add_all([first, second]); db.commit()
     captured = {}
 
-    def dynamic_plan(prompt, _schema):
-        captured["prompt"] = prompt
-        return career_engine.CareerPlanAI.model_validate({"tasks": [{
-            "title": "ML model portfolyosu", "hint": "Hedef role özel", "evidence_required": True,
-            "evidence_types": ["link"], "skill_impacts": ["Machine Learning"],
-            "training_queries": [{"query": "ML Engineer Python model deployment course certificate", "skill": "Machine Learning", "reason": "Hedef rol boşluğu"}],
-        }]})
+    def dynamic_plan(prompt, schema):
+        captured[schema] = prompt
+        if schema is career_engine.CareerPlanAI:
+            return career_engine.CareerPlanAI.model_validate({"target_title": "ML Engineer", "tasks": [{
+                "title": "ML model portfolyosu", "hint": "Hedef role özel", "evidence_required": True,
+                "evidence_types": ["link"], "skill_impacts": ["Machine Learning"],
+                "training_queries": [{"query": "ML Engineer Python model deployment course certificate", "skill": "Machine Learning", "reason": "Hedef rol boşluğu"}],
+            }]})
+        return career_engine.CareerPlanLocalizationsAI.model_validate({
+            "tr": {"target_title": "ML Mühendisi", "tasks": [{"id": "0", "title": "ML model portfolyosu", "hint": "Hedef role özel", "skill_impacts": ["Machine Learning"], "feedback": None}]},
+            "en": {"target_title": "ML Engineer", "tasks": [{"id": "0", "title": "Build an ML model portfolio", "hint": "Tailored to the target role", "skill_impacts": ["Machine Learning"], "feedback": None}]},
+        })
 
     monkeypatch.setattr(career_engine, "_invoke", dynamic_plan)
     monkeypatch.setattr(career_engine, "search_training", lambda query, skill, _limit: [{"catalog_id": "web-course", "title": "ML Course", "provider": "example.com", "url": "https://example.com/ml", "skills": [skill], "rank": 1, "source": "web"}])
@@ -288,8 +375,8 @@ def test_ai_plan_prompt_and_tasks_change_with_new_target(client, monkeypatch):
     assert [task.title for task in tasks] == ["ML model portfolyosu"]
     assert tasks[0].training_suggestions[0]["catalog_id"] == "web-course"
     assert tasks[0].training_suggestions[0]["source"] == "web"
-    assert '"target_role": "ML Engineer"' in captured["prompt"]
-    assert '"target_role": "BI Analyst"' not in captured["prompt"]
+    assert '"target_role": "ML Engineer"' in captured[career_engine.CareerPlanAI]
+    assert '"target_role": "BI Analyst"' not in captured[career_engine.CareerPlanAI]
     db.close()
 
 
@@ -342,7 +429,17 @@ def test_reset_scopes_are_user_owned_and_keep_unselected_domain(client):
     override = __import__("app.main", fromlist=["app"]).app.dependency_overrides
     db = next(override[__import__("app.core.database", fromlist=["get_db"]).get_db]())
     own_analysis = CareerAnalysis(id="reset-analysis", user_id=1, status="ready", source="text", cv_text="CV")
-    other_analysis = CareerAnalysis(id="other-analysis", user_id=2, status="ready", source="text", cv_text="CV")
+    other_analysis = CareerAnalysis(
+        id="other-analysis",
+        user_id=2,
+        status="ready",
+        source="text",
+        cv_text="CV",
+        localizations={
+            "tr": {"current_role": None, "profile": {}, "skills": [], "radar": [], "career_ladder": []},
+            "en": {"current_role": None, "profile": {}, "skills": [], "radar": [], "career_ladder": []},
+        },
+    )
     own_target = CareerTarget(id="reset-target", user_id=1, title="Data Analyst", source="ladder", status="active")
     own_task = CareerTask(id="reset-task", user_id=1, target_id=own_target.id, title="SQL", hint="", status="pending", evidence_types=["link"], skill_impacts=["SQL"])
     own_evidence = Evidence(id="reset-evidence", user_id=1, task_id=own_task.id, kind="link", url="https://example.com", status="pending")

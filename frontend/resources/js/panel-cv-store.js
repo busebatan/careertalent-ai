@@ -1,5 +1,42 @@
 export const PANEL_CV_STORAGE_KEY = 'panel-cv-state';
 const CV_ANALYSIS_MAX_POLLS = 180;
+const CV_MAX_BYTES = 5 * 1024 * 1024;
+
+const CV_UPLOAD_MESSAGES = {
+    tr: {
+        invalid: 'Yalnızca PDF dosyası yükleyebilirsin.',
+        tooLarge: 'Dosya en fazla 5 MB olabilir.',
+    },
+    en: {
+        invalid: 'Only PDF files are allowed.',
+        tooLarge: 'File must be 5 MB or smaller.',
+    },
+};
+
+export function isPdfCvFile(file) {
+    if (!file) {
+        return false;
+    }
+
+    const name = String(file.name || '').toLowerCase();
+    const type = String(file.type || '').toLowerCase();
+
+    return type === 'application/pdf' || name.endsWith('.pdf');
+}
+
+export function validateCvUploadFile(file, locale = 'tr') {
+    const messages = CV_UPLOAD_MESSAGES[locale === 'en' ? 'en' : 'tr'];
+
+    if (!isPdfCvFile(file)) {
+        return messages.invalid;
+    }
+
+    if (file.size > CV_MAX_BYTES) {
+        return messages.tooLarge;
+    }
+
+    return null;
+}
 
 function formatAnalyzedAt(locale) {
     const d = new Date();
@@ -135,15 +172,62 @@ export function profileCvUpload(locale, analyzeUrl, statusUrl = '', redirectUrl 
         historyAnalyzeUrl,
         loading: false,
         historyLoadingId: null,
+        dragOver: false,
         error: null,
 
         init() {
             this.fileName = null;
         },
 
+        onDragOver(event) {
+            event.preventDefault();
+            if (this.loading) {
+                return;
+            }
+
+            if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = 'copy';
+            }
+
+            this.dragOver = true;
+        },
+
+        onDragLeave(event) {
+            event.preventDefault();
+            const related = event.relatedTarget;
+            if (!event.currentTarget.contains(related)) {
+                this.dragOver = false;
+            }
+        },
+
+        async onDrop(event) {
+            event.preventDefault();
+            this.dragOver = false;
+            if (this.loading) {
+                return;
+            }
+
+            const file = event.dataTransfer?.files?.[0];
+            if (file) {
+                await this.handleCvFile(file);
+            }
+        },
+
         async onFileSelect(event) {
             const file = event.target.files?.[0];
             if (!file) {
+                return;
+            }
+
+            await this.handleCvFile(file);
+            event.target.value = '';
+        },
+
+        async handleCvFile(file) {
+            const validationError = validateCvUploadFile(file, this.locale);
+            if (validationError) {
+                this.error = validationError;
+                this.fileName = null;
                 return;
             }
 
@@ -190,14 +274,12 @@ export function profileCvUpload(locale, analyzeUrl, statusUrl = '', redirectUrl 
 
                 if (payload.redirect) {
                     window.location.href = payload.redirect;
-                    return;
                 }
             } catch (err) {
                 this.error = err?.message || 'CV analizi başarısız';
                 this.fileName = null;
             } finally {
                 this.loading = false;
-                event.target.value = '';
             }
         },
 

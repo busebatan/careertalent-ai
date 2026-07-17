@@ -123,6 +123,12 @@ class AuthController extends Controller
             'access_token' => $accessToken,
             'user' => $user,
         ]);
+        $request->session()->put(
+            'panel_locale',
+            in_array($user['preferred_locale'] ?? null, ['tr', 'en'], true)
+                ? $user['preferred_locale']
+                : 'tr',
+        );
     }
 
     private function authError(?int $status): string

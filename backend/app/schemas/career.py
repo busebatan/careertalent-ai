@@ -55,6 +55,30 @@ class CareerAnalysisAI(BaseModel):
         return self
 
 
+class CareerRoleLocalizationAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    title: str = Field(min_length=2, max_length=160)
+    strengths: list[str] = Field(max_length=12)
+    weaknesses: list[str] = Field(max_length=12)
+    opportunities: list[str] = Field(max_length=12)
+    threats: list[str] = Field(max_length=12)
+
+
+class CareerAnalysisLocalizationAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    current_role: str | None = Field(default=None, max_length=160)
+    profile: dict[str, str] = Field(default_factory=dict, max_length=20)
+    skill_names: list[str] = Field(max_length=30)
+    radar_labels: list[str] = Field(max_length=30)
+    roles: list[CareerRoleLocalizationAI] = Field(max_length=15)
+
+
+class CareerAnalysisLocalizationsAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    tr: CareerAnalysisLocalizationAI
+    en: CareerAnalysisLocalizationAI
+
+
 class TrainingSearchQuery(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     query: str = Field(min_length=4, max_length=240)
@@ -74,7 +98,29 @@ class CareerPlanTaskAI(BaseModel):
 
 class CareerPlanAI(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
+    target_title: str = Field(min_length=2, max_length=160)
     tasks: list[CareerPlanTaskAI] = Field(min_length=1, max_length=12)
+
+
+class CareerTaskLocalizationAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    id: str = Field(min_length=1, max_length=80)
+    title: str = Field(min_length=2, max_length=240)
+    hint: str = Field(default="", max_length=1200)
+    skill_impacts: list[str] = Field(max_length=12)
+    feedback: str | None = Field(default=None, max_length=1200)
+
+
+class CareerPlanLocalizationAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    target_title: str = Field(min_length=2, max_length=160)
+    tasks: list[CareerTaskLocalizationAI] = Field(max_length=12)
+
+
+class CareerPlanLocalizationsAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    tr: CareerPlanLocalizationAI
+    en: CareerPlanLocalizationAI
 
 
 class CareerAnalysisResponse(BaseModel):
@@ -91,6 +137,7 @@ class CareerAnalysisResponse(BaseModel):
     error_code: str | None = None
     error_message: str | None = None
     created_at: str
+    locale: Literal["tr", "en"] = "tr"
 
 
 class CareerTargetRequest(BaseModel):
@@ -107,6 +154,7 @@ class CareerTargetResponse(BaseModel):
     status: str
     plan: dict
     created_at: str
+    locale: Literal["tr", "en"] = "tr"
 
 
 class CareerTaskResponse(BaseModel):
@@ -124,6 +172,7 @@ class CareerTaskResponse(BaseModel):
     has_evidence: bool = False
     evidence_verified: bool = False
     evidence_pending: bool = False
+    locale: Literal["tr", "en"] = "tr"
 
 
 class EvidenceCreateRequest(BaseModel):

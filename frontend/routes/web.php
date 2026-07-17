@@ -83,6 +83,7 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'panel.locale'])
     Route::get('/kariyer-rotam', [RoadmapController::class, 'show'])->name('roadmap');
     Route::post('/kariyer-rotam/hedef', [CareerLadderController::class, 'select'])->name('career-ladder.select');
     Route::get('/kariyer-rotam/plan-durumu/{targetId}', [RoadmapController::class, 'planStatus'])->name('roadmap.plan-status');
+    Route::get('/kariyer-rotam/analiz-durumu', [RoadmapController::class, 'analysisStatus'])->name('roadmap.analysis-status');
     Route::get('/ilan-analizi', [JobMatchesController::class, 'show'])->name('job-matches');
     Route::post('/ilan-analizi/analiz', [JobMatchesController::class, 'analyze'])->name('job-matches.analyze');
     Route::get('/ilan-analizi/{jobId}/durum', [JobMatchesController::class, 'status'])->name('job-matches.status');

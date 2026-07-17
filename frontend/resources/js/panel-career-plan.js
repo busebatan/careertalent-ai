@@ -1,4 +1,12 @@
 export function careerPlanWatcher(config, runtime = {}) {
+    return createCareerStatusWatcher(config, runtime, ['active', 'ready']);
+}
+
+export function careerAnalysisWatcher(config, runtime = {}) {
+    return createCareerStatusWatcher(config, runtime, ['ready']);
+}
+
+function createCareerStatusWatcher(config, runtime = {}, readyStatuses = ['active', 'ready']) {
     const fetcher = runtime.fetch || globalThis.fetch;
     const sleep = runtime.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
     const reload = runtime.reload || (() => globalThis.location?.reload());
@@ -15,12 +23,12 @@ export function careerPlanWatcher(config, runtime = {}) {
                     const payload = await response.json().catch(() => ({}));
                     if (!response.ok) throw new Error(payload.message || config.errorMessage);
                     this.status = payload.status || this.status;
-                    if (['active', 'ready'].includes(this.status)) {
+                    if (readyStatuses.includes(this.status)) {
                         reload();
                         return;
                     }
                     if (this.status === 'failed') {
-                        this.error = payload.message || config.failedMessage;
+                        this.error = payload.message || payload.error_message || config.failedMessage;
                         return;
                     }
                 } catch (error) {

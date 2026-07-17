@@ -27,6 +27,7 @@ class AuthFlowTest extends TestCase
             'email' => 'ayse@example.com',
             'is_active' => true,
             'is_admin' => $admin,
+            'preferred_locale' => 'en',
         ];
     }
 
@@ -52,6 +53,8 @@ class AuthFlowTest extends TestCase
 
     public function test_guest_can_login_and_session_is_regenerated(): void
     {
+        $this->withMiddleware();
+
         Http::fake([
             '*/api/v1/auth/login' => Http::response(['access_token' => 'jwt-token', 'token_type' => 'bearer']),
             '*/api/v1/auth/me' => Http::response($this->user()),
@@ -65,6 +68,7 @@ class AuthFlowTest extends TestCase
         $response->assertRedirect('/panel');
         $response->assertSessionHas('auth.access_token', 'jwt-token');
         $response->assertSessionHas('auth.user.id', 7);
+        $response->assertSessionHas('panel_locale', 'en');
     }
 
     public function test_admin_account_using_panel_login_is_redirected_to_admin_panel(): void

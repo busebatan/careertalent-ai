@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Integer, String, func
+from sqlalchemy import JSON, Boolean, CheckConstraint, DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -8,6 +8,9 @@ from app.core.database import Base
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint("preferred_locale IN ('tr', 'en')", name="ck_users_preferred_locale"),
+    )
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -64,6 +67,12 @@ class User(Base):
     token_version: Mapped[int] = mapped_column(
         Integer,
         default=0,
+        nullable=False,
+    )
+
+    preferred_locale: Mapped[str] = mapped_column(
+        String(2),
+        default="tr",
         nullable=False,
     )
 

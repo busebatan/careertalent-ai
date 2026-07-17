@@ -15,6 +15,7 @@ class PanelPagesI18nTest extends TestCase
 
     Http::fake([
       'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
+      'http://localhost:8000/api/v1/auth/me' => Http::response(['preferred_locale' => 'en'], 200),
       'http://localhost:8000/*' => Http::response([], 200),
     ]);
   }
@@ -78,12 +79,18 @@ class PanelPagesI18nTest extends TestCase
 
   public function test_locale_switch_tr_to_en(): void
   {
-    $this->withSession(['panel_locale' => 'tr'])
+    $this->withMiddleware();
+
+    $this->withSession(['auth.access_token' => 'token', 'panel_locale' => 'tr'])
       ->get('/panel/locale/en')
       ->assertRedirect()
       ->assertSessionHas('panel_locale', 'en');
 
-    $this->withSession(['panel_locale' => 'en'])
+    Http::assertSent(fn ($request): bool => $request->method() === 'PATCH'
+      && $request->url() === 'http://localhost:8000/api/v1/auth/me/locale'
+      && $request['preferred_locale'] === 'en');
+
+    $this->withSession(['auth.access_token' => 'token', 'panel_locale' => 'en'])
       ->get('/panel')
       ->assertSee('Welcome');
   }

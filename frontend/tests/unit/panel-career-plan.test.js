@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { careerPlanWatcher } from '../../resources/js/panel-career-plan.js';
+import { careerAnalysisWatcher, careerPlanWatcher } from '../../resources/js/panel-career-plan.js';
 
 describe('careerPlanWatcher', () => {
     it('polls queued AI plan and reloads when target-specific tasks become active', async () => {
@@ -36,5 +36,25 @@ describe('careerPlanWatcher', () => {
         assert.equal(watcher.status, 'failed');
         assert.equal(watcher.error, 'AI output invalid');
         assert.equal(reloaded, 0);
+    });
+});
+
+describe('careerAnalysisWatcher', () => {
+    it('polls queued CV analysis and reloads when analysis becomes ready', async () => {
+        const states = ['running', 'ready'];
+        let reloaded = 0;
+        const watcher = careerAnalysisWatcher(
+            { status: 'running', statusUrl: '/analysis/current', interval: 1, attempts: 3 },
+            {
+                sleep: async () => {},
+                fetch: async () => ({ ok: true, json: async () => ({ status: states.shift() }) }),
+                reload: () => { reloaded += 1; },
+            },
+        );
+
+        await watcher.start();
+        assert.equal(watcher.status, 'ready');
+        assert.equal(reloaded, 1);
+        assert.equal(watcher.error, '');
     });
 });

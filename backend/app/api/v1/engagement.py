@@ -17,13 +17,38 @@ from app.models.engagement import CareerChatMessage, CareerInterview, CareerInte
 from app.models.user import User
 from app.schemas.engagement import ApplicationCreate, ApplicationUpdate, CareerTaskStatusUpdate, ChatRequest, InterviewAnswerRequest, PersonalTaskCreate, PersonalTaskUpdate, ProfileUpdate, SkillEvidenceLinkRequest, TaskNoteUpdate
 from app.services.engagement import answer_chat, evaluate_interview_answer, serialize_answer, serialize_chat, serialize_interview, start_interview
-from app.services.career_engine import clear_skill_evidence, ensure_skill_evidence_task, serialize_task, submit_evidence
+from app.services.career_engine import (
+    CareerLocalizationError,
+    clear_skill_evidence,
+    ensure_career_localizations,
+    ensure_skill_evidence_task,
+    serialize_task,
+    submit_evidence,
+)
 from app.services.ai_factory import AIOutputError, AIProviderError, AIUnavailableError
 from app.tasks.career import review_evidence_task
 
 router = APIRouter(prefix="/career", tags=["Career Engagement"], dependencies=[Depends(get_current_user)])
 DB = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def _ensure_localized_target(db: Session, user: User, target_id: str) -> None:
+    try:
+        ensure_career_localizations(
+            db,
+            user.id,
+            target_id=target_id,
+            include_analysis=False,
+        )
+    except CareerLocalizationError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "career_localization_failed",
+                "message": "Kariyer içerikleri seçilen panel dilinde hazırlanamadı. Lütfen tekrar deneyin.",
+            },
+        ) from exc
 
 
 @router.get("/profile")
@@ -113,16 +138,18 @@ def update_ai_task_status(task_id: str, body: CareerTaskStatusUpdate, db: DB, us
     row = db.scalar(select(CareerTask).where(CareerTask.id == task_id, CareerTask.user_id == user.id))
     if row is None:
         raise HTTPException(status_code=404, detail="Görev bulunamadı")
+    _ensure_localized_target(db, user, row.target_id)
     row.status = body.status
     db.commit()
     db.refresh(row)
-    return serialize_task(row, db)
+    return serialize_task(row, db, user.preferred_locale)
 
 
 @router.post("/skill-evidence/link", status_code=201)
 def add_skill_link_evidence(body: SkillEvidenceLinkRequest, db: DB, user: CurrentUser):
     if db.scalar(select(CareerTarget.id).where(CareerTarget.id == body.target_id, CareerTarget.user_id == user.id)) is None:
         raise HTTPException(status_code=404, detail="Hedef bulunamadı")
+    _ensure_localized_target(db, user, body.target_id)
     try:
         task = ensure_skill_evidence_task(db, user.id, body.target_id, body.skill)
     except ValueError as exc:
@@ -130,13 +157,14 @@ def add_skill_link_evidence(body: SkillEvidenceLinkRequest, db: DB, user: Curren
     evidence = submit_evidence(db, user.id, task, "link", body.url, None)
     review_evidence_task.delay(evidence.id)
     db.refresh(task)
-    return {"skill": body.skill, "task": serialize_task(task, db), "evidence": _serialize_evidence(evidence)}
+    return {"skill": body.skill, "task": serialize_task(task, db, user.preferred_locale), "evidence": _serialize_evidence(evidence)}
 
 
 @router.post("/skill-evidence/upload", status_code=201)
 async def add_skill_file_evidence(db: DB, user: CurrentUser, skill: str = Form(...), target_id: str = Form(...), file: UploadFile = File(...)):
     if db.scalar(select(CareerTarget.id).where(CareerTarget.id == target_id, CareerTarget.user_id == user.id)) is None:
         raise HTTPException(status_code=404, detail="Hedef bulunamadı")
+    _ensure_localized_target(db, user, target_id)
     if file.content_type not in {"application/pdf", "image/png", "image/jpeg"}:
         raise HTTPException(status_code=422, detail="Yalnızca PDF, PNG veya JPEG kanıt kabul edilir")
     data = await file.read()
@@ -154,17 +182,18 @@ async def add_skill_file_evidence(db: DB, user: CurrentUser, skill: str = Form(.
     evidence = submit_evidence(db, user.id, task, "file", None, str(path))
     review_evidence_task.delay(evidence.id)
     db.refresh(task)
-    return {"skill": skill, "task": serialize_task(task, db), "evidence": _serialize_evidence(evidence)}
+    return {"skill": skill, "task": serialize_task(task, db, user.preferred_locale), "evidence": _serialize_evidence(evidence)}
 
 
 @router.delete("/skill-evidence", status_code=200)
 def remove_skill_evidence(skill: str, target_id: str, db: DB, user: CurrentUser):
     if db.scalar(select(CareerTarget.id).where(CareerTarget.id == target_id, CareerTarget.user_id == user.id)) is None:
         raise HTTPException(status_code=404, detail="Hedef bulunamadı")
+    _ensure_localized_target(db, user, target_id)
     task = clear_skill_evidence(db, user.id, target_id, skill)
     if task is None:
         return {"skill": skill, "task": None}
-    return {"skill": skill, "task": serialize_task(task, db)}
+    return {"skill": skill, "task": serialize_task(task, db, user.preferred_locale)}
 
 
 def _serialize_evidence(row: Evidence) -> dict:

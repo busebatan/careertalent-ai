@@ -4,7 +4,25 @@
 
 @section('content')
 <div class="mx-auto max-w-5xl"
-    x-data="careerTasks({{ Js::from($weeklyTasks) }}, {{ Js::from($personalTasks) }}, @js(route('panel.tasks.evidence', ['taskId' => '__TASK_ID__'])), @js(route('panel.tasks.status', ['taskId' => '__TASK_ID__'])), @js([
+    @if (! empty($isPlanPending) && ! empty($selectedTarget['id']))
+        x-data="careerPlanWatcher({{ Js::from([
+            'status' => $selectedTarget['status'] ?? 'queued',
+            'statusUrl' => route('panel.roadmap.plan-status', ['targetId' => $selectedTarget['id']]),
+            'failedMessage' => __('panel.roadmap.plan_failed'),
+            'errorMessage' => __('panel.roadmap.plan_status_error'),
+            'timeoutMessage' => __('panel.roadmap.plan_timeout'),
+        ]) }})"
+        x-init="start()"
+    @endif
+>
+    @if (! empty($isPlanPending) && empty($weeklyTasks))
+        <div class="panel-card mb-6 border-dashed p-6 text-center text-sm text-amber-600 dark:text-amber-300" role="status">
+            <p x-show="!error">{{ __('panel.roadmap.plan_generating') }}</p>
+            <p x-show="error" x-cloak x-text="error" class="text-red-600 dark:text-red-400"></p>
+        </div>
+    @endif
+
+    <div x-data="careerTasks({{ Js::from($weeklyTasks) }}, {{ Js::from($personalTasks) }}, @js(route('panel.tasks.evidence', ['taskId' => '__TASK_ID__'])), @js(route('panel.tasks.status', ['taskId' => '__TASK_ID__'])), @js([
         'link' => app()->getLocale() === 'en' ? 'GitHub or public URL' : 'GitHub veya açık URL',
         'file' => app()->getLocale() === 'en' ? 'Private file' : 'Private dosya',
         'submit' => app()->getLocale() === 'en' ? 'Submit evidence' : 'Kanıt gönder',
@@ -64,6 +82,9 @@
             <p x-show="task.feedback" x-cloak class="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200" x-text="task.feedback"></p>
         </article></template>
     </div>
-    <p x-show="!tasks.length" x-cloak class="panel-card border-dashed p-6 text-center text-sm text-slate-500">{{ __('panel.dashboard.tasks_empty') }}</p>
+    @if (empty($isPlanPending))
+        <p x-show="!tasks.length" x-cloak class="panel-card border-dashed p-6 text-center text-sm text-slate-500">{{ __('panel.dashboard.tasks_empty') }}</p>
+    @endif
+    </div>
 </div>
 @endsection

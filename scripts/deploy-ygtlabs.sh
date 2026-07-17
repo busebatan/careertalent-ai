@@ -9,12 +9,19 @@ DOMAIN="careertalent.ygtlabs.ai"
 echo "→ rsync $SRC → $DEST"
 rsync -a --delete \
   --exclude '.git' \
+  --exclude '.pytest_cache' \
+  --exclude '__pycache__' \
+  --exclude '*.pyc' \
+  --exclude '.phpunit.result.cache' \
   --exclude 'node_modules' \
   --exclude 'frontend/node_modules' \
   --exclude 'frontend/vendor' \
   --exclude 'frontend/.env' \
+  --exclude 'frontend/database/database.sqlite' \
+  --exclude 'frontend/storage' \
   --exclude 'backend/.env' \
   --exclude 'backend/.venv' \
+  --exclude 'backend/uploads' \
   --exclude '.superpowers' \
   "$SRC/" "$DEST/"
 

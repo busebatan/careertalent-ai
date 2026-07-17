@@ -102,6 +102,23 @@ class SkillPassportResponse(BaseModel):
     passport: SkillPassport
 
 
+class InterviewQuestion(BaseModel):
+    role: str
+    type: str
+    question: str
+    score: int = Field(..., ge=0, le=100)
+    feedback: str
+
+
+class InterviewSimulator(BaseModel):
+    questions: list[InterviewQuestion]
+    rubric: list[str]
+
+
+class InterviewResponse(BaseModel):
+    interview: InterviewSimulator
+
+
 class ApplicationItem(BaseModel):
     company: str
     role: str

@@ -57,6 +57,7 @@ def _build_deepseek() -> BaseChatModel:
         api_key=settings.DEEPSEEK_API_KEY,
         base_url=settings.DEEPSEEK_BASE_URL,
         temperature=settings.AI_TEMPERATURE,
+        model_kwargs={"response_format": {"type": "json_object"}},
     )
 
 

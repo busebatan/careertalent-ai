@@ -33,6 +33,7 @@ def create_user(
         admin_permissions=[],
         must_change_password=False,
         token_version=0,
+        preferred_locale="tr",
     )
 
     db.add(new_user)

@@ -396,6 +396,21 @@ class PanelDemoData
     }
 
     /**
+     * @return array{questions:list<array<string,mixed>>, rubric:list<string>}
+     */
+    public static function interviewSimulator(): array
+    {
+        return [
+            'questions' => [
+                ['role' => 'Junior Veri Analisti', 'type' => 'Teknik', 'question' => 'Bir satış tablosunda tekrar eden müşteri kayıtlarını nasıl temizler ve raporlarsın?', 'score' => 82, 'feedback' => 'SQL DISTINCT/JOIN, Pandas drop_duplicates ve kalite kontrol adımlarını söylediğinde güçlü cevap olur.'],
+                ['role' => 'Junior Veri Analisti', 'type' => 'Davranışsal', 'question' => 'Eksik veri yüzünden teslim tarihi riskli olduğunda ekibe nasıl bilgi verirsin?', 'score' => 76, 'feedback' => 'Risk, seçenek ve net sonraki adım formatında cevap ver. STAR tekniği ekle.'],
+                ['role' => 'BI Analisti', 'type' => 'Vaka', 'question' => 'Yönetim düşen dönüşüm oranını soruyor. İlk bakacağın 3 metrik nedir?', 'score' => 71, 'feedback' => 'Funnel kırılımı, trafik kaynağı ve segment bazlı dönüşüm analizi iyi başlangıç.'],
+            ],
+            'rubric' => ['Problem çerçevesi', 'Teknik doğruluk', 'Ölçülebilir etki', 'İletişim netliği'],
+        ];
+    }
+
+    /**
      * @return array{columns:list<array<string,mixed>>, metrics:array<string,int>}
      */
     public static function applicationTracker(): array

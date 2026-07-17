@@ -89,12 +89,23 @@ def test_ai_task_status_can_be_toggled_without_evidence(client):
     auth = register_and_headers(client)
     db = db_session()
     target = __import__("app.models.career_engine", fromlist=["CareerTarget"]).CareerTarget(
-        id="target-toggle", user_id=1, title="CFO", source="ladder", status="active",
+        id="target-toggle",
+        user_id=1,
+        title="CFO",
+        source="ladder",
+        status="active",
+        localizations={
+            "tr": {"title": "CFO", "task_titles": {"task-toggle": "Finansal analiz eğitimi"}},
+            "en": {"title": "CFO", "task_titles": {"task-toggle": "Financial analysis course"}},
+        },
     )
     task = __import__("app.models.career_engine", fromlist=["CareerTask"]).CareerTask(
         id="task-toggle", user_id=1, target_id=target.id, title="Financial analysis course", hint="Enroll",
         status="pending", evidence_required=True, evidence_types=["link"], skill_impacts=["Finance"],
-        training_suggestions=[],
+        training_suggestions=[], localizations={
+            "tr": {"title": "Finansal analiz eğitimi", "hint": "Kaydol", "skill_impacts": ["Finans"], "feedback": None},
+            "en": {"title": "Financial analysis course", "hint": "Enroll", "skill_impacts": ["Finance"], "feedback": None},
+        },
     )
     db.add_all([target, task])
     db.commit()
@@ -113,7 +124,15 @@ def test_skill_evidence_can_be_submitted_for_radar_skill_without_existing_task(c
     auth = register_and_headers(client)
     db = db_session()
     target = __import__("app.models.career_engine", fromlist=["CareerTarget"]).CareerTarget(
-        id="target-skill-ev", user_id=1, title="CFO", source="ladder", status="active",
+        id="target-skill-ev",
+        user_id=1,
+        title="CFO",
+        source="ladder",
+        status="active",
+        localizations={
+            "tr": {"title": "CFO", "task_titles": {}},
+            "en": {"title": "CFO", "task_titles": {}},
+        },
     )
     db.add(target)
     db.commit()

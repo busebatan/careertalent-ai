@@ -66,6 +66,7 @@ def test_register_login_and_me_contract(client: TestClient):
         "role": "student",
         "admin_permissions": [],
         "must_change_password": False,
+        "preferred_locale": "tr",
     }
     assert "password" not in response.json()
 
@@ -81,6 +82,7 @@ def test_register_login_and_me_contract(client: TestClient):
     assert me.status_code == 200
     assert me.json()["email"] == "ogrenci@example.com"
     assert me.json()["is_admin"] is False
+    assert me.json()["preferred_locale"] == "tr"
 
 
 @pytest.mark.parametrize(

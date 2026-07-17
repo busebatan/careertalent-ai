@@ -4,7 +4,16 @@
 
 @section('content')
 <div class="mx-auto max-w-3xl"
-    @if (! empty($selectedTarget['id']))
+    @if (! empty($isAnalysisPending))
+        x-data="careerAnalysisWatcher({{ Js::from([
+            'status' => $analysisStatus,
+            'statusUrl' => route('panel.roadmap.analysis-status'),
+            'failedMessage' => __('panel.roadmap.analysis_failed'),
+            'errorMessage' => __('panel.roadmap.analysis_status_error'),
+            'timeoutMessage' => __('panel.roadmap.analysis_timeout'),
+        ]) }})"
+        x-init="start()"
+    @elseif (! empty($selectedTarget['id']) && ! empty($isPlanPending))
         x-data="careerPlanWatcher({{ Js::from([
             'status' => $selectedTarget['status'] ?? 'queued',
             'statusUrl' => route('panel.roadmap.plan-status', ['targetId' => $selectedTarget['id']]),
@@ -55,6 +64,11 @@
         <h2 class="mb-5 text-xl font-bold">{{ __('panel.career_ladder.title') }}</h2>
         @if (! empty($careerLadder))
             @include('app.partials.career-ladder', ['selectedTarget' => $selectedTarget, 'careerTierMeta' => $careerTierMeta, 'hideSectionHeader' => true])
+        @elseif (! empty($isAnalysisPending))
+            <div class="panel-card border-dashed p-6 text-center text-sm text-amber-600 dark:text-amber-300" role="status">
+                <p x-show="!error">{{ __('panel.roadmap.analysis_in_progress') }}</p>
+                <p x-show="error" x-cloak x-text="error" class="text-red-600 dark:text-red-400"></p>
+            </div>
         @else
             <div class="panel-card border-dashed p-6 text-center text-sm text-slate-500">{{ app()->getLocale() === 'en' ? 'AI career ladder is not ready.' : 'AI kariyer merdiveni henüz hazır değil.' }}</div>
         @endif
@@ -73,8 +87,8 @@
                 </div></li>
             @endforeach
         </ol>
-        @elseif (! empty($selectedTarget) && in_array($selectedTarget['status'] ?? null, ['queued', 'running'], true))
-            <div class="panel-card mb-8 border-dashed p-6 text-center text-sm text-amber-600" role="status"><p x-show="!error">{{ __('panel.roadmap.plan_generating') }}</p><p x-show="error" x-cloak x-text="error" class="text-red-600 dark:text-red-400"></p></div>
+        @elseif (! empty($isPlanPending))
+            <div class="panel-card mb-8 border-dashed p-6 text-center text-sm text-amber-600 dark:text-amber-300" role="status"><p x-show="!error">{{ __('panel.roadmap.plan_generating') }}</p><p x-show="error" x-cloak x-text="error" class="text-red-600 dark:text-red-400"></p></div>
         @else
             <div class="panel-card mb-8 border-dashed p-6 text-center text-sm text-slate-500">{{ __('panel.dashboard.tasks_empty') }}</div>
         @endif

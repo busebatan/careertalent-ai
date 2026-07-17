@@ -64,7 +64,9 @@
                 {{ __('panel.skill_radar.analysis_cv', ['name' => $skillRadar['file_name'] ?? $cvFileName ?? 'cv']) }}
                 · {{ __('panel.skill_radar.analysis_source', ['source' => $sourceLabel]) }}
                 · {{ __('panel.skill_radar.analyzed_at', ['date' => $analysisDate]) }}
-                · <span class="break-all font-mono">{{ __('panel.skill_radar.analysis_id', ['id' => $skillRadar['analysis_id'] ?? '—']) }}</span>
+                @if (! empty($showAnalysisId))
+                    · <span class="break-all font-mono">{{ __('panel.skill_radar.analysis_id', ['id' => $skillRadar['analysis_id'] ?? '—']) }}</span>
+                @endif
                 @if (! empty($showClearInline))
                     · <button type="button" @click="resetOpen = true"
                         class="font-medium text-emerald-600 hover:underline dark:text-emerald-400">

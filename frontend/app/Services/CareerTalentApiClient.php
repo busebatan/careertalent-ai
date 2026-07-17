@@ -64,6 +64,13 @@ class CareerTalentApiClient
         }
     }
 
+    public function updatePreferredLocale(string $locale): array
+    {
+        return $this->patchJson('/api/v1/auth/me/locale', [
+            'preferred_locale' => $locale,
+        ], 120);
+    }
+
     /**
      * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
      */

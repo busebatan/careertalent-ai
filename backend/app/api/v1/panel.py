@@ -17,6 +17,7 @@ from app.schemas.panel import (
     CareerLadderResponse,
     ChatResponse,
     DashboardResponse,
+    InterviewResponse,
     JobMatchAnalyzeResponse,
     JobMatchesResponse,
     JobListingParseRequest,
@@ -205,6 +206,17 @@ def _skill_passport() -> dict:
     }
 
 
+def _interview() -> dict:
+    return {
+        "questions": [
+            {"role": "Junior Veri Analisti", "type": "Teknik", "question": "Bir satış tablosunda tekrar eden müşteri kayıtlarını nasıl temizler ve raporlarsın?", "score": 82, "feedback": "SQL DISTINCT/JOIN, Pandas drop_duplicates ve kalite kontrol adımlarını söylediğinde güçlü cevap olur."},
+            {"role": "Junior Veri Analisti", "type": "Davranışsal", "question": "Eksik veri yüzünden teslim tarihi riskli olduğunda ekibe nasıl bilgi verirsin?", "score": 76, "feedback": "Risk, seçenek ve net sonraki adım formatında cevap ver. STAR tekniği ekle."},
+            {"role": "BI Analisti", "type": "Vaka", "question": "Yönetim düşen dönüşüm oranını soruyor. İlk bakacağın 3 metrik nedir?", "score": 71, "feedback": "Funnel kırılımı, trafik kaynağı ve segment bazlı dönüşüm analizi iyi başlangıç."},
+        ],
+        "rubric": ["Problem çerçevesi", "Teknik doğruluk", "Ölçülebilir etki", "İletişim netliği"],
+    }
+
+
 def _applications() -> dict:
     return {
         "metrics": {"active": 6, "interviews": 2, "offers": 1},
@@ -341,6 +353,11 @@ def career_ladder() -> CareerLadderResponse:
 @router.get("/skill-passport", response_model=SkillPassportResponse)
 def skill_passport() -> SkillPassportResponse:
     return {"passport": _skill_passport()}
+
+
+@router.get("/interview", response_model=InterviewResponse)
+def interview() -> InterviewResponse:
+    return {"interview": _interview()}
 
 
 @router.get("/applications", response_model=ApplicationsResponse)

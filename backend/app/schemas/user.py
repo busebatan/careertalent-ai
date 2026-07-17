@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
@@ -31,6 +33,7 @@ class UserResponse(BaseModel):
     role: str = "student"
     admin_permissions: list[str] = Field(default_factory=list)
     must_change_password: bool = False
+    preferred_locale: Literal["tr", "en"] = "tr"
 
     model_config = {
         "from_attributes": True
@@ -38,4 +41,8 @@ class UserResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
-    token_type: str   
+    token_type: str
+
+
+class UserLocaleUpdate(BaseModel):
+    preferred_locale: Literal["tr", "en"]

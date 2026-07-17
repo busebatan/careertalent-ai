@@ -54,3 +54,12 @@ def test_get_active_model_name(monkeypatch):
     monkeypatch.setattr(ai_factory.settings, "AI_PROVIDER", "groq")
     monkeypatch.setattr(ai_factory.settings, "GROQ_MODEL", "llama-test")
     assert ai_factory.get_active_model_name() == "llama-test"
+
+
+def test_deepseek_client_enforces_json_output_mode(monkeypatch):
+    monkeypatch.setattr(ai_factory.settings, "DEEPSEEK_API_KEY", "sk-test")
+    monkeypatch.setattr(ai_factory.settings, "DEEPSEEK_MODEL", "deepseek-v4-flash")
+
+    model = ai_factory._build_deepseek()
+
+    assert model.model_kwargs["response_format"] == {"type": "json_object"}

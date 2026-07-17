@@ -26,6 +26,11 @@ class EnsureApiAuthenticated
         }
 
         $request->session()->put('auth.user', $result['body']);
+        $preferredLocale = $result['body']['preferred_locale'] ?? 'tr';
+        if (in_array($preferredLocale, ['tr', 'en'], true)) {
+            $request->session()->put('panel_locale', $preferredLocale);
+            app()->setLocale($preferredLocale);
+        }
         $request->attributes->set('auth.user', $result['body']);
 
         return $next($request);
