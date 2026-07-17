@@ -1,0 +1,78 @@
+{
+  "roles": [
+    {
+      "id": "data-analyst",
+      "title": "Veri Analisti",
+      "description": "Veriyi toplar, temizler, analiz eder ve iş kararlarına dönüştürür.",
+      "required_skills": [
+        {"name": "Advanced Excel (Pivot, VLOOKUP)", "level": "orta", "priority": "zorunlu"},
+        {"name": "Advanced SQL (Window Functions, CTEs, Joins)", "level": "orta", "priority": "zorunlu"},
+        {"name": "Python (Data Ingestion & Wrangling)", "level": "temel", "priority": "zorunlu"},
+        {"name": "Pandas & NumPy", "level": "temel", "priority": "zorunlu"},
+        {"name": "Data Visualization (Seaborn, Matplotlib)", "level": "temel", "priority": "zorunlu"},
+        {"name": "İstatistik & Hipotez Testleri", "level": "temel", "priority": "tercih"},
+        {"name": "Power BI & Dashboarding", "level": "temel", "priority": "tercih"},
+        {"name": "Data Storytelling & Etkili İletişim", "level": "orta", "priority": "zorunlu"}
+      ],
+      "weeks_template": 12
+    },
+    {
+      "id": "ml-engineer",
+      "title": "Makine Öğrenmesi Mühendisi",
+      "description": "ML modelleri geliştirir, eğitir ve üretime alır.",
+      "required_skills": [
+        {"name": "Python (OOP, Scripting, Data Structures)", "level": "ileri", "priority": "zorunlu"},
+        {"name": "Machine Learning (Scikit-Learn, XGBoost, CatBoost)", "level": "orta", "priority": "zorunlu"},
+        {"name": "Deep Learning (TensorFlow veya PyTorch)", "level": "temel", "priority": "tercih"},
+        {"name": "SQL (Data Extraction & ETL)", "level": "orta", "priority": "zorunlu"},
+        {"name": "Pandas & NumPy", "level": "orta", "priority": "zorunlu"},
+        {"name": "Linear Algebra, Calculus & Statistics", "level": "orta", "priority": "zorunlu"},
+        {"name": "Git & GitHub CI/CD Workflow", "level": "temel", "priority": "zorunlu"}
+      ],
+      "weeks_template": 16
+    },
+    {
+      "id": "backend-dev",
+      "title": "Backend Geliştirici",
+      "description": "Sunucu tarafı API ve veritabanı sistemleri geliştirir.",
+      "required_skills": [
+        {"name": "Python (OOP, Concurrency, Asyncio)", "level": "orta", "priority": "zorunlu"},
+        {"name": "FastAPI veya Django", "level": "temel", "priority": "zorunlu"},
+        {"name": "SQL & Relational Databases", "level": "orta", "priority": "zorunlu"},
+        {"name": "REST API Architecture", "level": "orta", "priority": "zorunlu"},
+        {"name": "Git & Version Control", "level": "temel", "priority": "zorunlu"},
+        {"name": "Docker & Containerization", "level": "temel", "priority": "tercih"},
+        {"name": "PostgreSQL & Query Optimization", "level": "temel", "priority": "tercih"}
+      ],
+      "weeks_template": 14
+    },
+    {
+      "id": "frontend-dev",
+      "title": "Frontend Geliştirici",
+      "description": "Kullanıcı arayüzlerini web ve mobil için geliştirir.",
+      "required_skills": [
+        {"name": "HTML5 / CSS3 & Modern Semantic Web", "level": "orta", "priority": "zorunlu"},
+        {"name": "Modern JavaScript (ES6+)", "level": "orta", "priority": "zorunlu"},
+        {"name": "React & State Management (Redux/Context)", "level": "temel", "priority": "zorunlu"},
+        {"name": "Git & GitHub Workflow", "level": "temel", "priority": "zorunlu"},
+        {"name": "Responsive Design & Tailwind CSS", "level": "temel", "priority": "zorunlu"},
+        {"name": "TypeScript & Static Typing", "level": "temel", "priority": "tercih"}
+      ],
+      "weeks_template": 14
+    },
+    {
+      "id": "business-analyst",
+      "title": "İş Analisti",
+      "description": "İş ihtiyaçlarını analiz eder, süreçleri iyileştirir.",
+      "required_skills": [
+        {"name": "Advanced Excel (Data Analysis, Modeling)", "level": "orta", "priority": "zorunlu"},
+        {"name": "SQL (Data Querying & Reporting)", "level": "temel", "priority": "zorunlu"},
+        {"name": "İş Süreci Modelleme (BPMN, UML)", "level": "temel", "priority": "zorunlu"},
+        {"name": "Gereksinim Analizi & Paydaş Yönetimi", "level": "ileri", "priority": "zorunlu"},
+        {"name": "Power BI & Data Visualization", "level": "temel", "priority": "tercih"},
+        {"name": "Agile / Scrum Frameworks", "level": "temel", "priority": "tercih"}
+      ],
+      "weeks_template": 10
+    }
+  ]
+}
