@@ -51,7 +51,10 @@ def start_interview(db: Session, user_id: int) -> CareerInterview:
             "Her soru farklı yetkinliği ölçsün",
             "Mülakatın zorluk seviyesini, 'career_context' içindeki profile bakarak adayın tecrübe süresine ve kıdemine göre dinamik olarak belirle.",
             "Adayın deneyimini aşan konulardan (örneğin giriş seviyesi bir aday için kurumsal çapta canlıya alma, ileri düzey mimari tasarım veya stratejik liderlik) KESİNLİKLE kaçın.",
-            "Teknik soruları tamamen adayın seviyesine uygun olarak; kullandığı araçlara, problem çözme yaklaşımına ve CV'sindeki projelere odakla."
+            "Teknik soruları tamamen adayın seviyesine uygun olarak; kullandığı araçlara, problem çözme yaklaşımına ve CV'sindeki projelere odakla.",
+            "Adayın daha iyi pratik yapabilmesi için, CV'si İngilizce olsa dahi tüm soruları ve yönergeleri Türkçe dilinde üret.",
+            "Değerlendirme kriteri olarak adayı dar bir kalıba sokup belirli kelimeleri (örneğin mAP, oversampling vb.) aratacak katı metinler yazma.",
+            "Değerlendirme/Yönerge alanını adaya taktik verecek bir Mentör formatında doldur. Örn: 'İpucu: Cevabında veri dengesizliğini nasıl çözdüğünden bahsederek hikayeni güçlendirebilirsin.'"
         ],
     }, ensure_ascii=False), InterviewQuestionsAI)
     row = CareerInterview(id=str(uuid4()), user_id=user_id, target_role=target_role, status="active", questions=output.model_dump(mode="json")["questions"])
@@ -67,7 +70,15 @@ def evaluate_interview_answer(db: Session, user_id: int, interview: CareerInterv
         "purpose": "Mülakat cevabını hedef rol ve adayın gerçek CV bağlamına göre değerlendir",
         "career_context": career_context(db, user_id), "target_role": interview.target_role,
         "question": question, "answer": answer,
-        "rules": ["Uzunluğa göre puan verme", "Somutluk, doğruluk, yapı ve role uygunluğu değerlendir", "CV'de olmayan iddiaları güçlü yan sayma"],
+        "rules": [
+            "Uzunluğa göre puan verme", 
+            "Somutluk, doğruluk, yapı ve role uygunluğu değerlendir", 
+            "CV'de olmayan iddiaları güçlü yan sayma",
+            "Adayın cevabını spesifik anahtar kelimelere göre değil, problem çözme yaklaşımına ve algoritmik mantığına göre değerlendir.",
+            "Acımasız bir sınav okuyucusu gibi değil, adayın potansiyelini ölçen deneyimli bir takım lideri (Mentör) gibi davran.",
+            "Aday mantığı doğru kurmuş ama bazı teknik terimleri unutmuşsa puanı sert kırma, bu eksikleri 'improvements' (gelişim alanları) kısmında yapıcı bir dille hatırlat.",
+            "Cevapta STAR (Durum, Görev, Eylem, Sonuç) metodolojisinin izlerini ara ve problemi adım adım çözmesini ödüllendir."
+        ],
     }, ensure_ascii=False), InterviewEvaluationAI)
     row = CareerInterviewAnswer(id=str(uuid4()), interview_id=interview.id, user_id=user_id, question_id=question_id, answer=answer, **output.model_dump(mode="json"))
     db.add(row); db.commit(); db.refresh(row)
