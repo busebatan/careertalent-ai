@@ -6,12 +6,26 @@ function headers() {
 export function careerInterview(initial, startUrl, scoreUrlTemplate, labels) {
     return {
         interview: initial, idx: 0, answer: '', result: null, busy: false, error: '', startUrl, scoreUrlTemplate, labels,
+        
+        // EKLENDİ: Dil seçimi penceresinin (modal) açık/kapalı durumu
+        showLangModal: false, 
+        
         get question() { return this.interview?.questions?.[this.idx] || null; },
-        async start() {
+        
+        // EKLENDİ: start fonksiyonu artık varsayılan olarak 'tr' olan bir language parametresi alıyor
+        async start(language = 'tr') { 
+            this.showLangModal = false; // Mülakat başlarken modalı kapat
             this.busy = true; this.error = '';
-            try { const r = await fetch(this.startUrl, { method: 'POST', headers: headers(), body: '{}' }); const p = await r.json().catch(() => ({})); if (!r.ok) throw new Error(p.message || labels.failed); this.interview = p; this.idx = 0; this.answer = ''; this.result = null; }
+            try { 
+                // EKLENDİ: Backend'in beklediği language parametresini JSON body içine ekledik
+                const r = await fetch(this.startUrl, { method: 'POST', headers: headers(), body: JSON.stringify({ language }) }); 
+                const p = await r.json().catch(() => ({})); 
+                if (!r.ok) throw new Error(p.message || labels.failed); 
+                this.interview = p; this.idx = 0; this.answer = ''; this.result = null; 
+            }
             catch (e) { this.error = e?.message || labels.failed; } finally { this.busy = false; }
         },
+        
         async score() {
             if (!this.question || this.answer.trim().length < 20) return;
             this.busy = true; this.error = '';
