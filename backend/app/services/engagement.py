@@ -46,7 +46,13 @@ def start_interview(db: Session, user_id: int) -> CareerInterview:
     output = _invoke(json.dumps({
         "purpose": "Adayın hedef mesleğine ve CV boşluklarına özel mülakat soruları üret",
         "target_role": target_role, "career_context": context,
-        "rules": ["Davranışsal ve teknik soruları dengeli dağıt", "Her soru farklı yetkinliği ölçsün"],
+        "rules": [
+            "Davranışsal ve teknik soruları dengeli dağıt", 
+            "Her soru farklı yetkinliği ölçsün",
+            "Mülakatın zorluk seviyesini, 'career_context' içindeki profile bakarak adayın tecrübe süresine ve kıdemine göre dinamik olarak belirle.",
+            "Adayın deneyimini aşan konulardan (örneğin giriş seviyesi bir aday için kurumsal çapta canlıya alma, ileri düzey mimari tasarım veya stratejik liderlik) KESİNLİKLE kaçın.",
+            "Teknik soruları tamamen adayın seviyesine uygun olarak; kullandığı araçlara, problem çözme yaklaşımına ve CV'sindeki projelere odakla."
+        ],
     }, ensure_ascii=False), InterviewQuestionsAI)
     row = CareerInterview(id=str(uuid4()), user_id=user_id, target_role=target_role, status="active", questions=output.model_dump(mode="json")["questions"])
     db.add(row); db.commit(); db.refresh(row)
