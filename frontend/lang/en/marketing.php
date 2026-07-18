@@ -88,9 +88,18 @@ return [
     ],
 
     'contact' => [
-        'title' => 'Contact',
+        'title' => 'Contact | CareerTalent AI',
+        'badge' => 'CONTACT US',
+        'heading' => 'Get in Touch',
         'intro' => 'Reach out for questions and partnership requests.',
-    ],
+    
+        'form' => [
+            'name' => 'Full Name',
+            'email' => 'Email Address',
+            'message' => 'Your Message',
+            'submit' => 'Send Message'
+    ]
+],
 
     'home' => [
         'title' => 'Home',
@@ -162,12 +171,43 @@ return [
         'node_plan' => 'Weekly route',
     ],
 
-
     'bootcamp' => [
-        'title' => 'Bootcamp',
-        'headline' => 'YZTA Bootcamp Partnership',
-        'body' => 'CareerTalent AI is the YZTA Bootcamp 2026 Group 92 pilot. Bootcamp students use it for free; mentors track cohort progress.',
-        'cta' => 'Join the pilot',
+        'title' => 'YZTA Bootcamp Partnership',
+        'hero' => [
+            'badge' => 'YZTA Bootcamp 2026 · Group 92 Pilot Project',
+            'headline' => 'Turn potential into a <em>measurable</em> career path',
+            'sub' => 'CareerTalent AI is a pilot project developed for the AI and Technology Academy (YZTA) Bootcamp 2026. Bootcamp students use it for free; mentors track cohort progress from a single dashboard.',
+            'cta_primary' => 'Join the Pilot',
+            'cta_secondary' => 'Source Code · GitHub',
+            'visual' => [
+                'preview' => 'Live preview',
+                'graph' => 'Skill Graph',
+                'active' => 'Active matching',
+                'signal' => 'Tracked signal',
+                'nodes' => [
+                    'skill' => 'Skill',
+                    'interest' => 'Interest',
+                    'role' => 'Role',
+                    'mentor' => 'Mentorship',
+                    'cohort' => 'Cohort',
+                ],
+            ],
+        ],
+        'partners' => [
+            'label' => 'Support and cooperation',
+        ],
+        'about' => [
+            'eyebrow' => 'What is YZTA Bootcamp?',
+            'headline' => 'We are part of Turkey\'s flagship AI program',
+            'p1' => 'The AI and Technology Academy started as the "Game and App Academy" at Teknofest in 2021; in 2024 it evolved into YZTA with a focus on AI, data science, and autonomous systems. Supported by the Ministry of Industry and Technology, Google Turkey, T3 Foundation, and the Entrepreneurship Foundation, it is offered for free to university students and graduates aged 18-29.',
+            'p2' => 'CareerTalent AI is the pilot project developed by Group 92 during the 2026 bootcamp, aiming to turn scholars\' skill sets into measurable career roadmaps.',
+            'facts' => [
+                ['value' => '2021', 'label' => 'Founded at Teknofest as "Game and App Academy"'],
+                ['value' => '2024', 'label' => 'Restructured as "AI and Technology Academy"'],
+                ['value' => '18–29', 'label' => 'Open to university students and graduates in this age range'],
+                ['value' => 'Free', 'label' => 'Project-based, entirely scholar-focused program'],
+            ],
+        ],
     ],
 
     'auth' => [

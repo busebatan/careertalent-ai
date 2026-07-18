@@ -88,9 +88,18 @@ return [
     ],
 
     'contact' => [
-        'title' => 'İletişim',
-        'intro' => 'Sorularınız ve iş birliği talepleri için bize ulaşın.',
-    ],
+        'title' => 'İletişim | CareerTalent AI',
+        'badge' => 'BİZE ULAŞIN',
+        'heading' => 'İletişime Geçin',
+        'intro' => 'Sorularınız ve iş birliği talepleriniz için bizimle iletişime geçin.',
+    
+        'form' => [
+            'name' => 'Ad Soyad',
+            'email' => 'E-posta Adresi',
+            'message' => 'Mesajınız',
+            'submit' => 'Gönder'
+    ]
+],
 
     'home' => [
         'title' => 'Ana Sayfa',
@@ -162,22 +171,43 @@ return [
         'node_plan' => 'Haftalık rota',
     ],
 
-    'features' => [
-        'title' => 'Özellikler',
-        'intro' => 'Kariyer hazırlığını uçtan uca yöneten araç seti.',
-        'cv' => 'Akıllı CV ayrıştırma (PDF → yetenek listesi)',
-        'career' => 'Hedef meslek seçimi ve eksik yetenek analizi',
-        'roadmap' => 'Haftalık yol haritası ve hazırlık yüzdesi',
-        'chat' => 'Yapay zeka kariyer asistanı (sohbet)',
-        'jobs' => 'İş ilanı eşleştirme (Faz 2)',
-        'soon' => 'Yakında',
-    ],
-
     'bootcamp' => [
-        'title' => 'Bootcamp',
-        'headline' => 'YZTA Bootcamp İş Birliği',
-        'body' => 'CareerTalent AI, YZTA Bootcamp 2026 Grup 92 pilot projesidir. Bootcamp öğrencileri ücretsiz kullanır; mentörler cohort ilerlemesini takip eder.',
-        'cta' => 'Pilot Programa Katıl',
+        'title' => 'YZTA Bootcamp İş Birliği',
+        'hero' => [
+            'badge' => 'YZTA Bootcamp 2026 · Grup 92 Pilot Projesi',
+            'headline' => 'Potansiyeli <em>ölçülebilir</em> bir kariyer rotasına dönüştürün',
+            'sub' => 'CareerTalent AI, Yapay Zeka ve Teknoloji Akademisi (YZTA) Bootcamp 2026 kapsamında geliştirilen bir pilot projedir. Bootcamp bursiyerleri ücretsiz kullanır; mentörler cohort ilerlemesini tek panodan takip eder.',
+            'cta_primary' => 'Pilot Programa Katıl',
+            'cta_secondary' => 'Kaynak Kodu · GitHub',
+            'visual' => [
+                'preview' => 'Canlı önizleme',
+                'graph' => 'Beceri Grafiği',
+                'active' => 'Aktif eşleştirme',
+                'signal' => 'İzlenen sinyal',
+                'nodes' => [
+                    'skill' => 'Beceri',
+                    'interest' => 'İlgi Alanı',
+                    'role' => 'Rol',
+                    'mentor' => 'Mentörlük',
+                    'cohort' => 'Cohort',
+                ],
+            ],
+        ],
+        'partners' => [
+            'label' => 'Destek ve iş birliği',
+        ],
+        'about' => [
+            'eyebrow' => 'YZTA Bootcamp nedir?',
+            'headline' => 'Türkiye\'nin amiral gemisi yapay zeka programının bir parçasıyız',
+            'p1' => 'Yapay Zeka ve Teknoloji Akademisi, 2021\'de Teknofest\'te "Oyun ve Uygulama Akademisi" adıyla başladı; 2024\'te yapay zeka, veri bilimi ve otonom sistemler odağıyla YZTA\'ya dönüştü. Program, Sanayi ve Teknoloji Bakanlığı himayesinde; Google Türkiye, T3 Girişim Merkezi ve Türkiye Girişimcilik Vakfı iş birliğiyle, 18-29 yaş arasındaki üniversite öğrencilerine ve mezunlara ücretsiz sunuluyor.',
+            'p2' => 'CareerTalent AI, bu bootcamp\'in 2026 döneminde Grup 92 takımı tarafından geliştirilen pilot projedir — bursiyerlerin beceri setini ölçülebilir bir kariyer rotasına dönüştürmeyi hedefler.',
+            'facts' => [
+                ['value' => '2021', 'label' => 'Teknofest\'te "Oyun ve Uygulama Akademisi" adıyla kuruldu'],
+                ['value' => '2024', 'label' => '"Yapay Zeka ve Teknoloji Akademisi" olarak yeniden yapılandırıldı'],
+                ['value' => '18–29', 'label' => 'yaş aralığındaki üniversite öğrencisi ve mezunlarına açık'],
+                ['value' => 'Ücretsiz', 'label' => 'proje tabanlı, tamamen bursiyer odaklı bir program'],
+            ],
+        ],
     ],
 
     'auth' => [
