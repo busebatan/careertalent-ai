@@ -1,7 +1,12 @@
+import json
+
+from sqlalchemy import select
+
 from app.core.database import get_db
 from app.main import app
 from app.models.career_engine import JobOpportunity
 from app.models.engagement import JobApplication
+from app.models.user import User
 from app.schemas.engagement import ChatReplyAI, InterviewEvaluationAI, InterviewQuestionAI, InterviewQuestionsAI
 
 
@@ -51,8 +56,10 @@ def test_chat_uses_ai_and_persists_user_and_assistant_messages(client, monkeypat
 
 def test_interview_questions_and_scoring_are_ai_backed(client, monkeypatch):
     auth = register_and_headers(client)
+    prompts = []
 
     def fake_invoke(_prompt, schema):
+        prompts.append(json.loads(_prompt))
         if schema is InterviewQuestionsAI:
             return InterviewQuestionsAI(questions=[
                 InterviewQuestionAI(id="q1", question="SQL optimizasyon örneğin nedir?", competency="SQL", guidance="STAR kullan"),
@@ -70,6 +77,34 @@ def test_interview_questions_and_scoring_are_ai_backed(client, monkeypatch):
     assert answer.json()["score"] == 82
     assert answer.json()["improvements"] == ["Etki metriği ekle"]
     assert len(client.get("/api/v1/career/interviews/current", headers=auth).json()["answers"]) == 1
+    assert "Türkçe" in " ".join(prompts[0]["rules"])
+    assert "Mentör" in " ".join(prompts[1]["rules"])
+
+
+def test_interview_uses_saved_panel_language_without_request_body(client, monkeypatch):
+    auth = register_and_headers(client, "english-panel@example.com")
+    db = db_session()
+    user = db.scalar(select(User).where(User.email == "english-panel@example.com"))
+    assert user is not None
+    user.preferred_locale = "en"
+    db.commit()
+    db.close()
+    prompts = []
+
+    def fake_invoke(prompt, _schema):
+        prompts.append(json.loads(prompt))
+        return InterviewQuestionsAI(questions=[
+            InterviewQuestionAI(id="q1", question="Describe a production incident.", competency="Operations", guidance="Use STAR"),
+            InterviewQuestionAI(id="q2", question="Explain a design tradeoff.", competency="Architecture", guidance="Be specific"),
+            InterviewQuestionAI(id="q3", question="How do you test a migration?", competency="Quality", guidance="Cover failure paths"),
+        ])
+
+    monkeypatch.setattr("app.services.engagement._invoke", fake_invoke)
+
+    response = client.post("/api/v1/career/interviews", headers=auth)
+
+    assert response.status_code == 201
+    assert "English" in " ".join(prompts[0]["rules"])
 
 
 def test_personal_tasks_persist_and_are_user_scoped(client):

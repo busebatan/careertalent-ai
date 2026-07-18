@@ -8,7 +8,6 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -32,10 +31,6 @@ from app.tasks.career import review_evidence_task
 router = APIRouter(prefix="/career", tags=["Career Engagement"], dependencies=[Depends(get_current_user)])
 DB = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
-
-
-class InterviewStartRequest(BaseModel):
-    language: str = "tr"
 
 
 def _ensure_localized_target(db: Session, user: User, target_id: str) -> None:
@@ -102,9 +97,9 @@ def current_interview(db: DB, user: CurrentUser):
 
 
 @router.post("/interviews", status_code=201)
-def create_interview(request: InterviewStartRequest, db: DB, user: CurrentUser):
+def create_interview(db: DB, user: CurrentUser):
     try:
-        return serialize_interview(start_interview(db, user.id, language=request.language))
+        return serialize_interview(start_interview(db, user.id, language=user.preferred_locale))
     except (AIUnavailableError, AIOutputError, AIProviderError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 

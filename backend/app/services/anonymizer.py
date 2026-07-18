@@ -1,29 +1,57 @@
-import re
-import spacy
+"""CV metnindeki kişisel bilgileri AI işleminden önce maskele."""
 
-# NLP modelini yükle
+from __future__ import annotations
+
+import re
+from typing import Any
+
 try:
-    nlp = spacy.load("xx_ent_wiki_sm")
-except OSError:
-    nlp = None
+    import spacy
+except ImportError:  # Optional contextual masking; deterministic masking stays active.
+    spacy = None
+
+
+def _load_contextual_model() -> Any | None:
+    if spacy is None:
+        return None
+    try:
+        return spacy.load("xx_ent_wiki_sm")
+    except OSError:
+        return None
+
+
+nlp = _load_contextual_model()
+
 
 def mask_deterministic_data(text: str) -> str:
-    # Email, Telefon, Link temizliği
-    text = re.sub(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', '[EMAIL_GIZLENDI]', text)
-    text = re.sub(r'(\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}', '[TELEFON_GIZLENDI]', text)
-    text = re.sub(r'https?://(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)', '[LINK_GIZLENDI]', text)
-    return text
+    text = re.sub(
+        r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+",
+        "[EMAIL_GIZLENDI]",
+        text,
+    )
+    text = re.sub(
+        r"(\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}",
+        "[TELEFON_GIZLENDI]",
+        text,
+    )
+    return re.sub(
+        r"https?://(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_+.~#?&//=]*)",
+        "[LINK_GIZLENDI]",
+        text,
+    )
+
 
 def mask_contextual_data(text: str) -> str:
-    if not nlp: return text
-    doc = nlp(text)
-    masked_text = text
-    for ent in reversed(doc.ents):
-        if ent.label_ == "PER":
-            masked_text = masked_text[:ent.start_char] + "[ADAY_ISMI]" + masked_text[ent.end_char:]
-        elif ent.label_ == "ORG":
-            masked_text = masked_text[:ent.start_char] + "[KURUM_ISMI]" + masked_text[ent.end_char:]
-    return masked_text
+    if nlp is None:
+        return text
+    document = nlp(text)
+    masked = text
+    for entity in reversed(document.ents):
+        replacement = {"PER": "[ADAY_ISMI]", "ORG": "[KURUM_ISMI]"}.get(entity.label_)
+        if replacement:
+            masked = masked[:entity.start_char] + replacement + masked[entity.end_char:]
+    return masked
+
 
 def anonymize_cv_text(raw_text: str) -> str:
     return mask_contextual_data(mask_deterministic_data(raw_text))
