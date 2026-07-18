@@ -173,20 +173,6 @@ return [
         'soon' => 'Yakında',
     ],
 
-    'how' => [
-        'title' => 'Nasıl Çalışır?',
-        'intro' => 'Dört adımda hedef mesleğe hazırlan.',
-        'step1_title' => 'CV\'ni yükle',
-        'step1_desc' => 'PDF\'nden yeteneklerini çıkarır, güçlü yönlerini listeler.',
-        'step2_title' => 'Hedef mesleğini seç',
-        'step2_desc' => 'Eksik yeteneklerini gör, hazırlık yüzdesini takip et.',
-        'step3_title' => 'Haftalık planla ilerle',
-        'step3_desc' => 'Görevler, eğitim önerileri ve yapay zeka asistanıyla hazırlan.',
-        'step4_title' => 'İş ilanlarıyla eşleş',
-        'step4_desc' => 'Hazır olunca sana uygun ilanları önerir (Faz 2).',
-        'cta' => 'Ücretsiz Kayıt Ol',
-    ],
-
     'bootcamp' => [
         'title' => 'Bootcamp',
         'headline' => 'YZTA Bootcamp İş Birliği',
