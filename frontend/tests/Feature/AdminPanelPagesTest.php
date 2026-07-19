@@ -9,6 +9,17 @@ use Tests\TestCase;
 
 class AdminPanelPagesTest extends TestCase
 {
+    private const BYPASS_MIDDLEWARE = [
+        \App\Http\Middleware\EnsureApiAuthenticated::class,
+        \App\Http\Middleware\EnsureApiAdmin::class,
+    ];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware(self::BYPASS_MIDDLEWARE);
+    }
+
     private function superAdminSession(): array
     {
         return [
