@@ -217,9 +217,9 @@ Sprint 1'den devreden auth ve CV analiz kuyruğu **Must** olarak önce kapatıld
 ### Sprint Board Updates
 
 - **Done:** Auth/session, CV upload ve geçmiş, dinamik career engine, hedef planı, locale kalıcılığı, AI mülakat, CV anonimleştirme, gerçek admin modülleri, kariyer veri merkezi, SSS/iletişim/bootcamp ve middleware/Alpine düzeltmesi.
-- **Sprint 3'e taşındı:** `docs/openapi.yaml`, fiyatlandırma/galeri/blog/hakkımızda, tam görev→skor otomasyonu, admin cohort/gelir, toplu scraper ve mentor demo fallback.
+- **Sprint 3'e taşındı:** `docs/openapi.yaml`, fiyatlandırma/galeri/blog/hakkımızda, tam görev→skor otomasyonu, admin cohort/gelir ve mentor demo fallback.
 - **PR kanıtı:** Sprint 2'de PR #2–#11 merge edildi; kapanışta **11 closed / 0 open PR**.
-- **Güncel board:** 19 Temmuz kapanışında GitHub Project üzerinde **10 Done / 6 Todo** kart doğrulandı. Kickoff ve orta nokta görüntüleri bulunmadığı için geçmiş ekran üretilmedi.
+- **Güncel board:** 19 Temmuz kapanışında GitHub Project üzerinde **10 Done / 5 Todo** kart doğrulandı. Kickoff ve orta nokta görüntüleri bulunmadığı için geçmiş ekran üretilmedi.
 
 [Canlı GitHub Project board](https://github.com/users/busebatan/projects/1)
 
