@@ -39,29 +39,29 @@ YZTA bootcamp ve benzeri programlardan mezun olan veya mezun olmaya hazırlanan 
 
 **Pitch:** ChatGPT kariyer koçu verir; CareerTalent ölçülebilir hazırlık, kariyer merdiveni, haftalık plan ve pazar gerçekliği verir.
 
-**Mimari karar (pivot notu):** Sprint 1-2 **Plan A** (FastAPI backend + Laravel frontend) ile başlandı. Gerekirse Sprint 1 veya 2 sonrası **Plan B** (Laravel ana + Python worker) değerlendirilir. Detay: [Teknik Mimari](docs/teknik-mimari.md#mimari-karar-ve-geçiş-planı).
+**Mimari karar (Sprint 2 kapanışı):** **Plan A** (FastAPI backend + Laravel frontend) devam ediyor. Auth köprüsü ve kariyer motoru çalıştığı için Plan B geçiş maliyeti gerekli görülmedi. Detay: [Teknik Mimari](docs/teknik-mimari.md#mimari-karar-ve-geçiş-planı).
 
 ### Ürün Özellikleri
 
-| Özellik | Açıklama | Sprint / Faz | Durum (5 Tem) |
+| Özellik | Açıklama | Sprint / Faz | Durum (19 Tem) |
 |---------|----------|--------------|---------------|
-| Akıllı CV ayrıştırma | PDF → metin → Gemini ile profil çıkarımı | Sprint 1 | Kısmen (API var, auth/kuyruk yok) |
-| Tanıtım sitesi | Marketing rotaları + i18n | Sprint 1 | İskelet (6 sayfa placeholder) |
-| Öğrenci paneli | `/panel/*` Layout A | Sprint 1 | İskelet (demo veri) |
-| Admin paneli | `/admin/*` cohort, readiness, öğrenci ve gelir modülleri | Sprint 2 | Demo panel |
-| CV oluşturucu | Harvard format, TR/EN şablon | Sprint 1 | UI hazır |
-| Kariyer merdiveni | A (≥%70), B (%40-69), C (<%40) | Sprint 2 | Demo + API iskeleti |
-| Readiness skoru | Rol başına hazırlık yüzdesi | Sprint 2 | Planlı |
-| SWOT (kanıtlı) | CV'den S/W, pazardan O/T | Sprint 2 | Planlı |
-| Haftalık yol haritası | Gap → görev → skor güncelleme | Sprint 2 | Demo |
-| Eğitim / sertifika önerisi | Ücretsiz/ücretli filtre, harici link | Sprint 2-3 | Demo seed |
-| Yetenek pasaportu | Proje/GitHub/sertifika kanıtlarıyla skill proof | Sprint 2 | Demo panel |
-| AI mülakat simülasyonu | Teknik/HR/vaka sorusu + demo skor/geri bildirim | Sprint 2 | Demo panel |
-| Başvuru takip CRM'i | Kaydedildi/başvuruldu/mülakat aşamaları | Sprint 2 | Demo panel |
-| İş radarı ve gap uyarısı | Hedef role göre ilan sinyali, maaş, eksik yetenek | Sprint 2 | Demo panel |
+| Akıllı CV ayrıştırma | PDF → metin → AI profil çıkarımı | Sprint 1-2 | Auth, kuyruk/eager görev ve kalıcı geçmiş çalışıyor |
+| Tanıtım sitesi | Marketing rotaları + i18n | Sprint 1-2 | 7 içerikli sayfa; 4 sayfa Sprint 3'e taşındı |
+| Öğrenci paneli | `/panel/*` Layout A | Sprint 1-2 | Gerçek API; mentor yüzeyi demo fallback |
+| Admin paneli | `/admin/*` readiness, öğrenci ve veri yönetimi | Sprint 2 | Gerçek çekirdek modüller; cohort/gelir eksik |
+| CV oluşturucu | Harvard format, TR/EN şablon | Sprint 1-2 | Çalışıyor; analiz akışına bağlı |
+| Kariyer merdiveni | A/B/C kişiye özel rol önerisi | Sprint 2 | CV'den dinamik 3–15 rol |
+| Readiness skoru | Rol başına hazırlık yüzdesi | Sprint 2 | Panel ve API'de çalışıyor |
+| SWOT | CV'den S/W, pazardan O/T | Sprint 2 | AI analiz çıktısında çalışıyor |
+| Haftalık yol haritası | Gap → görev → skor güncelleme | Sprint 2 | Plan üretiliyor; tam skor otomasyonu eksik |
+| Eğitim / sertifika önerisi | Ücretsiz/ücretli filtre, harici link | Sprint 2-3 | Dinamik eğitim araması |
+| Yetenek pasaportu | Proje/GitHub/sertifika kanıtlarıyla skill proof | Sprint 2 | Evidence API'ye bağlı |
+| AI mülakat simülasyonu | Teknik/HR/vaka sorusu + geri bildirim | Sprint 2 | Gerçek API, kıdem ve TR/EN seçimi |
+| Başvuru takip CRM'i | Kaydedildi/başvuruldu/mülakat aşamaları | Sprint 2 | Gerçek engagement API |
+| İş radarı ve gap uyarısı | Hedef role göre ilan sinyali ve eksik yetenek | Sprint 2 | Tek-ilan MVP |
 | Mentor değerlendirme pazarı | CV/portfolio/mülakat review paketleri | Sprint 3 | Demo panel |
-| İlan eşleştirme | Semantic uyum skoru | Faz 2 | Panel iskeleti |
-| Kariyer sohbet ajanı | Bağlamlı LangChain asistan | Sprint 3 | «Yakında» |
+| İlan eşleştirme | Semantic uyum skoru | Faz 2 | Tek URL analizi çalışıyor |
+| Kariyer sohbet ajanı | Bağlamlı LangChain asistan | Sprint 2 | Gerçek engagement API |
 | Mentör / cohort paneli | Kim takıldı, hazırlık özeti | Sprint 3 | Planlı |
 
 ### Hedef Kitle
@@ -77,11 +77,11 @@ YZTA bootcamp ve benzeri programlardan mezun olan veya mezun olmaya hazırlanan 
 
 Öncelik: **MoSCoW** (Must / Should / Could). Sprint ataması Product Owner (Yiğit) + SM (Buse) ile yapılır.
 
-| ID | User Story | Öncelik | Sprint | Durum (16 Tem) |
+| ID | User Story | Öncelik | Sprint | Durum (19 Tem) |
 |----|------------|---------|--------|---------------|
 | US-01 | Öğrenci olarak kayıt olup giriş yapabilmeliyim | Must | 1→2 | Tamamlandı (FastAPI JWT + Laravel session) |
 | US-02 | PDF CV yükleyebilmeliyim; iş kuyruğa alınmalı | Must | 1→2 | Tamamlandı (Celery + kalıcı CV kaydı) |
-| US-03 | Tanıtım sitesinde ürünü görebilmeliyim | Must | 1 | İskelet (kısmi içerik) |
+| US-03 | Tanıtım sitesinde ürünü görebilmeliyim | Must | 1→2 | Kısmen (7 içerikli, 4 placeholder sayfa) |
 | US-04 | Panelde backend/API sağlık durumunu görebilmeliyim | Must | 1 | Tamamlandı |
 | US-05 | CV'den yapılandırılmış profil çıkarılmalı | Must | 1–2 | Tamamlandı (AI kariyer analizi) |
 | US-06 | CV'den sabit katalog sınırı olmadan kişiye özel kariyer rolleri önerilmeli | Must | 2 | Tamamlandı (3–15 dinamik A/B/C rolü) |
@@ -214,49 +214,57 @@ Detay: [sprint-1-ilk-sprint.md](docs/sprintler/sprint-1-ilk-sprint.md)
 
 ---
 
-### Sprint 2 — İkinci Sprint (6 Temmuz – 19 Temmuz 2026) — Devam ediyor
+### Sprint 2 — İkinci Sprint (6 Temmuz – 19 Temmuz 2026) — Tamamlandı
 
-**Sprint hedefi:** Öğrenci hedef mesleğini seçsin; eksik yetenekler ve haftalık yol haritasını görsün; hazırlık % panelde görünsün.
+**Sprint hedefi:** Öğrenci hedef mesleğini seçsin; eksik yetenekler ve haftalık yol haritasını görsün; hazırlık yüzdesi panelde görünsün.
 
 #### Backlog Dağıtma Mantığı
 
-Sprint 1'den devreden JWT ve Celery **Must** olarak kapatıldı. Sprint 2 odağı; dinamik CV analizi, hedef rol, görev planı, gerçek admin verisi ve kariyer veri merkezi oldu. OpenAPI dosyası, marketing placeholder sayfaları, cohort/gelir modülleri ve tam görev→skor otomasyonu açık kaldı.
+Sprint 1'den devreden auth ve CV analiz kuyruğu **Must** olarak önce kapatıldı. Ardından CV→kişiye özel rol→hedef→görev planı zinciri, kullanıcı dili, admin yetki ayrımı ve gerçek veri modülleri önceliklendirildi. Livewire zorunlu görülmedi; Blade mimarisi korundu. OpenAPI, dört marketing sayfası, cohort/gelir ve tam görev→skor otomasyonu Sprint 3'e taşındı.
 
 #### Daily Scrum Notları
 
-6–16 Temmuz kayıtları; auth, Celery, CV belgeleri, dinamik kariyer motoru, panel/API entegrasyonu, admin gerçek verisi, kariyer veri merkezi ve dashboard CV aksiyon kartını kapsıyor. Ayrıntı: [Sprint 2 Daily Scrum](docs/sprintler/sprint-2-ikinci-sprint.md#daily-scrum-notları).
+6–19 Temmuz kayıtları; auth, CV/Celery, dinamik kariyer motoru, admin veri merkezi, drag-drop, TR/EN kalıcılığı, CV anonimleştirme, AI mülakat, PR #9–#11 ve final test/build kapanışını kapsıyor. Ayrıntı: [Sprint 2 Daily Scrum](docs/sprintler/sprint-2-ikinci-sprint.md#daily-scrum-notları).
 
 #### Sprint Board Updates
 
-- **Done:** JWT/session köprüsü, CV kuyruğu ve geçmişi, dinamik 3–15 kariyer rolü, hedef planı, AI asistan, tek-ilan analizi, gerçek admin modülleri, kariyer veri merkezi.
-- **In Progress:** OpenAPI dosyası, marketing içeriği, görev→skor otomasyonu, admin cohort/gelir kapsamı.
-- **To Do / ertelenen:** toplu ilan tarama ve opsiyonel Livewire geçişi.
+- **Done:** Auth/session, CV upload ve geçmiş, dinamik career engine, hedef planı, locale kalıcılığı, AI mülakat, CV anonimleştirme, gerçek admin modülleri, kariyer veri merkezi, SSS/iletişim/bootcamp ve middleware/Alpine düzeltmesi.
+- **Sprint 3'e taşındı:** `docs/openapi.yaml`, fiyatlandırma/galeri/blog/hakkımızda, tam görev→skor otomasyonu, admin cohort/gelir, toplu scraper ve mentor demo fallback.
+- **PR kanıtı:** Sprint 2'de PR #2–#11 merge edildi; kapanışta **11 closed / 0 open PR**.
+- Farklı günlerden board ekran görüntüsü bulunmadığı için geçmiş görüntü üretilmedi; commit/PR zaman çizelgesi ve 19 Temmuz PR ekranı kullanıldı.
 
-#### Ürün Durumu (16 Temmuz ara durum)
+#### Ürün Durumu (19 Temmuz kapanış)
 
 | Alan | Durum |
 |------|-------|
-| Öğrenci paneli | Gerçek FastAPI verisi; CV, kariyer rotası, görev, kanıt, başvuru ve mülakat akışları bağlı |
-| Kariyer analizi | Sabit meslek listesi yok; CV'den 3–15 kişiye özel A/B/C rolü |
-| Admin | Gerçek DB sayımları ve modülleri; kariyer rol/yetenek/kaynak/gereksinim CRUD |
-| Eksik | OpenAPI dosyası, 6 marketing placeholder, cohort/gelir modülleri, tam skor otomasyonu |
+| Öğrenci paneli | CV yükleme/oluşturma, analiz, kişiye özel rota, görev, kanıt, başvuru ve mülakat akışları gerçek API'ye bağlı |
+| Kariyer analizi | Sabit beş meslek sınırı yok; geçerli analizden 3–15 kişiye özel A/B/C rolü |
+| Dil | Panel tercihi kullanıcı hesabında saklanır; kariyer içeriği panel diline döner |
+| Admin | Ayrı admin login, rol kontrolü, hesap yönetimi ve gerçek veri modülleri |
+| Marketing | SSS, iletişim ve bootcamp tamamlandı; dört sayfa Sprint 3'e taşındı |
+| Test/build | Backend **100/100**, frontend PHP **164/164**, frontend JS **37/37**, Vite build başarılı |
 
-#### Sprint Review (16 Temmuz ara değerlendirme)
+19 Temmuz canlı ana sayfa, panel/admin login ve PR akışı görselleri Sprint 2 raporuna eklendi. PR #10/#11 `main` üzerinde yerelde doğrulandı; bu iki PR için ayrıca canlı deploy iddiası yoktur.
 
-CV yükleme→AI analiz→rol önerisi→hedef seçimi→görev planı akışı; kullanıcı/admin auth ayrımı; gerçek admin listeleri ve kariyer veri merkezi gösterilebilir durumda. Nihai review 19 Temmuz'da açık maddeler yeniden kontrol edilerek kapatılacak.
+#### Sprint Review
 
-#### Sprint Retrospective (16 Temmuz ara değerlendirme)
+Sprint hedefinin çekirdek akışı tamamlandı: CV analizi kişiye özel rol, gap, hedef ve haftalık plana dönüşüyor; panel dili ve admin yetki sınırı kalıcı hale geldi. Merge sonrası SSS testi ve bozuk `composer test` komutu düzeltildi. Statik OpenAPI, dört marketing sayfası, cohort/gelir ve tam skor otomasyonu yetişmedi; Sprint 3 backlog'una aktarıldı.
 
-Plan A iki servisli mimari auth ve kariyer akışında çalıştı. En büyük iyileştirme alanı; dokümanın runtime'dan geri kalmaması, demo etiketlerinin temizlenmesi ve OpenAPI sözleşmesinin repoya eklenmesi.
+#### Sprint Retrospective
+
+İki servisli Plan A mimarisi devam ediyor. Sprint 3 aksiyonları: ilk iki günde OpenAPI sözleşmesi, ilk haftada AI/DB session regresyon smoke'u ve kararsız backend testinin izolasyonu, orta noktaya kadar dört marketing sayfası, her board kontrol noktasında ekran görüntüsü.
 
 #### Her Sprint Sonunda Beklentiler
 
-- [x] Zorunlu altı sprint başlığı README ve Sprint 2 kaydında mevcut.
-- [x] 16 Temmuz ürün ve board ara durumu repo kanıtıyla güncel.
-- [x] Sprint 1 tarihsel kaydına dokunulmadı.
-- [ ] 19 Temmuz nihai Review/Retro ve kalan backlog kapanışı.
+- [x] Backlog Dağıtma Mantığı
+- [x] Daily Scrum Notları
+- [x] Sprint Board Updates
+- [x] Ürün Durumu ve final görselleri
+- [x] Sprint Review
+- [x] Sprint Retrospective ve sahipli Sprint 3 aksiyonları
+- [x] Sprint 1 tarihsel kaydı değiştirilmedi
 
-Detay: [sprint-2-ikinci-sprint.md](docs/sprintler/sprint-2-ikinci-sprint.md)
+Detay ve görsel kanıtlar: [sprint-2-ikinci-sprint.md](docs/sprintler/sprint-2-ikinci-sprint.md)
 
 ---
 

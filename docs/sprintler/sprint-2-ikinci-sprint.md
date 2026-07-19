@@ -6,7 +6,7 @@
 | **Süre** | ~14 gün |
 | **Hedef** | Kariyer seçimi, gap analizi, yol haritası MVP, hazırlık % göstergesi |
 | **Mimari** | Plan A (FastAPI + Laravel) |
-| **Durum** | Devam ediyor (16 Temmuz 2026 ara güncelleme) |
+| **Durum** | Tamamlandı (19 Temmuz 2026 kapanış) |
 
 ---
 
@@ -27,9 +27,11 @@ Sprint 1 tablosu ve backlog [sprint-1-ilk-sprint.md](sprint-1-ilk-sprint.md) dos
 
 ---
 
-## Ürün Durumu (16 Temmuz 2026 ara durum)
+## Ürün Durumu (19 Temmuz 2026 kapanış)
 
-> Sprint 1 kapanışından bu yana kod tabanı önemli ölçüde ilerledi. Aşağıdaki envanter **canlı ortam + repo** kanıtına dayanır.
+Sprint 2 sonunda öğrenci ve admin auth yüzeyleri ayrıldı; CV yükleme/oluşturma, AI analiz, kişiye özel kariyer rotası, hedef planı, görevler, kanıt, başvuru, mülakat ve admin veri yönetimi gerçek API akışlarına bağlandı. Kariyer analizi sabit beş meslekle sınırlı değil; geçerli CV analizinden 3–15 kişiye özel A/B/C rolü üretir.
+
+> **Kanıt sınırı:** 19 Temmuz görselleri canlı marketing ve auth yüzeylerinden alındı. PR #10 ve #11 aynı gün `main` dalına merge edildi ve yerelde test edildi; bu iki PR için ayrıca canlı deploy iddiası yoktur.
 
 **Canlı URL'ler:**
 - Tanıtım: https://careertalent.ygtlabs.ai/
@@ -37,128 +39,47 @@ Sprint 1 tablosu ve backlog [sprint-1-ilk-sprint.md](sprint-1-ilk-sprint.md) dos
 - Admin giriş: https://careertalent.ygtlabs.ai/admin/login
 - Öğrenci paneli: https://careertalent.ygtlabs.ai/panel
 - Admin paneli: https://careertalent.ygtlabs.ai/admin (admin JWT gerekir)
-- Eski kısayollar: `/giris` → `/panel/login`, `/kayit` → `/panel/register` (301)
 
 ### Katman özeti
 
-| Katman | Sprint 1 (5 Tem) | Bugün (16 Tem) | Delta |
-|--------|------------------|----------------|-------|
-| Marketing UI | ~55% | ~70% | Meslek sihirbazı, auth formları gerçek; 6 sayfa hâlâ placeholder |
-| Panel UI | ~70% demo | ~90% gerçek API | Auth, CV merkezi/geçmişi, dinamik kariyer rotası, görevler, kanıt, AI asistan, ilan ve başvuru akışları |
-| Admin UI | Planlı | ~85% gerçek API | Dashboard + 6 gerçek veri modülü + kariyer veri merkezi; cohort ve gelir kapsamı yok |
-| Backend API | ~40% | ~85% | JWT, Celery, dinamik career engine, engagement, CV CRUD, admin ve kariyer katalog CRUD |
-| Kariyer analizi | Sabit seed denemesi | Dinamik | CV içeriğinden 3–15 kişiye özel A/B/C rolü; sabit meslek sınırı yok |
-| Test | ~50% | Güncel | Frontend 148 test; backend 77 test |
+| Katman | Sprint 2 kapanışı | Kanıt / sınır |
+|--------|-------------------|---------------|
+| Marketing UI | Ana sayfa, özellikler, nasıl çalışır, bootcamp, meslekler, SSS ve iletişim içerikli | Fiyatlandırma, galeri, blog ve hakkımızda Sprint 3'e taşındı |
+| Panel UI | Auth, CV merkezi/geçmişi, dinamik kariyer rotası, görevler, kanıt, AI asistan, ilan, başvuru ve mülakat akışları | Mentor yüzeyi demo fallback |
+| Admin UI | Rol tabanlı giriş, dashboard, hesap yönetimi ve gerçek veri modülleri | Cohort ve gelir yönetimi Sprint 3'e taşındı |
+| Backend API | JWT, Celery/eager görev akışı, CV CRUD, dinamik career engine, engagement, admin ve katalog CRUD | Statik `docs/openapi.yaml` eksik; runtime `/openapi.json` var |
+| Kariyer analizi | CV'den 3–15 kişiye özel rol, gap, readiness ve haftalık plan | AI sağlayıcı geçersiz çıktı verirse analiz hata durumuna alınır; eski sonuç gösterilmez |
 
-### Sprint 1'den tamamlanan (Sprint 2 öncesi / hafta 1)
+### Sprint 2'de tamamlanan ana akışlar
 
 | Özellik | Kanıt |
 |---------|-------|
-| JWT auth (register/login/me) | `backend/app/api/v1/auth.py`, `frontend/app/Http/Middleware/EnsureApiAuthenticated.php` |
-| Laravel ↔ FastAPI oturum köprüsü | `AuthController.php`, `AuthFlowTest.php` |
-| Celery CV analiz kuyruğu | `backend/app/tasks/career.py`, `analyze_cv` task |
-| Career engine (CV analiz, hedef, görev planı) | `backend/app/services/career_engine.py`, `backend/app/api/v1/career.py` |
-| Panel gerçek API entegrasyonu | `CareerTalentApiClient.php`, `RoadmapController.php`, `TasksController.php` |
-| Hazırlık % hesaplama | `TaskReadinessCalculator.php` |
-| AI kariyer asistanı | `ChatController.php`, `engagement.py` |
-| İlan URL analizi (tek ilan) | `job_opportunity.py`, `JobMatchesController.php` |
-| Admin panel + gerçek veri modülleri | `backend/app/api/v1/admin.py`, `AdminController.php` |
-| Ayrı auth yüzeyleri (panel + admin login) | `AuthController.php`, `panel/login`, `admin/login` |
-| Admin gerçek veri modülleri | `backend/app/api/v1/admin.py`, `AdminController.php` |
-| Kariyer veri merkezi | `/admin/kariyer-veri-merkezi`, `career_data.py` |
-| Dashboard CV hızlı aksiyon kartı | `dashboard.blade.php`, `DashboardCvRadarTest.php` |
-| Canlı deploy | careertalent.ygtlabs.ai |
+| JWT auth + Laravel/FastAPI oturum köprüsü | PR #3, `AuthController.php`, auth testleri |
+| CV sürükle-bırak, anonimleştirme ve kalıcı geçmiş | `ee98363`, PR #7, CV testleri |
+| Dinamik kariyer analizi, hedef ve görev planı | `career_engine.py`, `career.py`, backend testleri |
+| Panel dilinin kullanıcı hesabında saklanması ve kariyer içeriğinin TR/EN dönmesi | `44d5c5b`, `cd2bf91` |
+| Adminin doğru panele yönlenmesi ve rol tabanlı hesap yönetimi | `f2862e7`, `052b5ee` |
+| AI mülakat kuralları ve TR/EN dil seçimi | PR #4–#6 ve #8 |
+| Marketing SSS, iletişim ve bootcamp içeriği | PR #10 |
+| Session middleware ve Alpine import temizliği | PR #11 |
 
-### Tanıtım sitesi envanteri (14 Temmuz)
+### Test ve build durumu (19 Temmuz)
 
-| Rota | Durum | Not |
-|------|-------|-----|
-| `/` | İçerik var | Hero, özellikler, panel önizlemesi, i18n TR/EN |
-| `/ozellikler`, `/nasil-calisir`, `/bootcamp` | İçerik var | Lang dosyalarından gerçek metin |
-| `/meslekler` | İnteraktif | 4 adımlı sihirbaz + `careers-catalog.json` |
-| `/panel/login`, `/panel/register` | Gerçek auth | Panel güvenlik yüzeyi (yeşil tema); FastAPI JWT |
-| `/admin/login` | Gerçek auth | Admin güvenlik yüzeyi (amber tema); yalnız `is_admin` |
-| `/giris`, `/kayit` | Redirect | 301 → `/panel/login`, `/panel/register` |
-| `/fiyatlandirma`, `/galeri`, `/faq`, `/blog`, `/hakkimizda`, `/iletisim` | Placeholder | «İçerik yakında eklenecek» |
+| Katman | Komut | Sonuç |
+|--------|-------|-------|
+| Backend | `DEBUG=false .venv/bin/pytest -q` | **100/100 geçti**; 1 Starlette deprecation uyarısı |
+| Frontend PHP | `composer test` | **164/164 geçti**, 889 assertion |
+| Frontend JS | `npm test` | **37/37 geçti**, 14 suite |
+| Frontend build | `npm run build` | Başarılı; yalnız 500 kB üzeri chunk uyarısı |
 
-### Auth yüzeyleri — ayrı ekran görüntüleri (14 Temmuz)
+### Kapanışta açık kalan kapsam
 
-> Panel ve admin için **ayrı güvenlik yüzeyleri**; marketing `/giris` artık yalnızca redirect. Görseller: `screenshots/sprint-2/auth/`
-
-| Yüzey | URL | Tema | Dosya |
-|-------|-----|------|-------|
-| Panel giriş | `/panel/login` | Yeşil (öğrenci) | `auth/panel-login.png` |
-| Panel kayıt | `/panel/register` | Yeşil (öğrenci) | `auth/panel-register.png` |
-| Admin giriş | `/admin/login` | Amber (yönetici) | `auth/admin-login.png` |
-
-**Panel giriş** — https://careertalent.ygtlabs.ai/panel/login
-
-![Panel giriş — güvenli oturum yüzeyi](screenshots/sprint-2/auth/panel-login.png)
-
-**Panel kayıt** — https://careertalent.ygtlabs.ai/panel/register
-
-![Panel kayıt — kariyer profili oluştur](screenshots/sprint-2/auth/panel-register.png)
-
-**Admin giriş** — https://careertalent.ygtlabs.ai/admin/login
-
-![Admin giriş — yönetim alanı](screenshots/sprint-2/auth/admin-login.png)
-
-### Panel envanteri (14 Temmuz)
-
-| Rota | Özellik | Veri kaynağı |
-|------|---------|--------------|
-| `/panel` | Dashboard | Career API + readiness hesabı |
-| `/panel/cv-merkezi` | CV yükle / oluştur / analiz | FastAPI CV + Celery |
-| `/panel/kariyer-rotam` | Hedef rol, merdiven, görevler, eğitim | Career engine + education search |
-| `/panel/kariyer-rotam/gorevler` | Görev listesi, durum, kanıt | Career tasks API |
-| `/panel/ilan-analizi` | Tek ilan URL analizi | `job_opportunity.py` |
-| `/panel/basvurularim` | Başvuru CRM | Engagement API |
-| `/panel/mulakat-hazirligi` | Mülakat simülasyonu | Engagement API |
-| `/panel/yetenek-pasaportu` | Yetenek kanıtları | Career evidence API |
-| `/panel/ai-yardimcisi` | Kariyer sohbet | LangChain engagement |
-| `/panel/uzmanlardan-destek` | Mentor marketplace | Demo fallback (`PanelDemoData`) |
-| `/panel/hesap` | Profil + CV geçmişi | Career profile + CV documents |
-
-Eski Sprint 1 rotaları (`/panel/cv-olustur`, `/panel/yol-haritasi` vb.) yeni isimlere **redirect** edilir.
-
-### Admin envanteri (16 Temmuz)
-
-| Rota | Modül | Veri |
-|------|-------|------|
-| `/admin` | Dashboard | Gerçek DB sayımları + son öğrenciler |
-| `/admin/kariyer-veri-merkezi` | Rol, yetenek, kaynak ve gereksinim CRUD | Gerçek FastAPI/DB |
-| `/admin/ogrenciler` | Öğrenci ve CV/analiz durumu | Gerçek FastAPI/DB |
-| `/admin/readiness` | CV analiz durumu ve yetenek sayısı | Gerçek FastAPI/DB |
-| `/admin/yetenek-pasaportu` | Kanıt kayıtları | Gerçek FastAPI/DB |
-| `/admin/is-radari` | Analiz edilen iş ilanları | Gerçek FastAPI/DB |
-| `/admin/basvurular` | Başvuru kayıtları | Gerçek FastAPI/DB |
-| `/admin/mulakatlar` | Mülakat kayıtları | Gerçek FastAPI/DB |
-
-**Not:** Admin rotaları `auth.api` + `auth.api.admin` middleware ile korunur. Cohort, mentor, eğitim, ayarlar ve gelir yönetimi henüz bu gerçek veri kapsamında değil.
-
-### Backend API envanteri (14 Temmuz)
-
-| Grup | Endpoint örnekleri | Durum |
-|------|-------------------|-------|
-| Health | `GET /health`, `GET /health/ready` | Tamamlandı |
-| Auth | `POST /auth/register`, `/login`, `GET /auth/me` | Tamamlandı |
-| CV | `POST /cv/analyze`, `/analyze-text`, CRUD documents | Tamamlandı (Celery kuyruk) |
-| Career | `POST /career/targets`, `GET .../tasks`, evidence, jobs | Tamamlandı |
-| Dinamik kariyer analizi | CV'den `current_role`, skills, radar ve 3–15 A/B/C rolü | Tamamlandı |
-| Kariyer veri yönetimi | `/admin/career-data/roles`, `skills`, `sources`, `requirements` CRUD | Tamamlandı |
-| Engagement | chat, interview, applications, personal tasks | Tamamlandı |
-| Panel (legacy demo) | `GET /panel/dashboard`, `/job-radar`, `/mentors` | Demo fallback; yeni iş `career/*` üzerinden |
-
-**Eksik:** `docs/openapi.yaml` (commit edilmiş sözleşme yok; runtime `/openapi.json` var).
-
-### Test durumu (16 Temmuz)
-
-| Katman | Araç | Sonuç |
-|--------|------|-------|
-| Frontend | PHPUnit | **148 test, 148 geçti** (16 Temmuz) |
-| Backend | pytest | **77 test, 77 geçti** (16 Temmuz) |
-
----
+- `docs/openapi.yaml` sözleşmesi
+- Fiyatlandırma, galeri, blog ve hakkımızda içerikleri
+- Görev tamamlama → readiness skorunun tam otomatik yeniden hesaplanması
+- Admin cohort/gelir modülleri
+- Toplu iş ilanı tarama
+- Mentor yüzeyindeki demo fallback'in kaldırılması
 
 ## Backlog Dağıtma Mantığı
 
@@ -166,7 +87,7 @@ Eski Sprint 1 rotaları (`/panel/cv-olustur`, `/panel/yol-haritasi` vb.) yeni is
 2. CV→analiz→hedef rol→görev planı uçtan uca akışı, ayrı ekran sayısından daha yüksek öncelik aldı.
 3. Meslek önerisi sabit katalogtan çıkarıldı; CV içeriğinden 3–15 dinamik A/B/C rolü üreten kariyer motoru kabul edildi.
 4. Admin'de demo zenginliği yerine gerçek DB kayıtları ve kariyer veri CRUD kapsamı öne alındı.
-5. Tamamlanmayan OpenAPI, marketing içeriği, cohort/gelir ve tam skor otomasyonu Sprint 2 kapanışında yeniden değerlendirilecek.
+5. Tamamlanmayan OpenAPI, dört marketing sayfası, cohort/gelir ve tam skor otomasyonu Sprint 3 backlog’una taşındı.
 
 ### Sprint hedefi
 
@@ -192,7 +113,7 @@ Eski Sprint 1 rotaları (`/panel/cv-olustur`, `/panel/yol-haritasi` vb.) yeni is
 | `openapi.yaml` v1 (careers, roadmap) | Döne | ☐ | Runtime OpenAPI var; dosya commit edilmedi |
 | JWT auth + kalıcı kullanıcı (Sprint 1 carry) | Döne | ☑ | Sprint 2 hafta 1'de tamamlandı |
 | Panel + admin ayrı login/register UI | Bithanya + Buse | ☑ | `/panel/login`, `/panel/register`, `/admin/login` |
-| Marketing placeholder sayfaları | Bithanya | ☐ | 6 sayfa hâlâ placeholder |
+| Marketing placeholder sayfaları | Bithanya | ☑ kısmen | SSS ve iletişim tamamlandı; fiyatlandırma, galeri, blog ve hakkımızda Sprint 3’e taşındı |
 
 ### Kabul kriterleri
 
@@ -202,7 +123,7 @@ Eski Sprint 1 rotaları (`/panel/cv-olustur`, `/panel/yol-haritasi` vb.) yeni is
 - [x] Panelde hazırlık % görünüyor
 - [ ] Görev tamamlanınca skor güncelleniyor (MVP: kısmen; kanıt akışı var, otomatik yeniden hesap sınırlı)
 - [ ] `docs/openapi.yaml` v1 commit edildi
-- [ ] Admin gerçek cohort/öğrenci verisi gösteriyor
+- [ ] Admin cohort ve gelir yönetimi tamamlandı
 
 ### Mimari retro (19 Temmuz — sprint kapanışı)
 
@@ -212,144 +133,130 @@ Eski Sprint 1 rotaları (`/panel/cv-olustur`, `/panel/yol-haritasi` vb.) yeni is
 |-------------|------------|-----|
 | Çift auth blokajı | Hayır | Laravel session + FastAPI JWT köprüsü çalışıyor |
 | API uyumsuzluğu | Kısmen | `openapi.yaml` eksik; panel `career/*` ile hizalandı |
-| Upload proxy sorunu | Hayır | CV upload + Celery kuyruk stabil |
+| Upload proxy sorunu | Hayır | CV upload ve queued/eager analiz akışı çalışıyor |
 | Demo baskısı | Kısmen | Admin çekirdek modülleri gerçek; mentor ve bazı destek yüzeyleri demo fallback |
 
 **Karar:** ☑ Plan A devam ☐ Plan B'ye geç ☐ Kısmi (sadece worker ayrımı)
 
-**Ara gerekçe (16 Tem):** Auth, dinamik career engine ve gerçek admin veri akışı Sprint 2 hedeflerinin çoğunu karşıladı. Plan B tetikleyicileri aktifleşmedi.
+**Final gerekçe (19 Tem):** Auth, dinamik career engine ve gerçek admin veri akışı Sprint 2 hedeflerini karşıladı. Plan B tetikleyicileri aktifleşmedi.
 
 ---
 
 ## Daily Scrum Notları
 
-| Tarih | Kim | Ne yapıldı? | Engel / not |
-|-------|-----|-------------|-------------|
-| 6.07 | Tüm takım | Sprint 2 kickoff; Sprint 1 carry (auth, Celery) önceliklendi | — |
-| 8.07 | Döne | JWT auth, CV Celery task, career engine API | — |
-| 10.07 | Buse | Panel rotaları yeniden adlandırıldı (`cv-merkezi`, `kariyer-rotam`); API client genişletildi | — |
-| 11.07 | Bithanya | Admin panel layout + demo modüller | Admin gerçek veri bekliyor |
-| 12.07 | Yiğit | Career ladder + education search entegrasyonu | Toplu job scraper ertelendi |
-| 13.07 | Buse | İş planı v002 (B2B cohort SaaS pivot) taslağı | `docs/is-planlari/2026-07-13-v002-iyilestirilmis-is-plani.md` |
-| 14.07 | Bithanya + Buse | Panel/admin ayrı auth yüzeyleri (`/panel/login`, `/panel/register`, `/admin/login`); sprint görselleri güncellendi | `/giris` → 301 redirect |
-| 14.07 | Repo güncellemesi | Admin dashboard ve modüller demo veriden gerçek FastAPI/DB kayıtlarına geçirildi | Cohort ve gelir modülleri kapsam dışı |
-| 14.07 | Repo güncellemesi | Kariyer veri merkezi eklendi; rol, yetenek, kaynak ve gereksinim CRUD akışları tamamlandı | Katalog kayıtları admin tarafından yönetilir |
-| 16.07 | Repo güncellemesi | Dashboard'a her zaman görünen “CV yükle / CV oluştur” kartı geri eklendi; TR/EN ve rota testleri güncellendi | Mükerrer boş-state butonları kaldırıldı |
-| 16.07 | Tüm takım | README ve Sprint 2 kaydı runtime gerçeğine göre revize edildi | Sprint 1 kaydı değiştirilmedi |
+<details open>
+<summary><strong>6–19 Temmuz günlük çalışma kayıtları</strong></summary>
 
----
+| Tarih | Kim | Ne yapıldı? | Engel / karar |
+|-------|-----|-------------|----------------|
+| 6.07 | Tüm takım | Sprint 2 kickoff; Sprint 1'den auth ve Celery işleri Must olarak alındı | — |
+| 8.07 | Döne | JWT auth, CV Celery task ve career engine API | — |
+| 10.07 | Buse | Panel rotaları yeniden adlandırıldı; API client genişletildi | — |
+| 11.07 | Bithanya | Admin panel layout ve ilk modüller | Gerçek admin verisi bekleniyor |
+| 12.07 | Yiğit | Career ladder ve eğitim arama entegrasyonu | Toplu scraper ertelendi |
+| 13.07 | Buse | İş planı v002 ve B2B cohort vizyonu | Sprint 3 kapsamına aday |
+| 14.07 | Bithanya + Buse | Panel/admin auth yüzeyleri ve ilk Sprint 2 görselleri | `/giris` artık redirect |
+| 14.07 | Takım | Admin gerçek DB modülleri ve kariyer veri merkezi | Cohort/gelir kapsam dışı |
+| 16.07 | Buse | Dashboard “CV yükle / CV oluştur” kartı, admin yönlendirme ve hesap rolleri | Sprint 1 kaydı korunarak ara doküman güncellendi |
+| 17.07 | Buse + Yiğit | CV drag-drop, panel dili kalıcılığı, kariyer içeriği lokalizasyonu, CV anonimleştirme ve AI mülakat iyileştirmeleri | AI/DB transaction ve FK hataları için düzeltmeler eklendi |
+| 18.07 | Bithanya + Buse | PR #9 UI güncellemeleri merge edildi; matcher/anonymizer ve frontend middleware testleri sağlamlaştırıldı | Doküman güncelliği geride kaldı |
+| 19.07 | Buse + takım | PR #10 ve #11 merge edildi; SSS/iletişim/bootcamp, session middleware ve Alpine temizliği tamamlandı | Merge regresyonu düzeltilip full test/build yeşile getirildi |
 
-## Sprint Board Updates (16 Temmuz ara özeti)
+</details>
 
-| Kolon | Öğe sayısı | Örnekler |
-|-------|------------|----------|
-| **Done** | 11 | Auth/session, Celery CV, CV geçmişi, dinamik career engine, hedef planı, panel API, readiness, AI chat, ilan/başvuru akışları, admin gerçek veri, kariyer veri merkezi |
-| **In Progress** | 4 | OpenAPI v1, marketing placeholder, görev→skor otomasyonu, admin cohort/gelir kapsamı |
-| **To Do / ertelenen** | 3 | Opsiyonel Livewire geçişi, statik learning_resources, toplu job scraper |
+## Sprint Board Updates (19 Temmuz kapanış)
 
-GitHub board: https://github.com/busebatan/careertalent-ai/issues
+| Durum | Sprint 2 kapanış öğeleri |
+|-------|--------------------------|
+| **Done** | Auth/session, CV upload ve geçmiş, dinamik career engine, hedef planı, locale kalıcılığı, AI mülakat, CV anonimleştirme, admin gerçek veri, kariyer veri merkezi, SSS/iletişim/bootcamp, middleware/Alpine düzeltmesi |
+| **Sprint 3'e taşındı** | `docs/openapi.yaml`, dört marketing sayfası, tam görev→skor otomasyonu, admin cohort/gelir, toplu scraper, mentor demo fallback |
+| **Kapsam kararı** | Livewire zorunlu görülmedi; mevcut Blade mimarisi korunacak, yalnız gerçek ihtiyaç doğarsa yeniden değerlendirilecek |
 
----
+**PR akışı:** Sprint 2 boyunca PR #2–#11 merge edildi. 19 Temmuz kapanışında **11 closed / 0 open PR** vardı.
+
+![19 Temmuz GitHub PR akışı](screenshots/sprint-2/github-pr-akisi-19-temmuz.png)
+
+> Sprint 2 sırasında farklı günlerden board ekran görüntüsü alınmamış. Geçmiş görüntü uydurulmadı; tarihli Daily kayıtları, commit/PR geçmişi ve 19 Temmuz PR ekranı kanıt olarak kullanıldı. Sprint 3 aksiyonu: kickoff, orta nokta ve kapanışta board ekran görüntüsü alınacak.
+
+GitHub PR geçmişi: https://github.com/busebatan/careertalent-ai/pulls?q=is%3Apr+is%3Aclosed
 
 ## Her Sprint Sonunda Beklentiler
 
-> **Tam teslim:** 19 Temmuz 2026  
-> Şablon: [sprint-rapor-sablonu.md](sprint-rapor-sablonu.md)
+- [x] **Backlog Dağıtma Mantığı:** hedef, Must/Should sırası, sahipler ve kabul kriterleri yazıldı.
+- [x] **Daily Scrum Notları:** 6–19 Temmuz kayıtları açılır-kapanır bölümde toplandı.
+- [x] **Sprint Board Updates:** Done ve Sprint 3'e taşınan işler ayrıldı; PR akışı kanıtlandı.
+- [x] **Ürün Durumu:** canlı görseller, repo sınırı ve güncel test/build sonucu eklendi.
+- [x] **Sprint Review:** başarılar, eksikler, teknik sonuçlar ve demo sınırı kapatıldı.
+- [x] **Sprint Retrospective:** Sprint 3 için sahipli ve ölçülebilir aksiyonlar yazıldı.
+- [x] README denetim özeti Sprint 2 final kaydıyla hizalandı.
 
-- [x] **Backlog Dağıtma Mantığı** güncel öncelik ve kapsam değişiklikleriyle yazıldı.
-- [x] **Daily Scrum Notları** 6–16 Temmuz repo kanıtlarıyla güncellendi.
-- [x] **Sprint Board Updates** Done / In Progress / To Do olarak özetlendi.
-- [x] **Ürün Durumu** gerçek ve demo ayrımıyla kaydedildi.
-- [x] **Sprint Review** ve **Sprint Retrospective** ara değerlendirmeleri yazıldı.
-- [x] README denetim özeti Sprint 2 ayrıntısıyla hizalandı.
-- [ ] 19 Temmuz nihai kapanışında test, demo, açık backlog ve son kararlar yeniden kaydedilecek.
+## Sprint Review (19 Temmuz final)
 
-## Sprint Review (16 Temmuz ara değerlendirme)
+### Özet
 
-### Özet (3–5 cümle)
+Sprint 1'den taşınan auth ve CV kuyruk borcu kapatıldı. CV→AI analiz→kişiye özel rol→hedef→haftalık görev zinciri, kullanıcı dili kalıcılığı ve admin yetki ayrımı gerçek API akışında çalışır hale geldi. Sprint sonunda PR #10 ve #11 dahil tüm açık PR'lar merge edildi; backend 100, frontend PHP 164 ve frontend JS 37 test geçti, Vite build tamamlandı. Statik OpenAPI, dört marketing sayfası, cohort/gelir ve tam görev→skor otomasyonu Sprint 3'e taşındı.
 
-Sprint 1'den taşınan auth ve Celery borçları kapatıldı; OpenAPI dosyası açık kaldı. Öğrenci paneli **career engine API** üzerinden CV analizi, sabit katalog sınırı olmadan 3–15 hedef rol, hedef seçimi, görev planı, hazırlık yüzdesi, kanıt, AI asistan ve tek-ilan analizi sunuyor. Admin paneli gerçek DB sayımları, altı gerçek veri modülü ve kariyer veri merkeziyle çalışıyor; cohort ve gelir kapsamı henüz yok. Tanıtım sitesinde auth ve meslek sihirbazı çalışıyor; 6 alt sayfa placeholder.
+### Planlandığı gibi başarılanlar
 
-### Tamamlanan işler (Sprint 1 sonrası kümülatif)
+- Sabit beş meslek sınırı kaldırıldı; CV içeriğine göre 3–15 rol üretiliyor.
+- CV yükleme/oluşturma, drag-drop, anonimleştirme, geçmiş ve analiz akışları tamamlandı.
+- Panel dili kullanıcı hesabında saklanıyor; kariyer rotası, SWOT ve görev içerikleri panel diline dönüyor.
+- Admin login öğrenci paneline düşmüyor; admin yetkisi ve geri dönüş akışı ayrıldı.
+- AI mülakat kuralları kıdem ve TR/EN seçimine göre geliştirildi.
+- Marketing SSS, iletişim ve bootcamp sayfaları içerik kazandı.
 
-| Görev | Sorumlu | Kanıt |
-|-------|---------|-------|
-| JWT auth + Laravel oturum köprüsü | Döne + Buse | `auth.py`, `AuthFlowTest.php` |
-| Celery CV analiz kuyruğu | Döne | `tasks/career.py` |
-| Career engine (analiz, hedef, görev) | Döne + Yiğit | `career_engine.py`, `test_career_engine.py` |
-| Panel gerçek API entegrasyonu | Buse | `CareerTalentApiClient.php`, frontend test suite |
-| Hazırlık % UI | Bithanya | `panel-dashboard.png`, `TaskReadinessCalculator.php` |
-| AI kariyer asistanı | Döne | `ChatController.php`, `engagement.py` |
-| Admin gerçek veri modülleri | Repo güncellemesi | `backend/app/api/v1/admin.py`, `AdminController.php` |
-| Kariyer veri merkezi | Repo güncellemesi | `career_data.py`, `admin/career-data.blade.php` |
-| Ayrı auth yüzeyleri (panel + admin) | Bithanya + Buse | `panel-login.png`, `panel-register.png`, `admin-login.png` |
-| Canlı deploy güncellemesi | Buse | careertalent.ygtlabs.ai |
+### Yetişmeyen / Sprint 3'e taşınanlar
 
-### Tamamlanmayan / devam eden
+| İş | Neden | Sprint 3 sonucu |
+|----|-------|-----------------|
+| `docs/openapi.yaml` | Runtime OpenAPI yeterli görülerek ertelendi | Sözleşme repoya alınacak |
+| Fiyatlandırma, galeri, blog, hakkımızda | Çekirdek ürün akışı önceliklendirildi | Dört sayfa içerikle tamamlanacak |
+| Admin cohort ve gelir | Çekirdek admin verisi önceliklendirildi | MVP kapsamı netleştirilip uygulanacak |
+| Tam görev→skor otomasyonu | Kanıt akışı önce tamamlandı | Readiness yeniden hesap sözleşmesi eklenecek |
+| Toplu job scraper | Tek-ilan MVP yeterli görüldü | Kapsam/fayda yeniden değerlendirilecek |
 
-| Görev | Sebep | Hedef |
-|-------|-------|-------|
-| `docs/openapi.yaml` v1 | Zaman; runtime OpenAPI yeterli görüldü | Sprint 2 kapanış |
-| Admin cohort ve gelir kapsamı | Çekirdek admin modülleri önceliklendirildi | Sprint 2 kapanış / Sprint 3 |
-| Marketing 6 placeholder | İçerik üretimi | Sprint 2 Should |
-| Livewire bileşenleri | Blade yeterli görüldü | Sprint 3 veya ertele |
-| Toplu job scraper | Tek-ilan MVP öncelik | Sprint 3 |
+### Teknik sonuç
 
-### Demo durumu (16 Temmuz)
+- `main` dalında açık PR kalmadı.
+- Merge sonrası SSS copy testi güncellendi; `composer test` doğrudan PHPUnit çalıştıracak şekilde düzeltildi.
+- Backend tam suite bir paralel koşuda iki geçici `503` hatası gösterdi; iki test tekil olarak ve ardından tam suite **100/100** geçti. Bu kararsızlık Sprint 3 QA takibine alındı.
+- Build başarılı; büyük chunk uyarısı performans borcu olarak kaydedildi.
 
-| Akış | Çalışıyor mu? | Not |
-|------|---------------|-----|
-| Tanıtım sitesi | Kısmen | Çekirdek + meslek sihirbazı evet; 6 sayfa placeholder |
-| Kayıt / giriş | Evet | `/panel/login`, `/panel/register`, `/admin/login`; `/giris` redirect |
-| CV yükleme | Evet | Celery kuyruk + kalıcı document |
-| Kariyer seçimi + gap | Kısmen | CV analizi sonrası hedef plan |
-| Yol haritası / görevler | Kısmen | AI plan; boş state yeni kullanıcıda |
-| Hazırlık % | Evet | Panel dashboard + kariyer rotam |
-| AI sohbet | Evet | Bağlamlı asistan |
-| İlan analizi (tek URL) | Evet | URL yapıştır → eşleşme |
-| Admin paneli | Kısmen | Çekirdek modüller gerçek DB; cohort/gelir eksik; admin login gerekir |
-| Mentor / iş radarı | Demo | `PanelDemoData` fallback |
+## Sprint Retrospective (19 Temmuz final)
 
-### Tamamlanma özeti
-
-| Katman | Tamamlanma (tahmini) | Açıklama |
-|--------|----------------------|----------|
-| Marketing UI | ~70% | Auth + sihirbaz; placeholder sayfalar eksik |
-| Panel UI | ~85% | Gerçek API; birkaç modül demo fallback |
-| Admin UI | ~85% | Gerçek çekirdek modüller + kariyer veri merkezi; cohort/gelir eksik |
-| Backend API | ~85% | Dinamik career engine ve admin API tamam; openapi dosyası eksik |
-| Kariyer analizi | Dinamik | CV'den 3–15 kişiye özel A/B/C rolü; sabit meslek sınırı yok |
-| Test | Güncel | Frontend 148/148; backend 77/77 |
-
-### Riskler ve engeller
-
-1. Gerçek admin modülleri «cohort ve gelir yönetimi de bitti» algısı yaratabilir; kapsam ayrımı net anlatılmalı.
-2. `openapi.yaml` eksikliği panel-backend sözleşmesini kırılgan bırakıyor.
-3. Sprint dokümanı runtime değişikliklerinden sonra aynı gün güncellenmezse README ile kod yeniden ayrışabilir.
-
-### Sonraki sprint önceliği (kalan Sprint 2 — max 3)
-
-1. **Admin cohort/gelir kapsamı** + openapi v1 commit
-2. Marketing **SSS + fiyatlandırma + iletişim** içeriği
-3. Görev tamamlama → readiness skor otomasyonu + kanıt akışı polish
-
-## Sprint Retrospective (16 Temmuz ara değerlendirme)
-
-| İyi gitti | İyileştirilecek | Aksiyon |
-|-----------|-----------------|---------|
-| CV→dinamik rol→hedef→plan zinciri gerçek API ile kuruldu | Eski sabit meslek anlatımı dokümanda kaldı | README ve Sprint 2 runtime sözleşmesine göre güncellendi |
-| Admin demo kayıtları gerçek DB verisine döndü | Cohort/gelir kapsamı henüz yok | Ayrı backlog maddesi ve açık kapsam etiketi |
-| Auth, CV kuyruğu ve geçmiş akışı stabil hale geldi | `docs/openapi.yaml` repoda yok | Sprint 2 kapanış önceliği |
-| Test sayısı ve kapsamı arttı | Yeni davranış sonrası eski beklenti testi kaldı | Full suite ile drift yakalanıp düzeltilecek |
+| İyi gitti | Zorlandık | Sprint 3 aksiyonu | Sorumlu / hedef |
+|-----------|-----------|------------------|------------------|
+| CV→rol→hedef→plan zinciri gerçek API ile kuruldu | AI çıktısı ve uzun DB işlemleri rota kaydını zaman zaman bozdu | AI şema hatası ve DB session yaşam döngüsü için regresyon smoke'u | Döne + Buse / Sprint 3 ilk hafta |
+| Auth ve admin rol ayrımı netleşti | İki servis sözleşmesi statik dosyada yok | `docs/openapi.yaml` üret, review ve CI doğrulaması ekle | Döne / Sprint 3 ilk 2 gün |
+| Takım PR üzerinden paralel ilerledi | Doküman runtime'dan üç gün geride kaldı | README/Daily aynı gün güncellenecek; board kickoff/orta/kapanışta çekilecek | Buse / her kontrol noktası |
+| Marketing ana akış güçlendi | Dört sayfa placeholder kaldı | Fiyatlandırma, galeri, blog ve hakkımızda içeriklerini bitir | Bithanya / Sprint 3 orta noktası |
+| Test sayısı arttı ve merge regresyonu yakalandı | Backend paralel koşuda geçici `503` verdi | Kararsız testi izole et; iki ardışık full suite ile kapanış kapısı koy | Yiğit + Döne / Sprint 3 ilk hafta |
 
 ### Mimari karar
 
-- **Plan A / Plan B:** Plan A devam
-- **Gerekçe:** Auth köprüsü ve career engine iki stack ayrımını doğruladı. Plan B maliyeti hâlâ gereksiz.
+- **Karar:** Plan A devam.
+- **Gerekçe:** Laravel session + FastAPI JWT köprüsü, dinamik career engine ve gerçek admin veri akışı çalışıyor. Plan B geçiş maliyetini haklı çıkaran blokaj oluşmadı.
+- **Sınır:** `docs/openapi.yaml` Sprint 3 başında tamamlanmazsa servis sözleşmesi yeniden risk olarak açılacak.
 
----
+## Ürün durumu görselleri (Sprint 2 final — 19 Temmuz)
 
-## Ürün durumu görselleri (Sprint 2 — 14 Temmuz)
+**Canlı ana sayfa** — 19 Temmuz 2026
+
+![Sprint 2 final canlı ana sayfa](screenshots/sprint-2/final-ana-sayfa-19-temmuz.png)
+
+**Canlı öğrenci giriş yüzeyi** — 19 Temmuz 2026
+
+![Sprint 2 final panel giriş](screenshots/sprint-2/final-panel-login-19-temmuz.png)
+
+**Canlı admin giriş yüzeyi** — 19 Temmuz 2026
+
+![Sprint 2 final admin giriş](screenshots/sprint-2/final-admin-login-19-temmuz.png)
+
+**Doğrulanmış panel dashboard** — 16 Temmuz 2026
+
+![Sprint 2 doğrulanmış panel dashboard](screenshots/sprint-2/panel-dashboard-verified.png)
+
+## Ürün gelişim görselleri (14 Temmuz ara durum)
 
 > Görseller 14 Temmuz yakalamasıdır. Admin ekranı o tarihte demo veriyle kaydedildi; 16 Temmuz runtime'ı gerçek FastAPI/DB verisine geçti. Canlı `/admin` admin JWT gerektirir.
 
@@ -423,6 +330,6 @@ Sprint 1'den taşınan auth ve Celery borçları kapatıldı; OpenAPI dosyası a
 ---
 
 *Raporu hazırlayan: Grup 92*  
-*Ara güncelleme: 16 Temmuz 2026*
+*Final güncelleme: 19 Temmuz 2026*
 
-*Durum: Devam ediyor (6 Tem – 19 Tem 2026)*
+*Durum: Tamamlandı (6 Tem – 19 Tem 2026)*
