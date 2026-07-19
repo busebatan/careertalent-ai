@@ -108,7 +108,7 @@ class MarketingPagesTest extends TestCase
 
     public function test_faq_sayfasi_acilir(): void
     {
-        $this->get('/faq')->assertStatus(200)->assertSee('Sıkça Sorulan Sorular');
+        $this->get('/faq')->assertStatus(200)->assertSee('Aklınıza takılan bir şey mi var?');
     }
 
     public function test_iletisim_sayfasi_acilir(): void
