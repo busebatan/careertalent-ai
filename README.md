@@ -244,7 +244,7 @@ Sprint 1'den devreden auth ve CV analiz kuyruğu **Must** olarak önce kapatıld
 | Marketing | SSS, iletişim ve bootcamp tamamlandı; dört sayfa Sprint 3'e taşındı |
 | Test/build | Backend **100/100**, frontend PHP **164/164**, frontend JS **37/37**, Vite build başarılı |
 
-19 Temmuz canlı ana sayfa, panel/admin login ve PR akışı görselleri Sprint 2 raporuna eklendi. PR #10/#11 `main` üzerinde yerelde doğrulandı; bu iki PR için ayrıca canlı deploy iddiası yoktur.
+19 Temmuz canlı ana sayfa, panel/admin login, yetkili gerçek admin dashboard/readiness/veri merkezi/hesap yönetimi ve PR akışı görselleri Sprint 2 raporuna eklendi. Admin kayıtlarındaki kişisel alanlar public görselde maskelendi. PR #10/#11 `main` üzerinde yerelde doğrulandı; bu iki PR için ayrıca canlı deploy iddiası yoktur.
 
 #### Sprint Review
 
