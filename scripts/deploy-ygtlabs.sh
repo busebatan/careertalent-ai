@@ -46,9 +46,13 @@ echo "→ storage dirs"
 mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
 chmod -R ug+rwx storage bootstrap/cache
 
-echo "→ migrate + Livewire assets (Alpine panel UI)"
-php artisan migrate --force --no-interaction
-php artisan livewire:publish --assets --no-interaction 2>/dev/null || true
+echo "→ Laravel runtime schema check"
+# FastAPI/Alembic owns the shared PostgreSQL business schema. Laravel only
+# consumes the existing users/career tables and needs its session/cache tables.
+php artisan tinker --execute="foreach (['sessions', 'cache', 'cache_locks'] as \$table) { if (! Illuminate\\Support\\Facades\\Schema::hasTable(\$table)) { throw new RuntimeException('Missing Laravel runtime table: '.\$table); } }"
+
+echo "→ Livewire assets (Alpine panel UI)"
+php artisan livewire:publish --assets --no-interaction
 
 echo "→ permissions"
 chown -R yigit:www-data "$DEST"
@@ -63,9 +67,14 @@ sudo -u yigit php artisan view:clear
 sudo -u yigit php artisan view:cache
 
 echo "→ backend services restart"
-systemctl restart careertalent-fastapi.service careertalent-celery.service
+systemctl restart careertalent-fastapi.service
 systemctl is-active --quiet careertalent-fastapi.service
-systemctl is-active --quiet careertalent-celery.service
+if grep -Eq '^CELERY_TASK_ALWAYS_EAGER=(true|1|yes|on)$' "$DEST/backend/.env"; then
+  systemctl stop careertalent-celery.service 2>/dev/null || true
+else
+  systemctl restart careertalent-celery.service
+  systemctl is-active --quiet careertalent-celery.service
+fi
 for attempt in {1..15}; do
   if curl -fsS --max-time 3 http://127.0.0.1:8000/health >/dev/null; then
     break
@@ -78,10 +87,14 @@ for attempt in {1..15}; do
 done
 
 echo "→ smoke (origin)"
-for path in / /panel /panel/kariyer-profilim /panel/cv-merkezi /panel/kariyer-rotam /panel/yetenek-pasaportu; do
+for path in / /ozellikler /nasil-calisir /bootcamp /faq /iletisim /panel/login /admin/login; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $DOMAIN" "https://127.0.0.1${path}" --insecure)
   echo "  $code $path"
+  [[ "$code" == "200" ]] || { echo "HTTP smoke failed: $code $path" >&2; exit 1; }
 done
+
+curl -fsS -H "Host: $DOMAIN" https://127.0.0.1/faq --insecure | grep -Fq 'Aklınıza takılan bir şey mi var?'
+curl -fsS -H "Host: $DOMAIN" https://127.0.0.1/iletisim --insecure | grep -Fq 'İletişime Geçin'
 
 lw=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $DOMAIN" "https://127.0.0.1/vendor/livewire/livewire.min.js" --insecure)
 echo "  $lw /vendor/livewire/livewire.min.js"
