@@ -11,4 +11,4 @@ def test_migration_graph_has_one_unambiguous_head() -> None:
 
     script = ScriptDirectory.from_config(config)
 
-    assert script.get_heads() == ["20260719_10"]
+    assert script.get_heads() == ["20260719_11"]

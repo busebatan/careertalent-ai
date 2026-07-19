@@ -148,11 +148,18 @@ class AdminController extends Controller
 
     public function storeOrganization(Request $request, CareerTalentApiClient $api): RedirectResponse
     {
+        $owner = $request->validate(['owner_email' => ['required', 'email']]);
         $response = $api->createAdminOrganization($this->organizationPayload($request));
+        if (! $response['ok']) {
+            return back()->withInput()->withErrors(['organizations' => $response['error']]);
+        }
+        $invitation = $api->inviteAdminOrganizationOwner($response['body']['id'], $owner['owner_email']);
+        if (! $invitation['ok']) {
+            return redirect()->route('admin.organizations')->withErrors(['organizations' => __('admin.organizations.created_invite_failed')]);
+        }
 
-        return $response['ok']
-            ? redirect()->route('admin.organizations')->with('status', __('admin.organizations.created'))
-            : back()->withInput()->withErrors(['organizations' => $response['error']]);
+        return redirect()->route('admin.organizations')->with('status', __('admin.organizations.created'))
+            ->with('company_invite_url', route('company.invitation', $invitation['body']['token']));
     }
 
     public function updateOrganization(
@@ -167,12 +174,50 @@ class AdminController extends Controller
             : back()->withErrors(['organizations' => $response['error']]);
     }
 
-    public function students(CareerTalentApiClient $api) { return $this->page('students', $api); }
-    public function readiness(CareerTalentApiClient $api) { return $this->page('readiness', $api); }
-    public function skillPassport(CareerTalentApiClient $api) { return $this->page('skill-passport', $api); }
-    public function jobRadar(CareerTalentApiClient $api) { return $this->page('job-radar', $api); }
-    public function applications(CareerTalentApiClient $api) { return $this->page('applications', $api); }
-    public function interviews(CareerTalentApiClient $api) { return $this->page('interviews', $api); }
+    public function inviteOrganizationOwner(
+        Request $request,
+        CareerTalentApiClient $api,
+        string $organization,
+    ): RedirectResponse {
+        $data = $request->validate(['owner_email' => ['required', 'email']]);
+        $response = $api->inviteAdminOrganizationOwner($organization, $data['owner_email']);
+
+        return $response['ok']
+            ? redirect()->route('admin.organizations')
+                ->with('status', __('admin.organizations.owner_invited'))
+                ->with('company_invite_url', route('company.invitation', $response['body']['token']))
+            : back()->withInput()->withErrors(['organizations' => $response['error']]);
+    }
+
+    public function students(CareerTalentApiClient $api)
+    {
+        return $this->page('students', $api);
+    }
+
+    public function readiness(CareerTalentApiClient $api)
+    {
+        return $this->page('readiness', $api);
+    }
+
+    public function skillPassport(CareerTalentApiClient $api)
+    {
+        return $this->page('skill-passport', $api);
+    }
+
+    public function jobRadar(CareerTalentApiClient $api)
+    {
+        return $this->page('job-radar', $api);
+    }
+
+    public function applications(CareerTalentApiClient $api)
+    {
+        return $this->page('applications', $api);
+    }
+
+    public function interviews(CareerTalentApiClient $api)
+    {
+        return $this->page('interviews', $api);
+    }
 
     public function careerData(Request $request, CareerTalentApiClient $api): View
     {
@@ -243,7 +288,6 @@ class AdminController extends Controller
     }
 
     /**
-     * @param  mixed  $counts
      * @return list<array{key: string, title: string, description: string, route: string, icon: string, count: int}>
      */
     private function modules(mixed $counts): array

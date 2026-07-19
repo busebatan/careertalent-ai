@@ -87,7 +87,7 @@ for attempt in {1..15}; do
 done
 
 echo "→ smoke (origin)"
-for path in / /ozellikler /nasil-calisir /bootcamp /faq /iletisim /panel/login /admin/login; do
+for path in / /ozellikler /nasil-calisir /bootcamp /faq /iletisim /panel/login /admin/login /company/login; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $DOMAIN" "https://127.0.0.1${path}" --insecure)
   echo "  $code $path"
   [[ "$code" == "200" ]] || { echo "HTTP smoke failed: $code $path" >&2; exit 1; }

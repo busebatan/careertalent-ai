@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Middleware\EnsureApiAdmin;
+use App\Http\Middleware\EnsureApiAuthenticated;
+use App\Http\Middleware\EnsureApiCandidate;
+use App\Http\Middleware\EnsureApiCompany;
+use App\Http\Middleware\SetMarketingLocale;
+use App\Http\Middleware\SetPanelLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,10 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'auth.api' => \App\Http\Middleware\EnsureApiAuthenticated::class,
-            'auth.api.admin' => \App\Http\Middleware\EnsureApiAdmin::class,
-            'panel.locale' => \App\Http\Middleware\SetPanelLocale::class,
-            'marketing.locale' => \App\Http\Middleware\SetMarketingLocale::class,
+            'auth.api' => EnsureApiAuthenticated::class,
+            'auth.api.admin' => EnsureApiAdmin::class,
+            'auth.api.company' => EnsureApiCompany::class,
+            'auth.api.candidate' => EnsureApiCandidate::class,
+            'panel.locale' => SetPanelLocale::class,
+            'marketing.locale' => SetMarketingLocale::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

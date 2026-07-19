@@ -1,0 +1,57 @@
+- generic [ref=f2e2]:
+  - complementary "CareerTalent Company" [ref=f2e3]:
+    - generic [ref=f2e4]:
+      - link "CareerTalent Company" [ref=f2e5] [cursor=pointer]:
+        - /url: http://127.0.0.1:18997/company
+        - text: CareerTalent
+        - generic [ref=f2e6]: Company
+      - generic [ref=f2e7]:
+        - paragraph [ref=f2e8]: E2E Acme Teknoloji
+        - paragraph [ref=f2e9]: Kurum Sahibi
+      - navigation [ref=f2e10]:
+        - paragraph [ref=f2e11]: Genel
+        - link "▦ Kurum Özeti" [ref=f2e12] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company
+          - text: ▦
+          - generic [ref=f2e13]: Kurum Özeti
+        - paragraph [ref=f2e14]: Kurum Yönetimi
+        - link "♙ Ekip ve Yetkiler" [ref=f2e15] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company/ekip
+          - text: ♙
+          - generic [ref=f2e16]: Ekip ve Yetkiler
+        - link "⚙ Kurum Profili" [ref=f2e17] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company/profil
+          - text: ⚙
+          - generic [ref=f2e18]: Kurum Profili
+      - generic [ref=f2e19]:
+        - generic [ref=f2e20]:
+          - paragraph [ref=f2e21]: E2E Company Owner
+          - paragraph [ref=f2e22]: owner@e2e-acme.example.com
+        - button "Çıkış yap" [ref=f2e24]
+  - generic [ref=f2e25]:
+    - banner [ref=f2e26]:
+      - generic [ref=f2e27]:
+        - generic [ref=f2e28]: Kurum bağlamı doğrulandı
+        - generic [ref=f2e29]:
+          - link "TR" [ref=f2e30] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/company/locale/tr
+          - link "EN" [ref=f2e31] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/company/locale/en
+        - button "Tema" [ref=f2e32]: ◐
+    - main [ref=f2e33]:
+      - generic [ref=f2e34]:
+        - heading "Ekip ve Yetkiler" [level=1] [ref=f2e35]
+        - paragraph [ref=f2e36]: Her kullanıcı yalnız rolünün izin verdiği kurum işlemlerini görür.
+        - generic [ref=f2e37]:
+          - textbox "ekip@kurum.com" [ref=f2e38]
+          - combobox [ref=f2e39]:
+            - option "Kurum Yöneticisi" [selected]
+            - option "İşe Alım Uzmanı"
+            - option "Teknik Yönetici"
+            - option "Görüntüleyici"
+          - button "Davet oluştur" [ref=f2e40]
+        - article [ref=f2e42]:
+          - generic [ref=f2e43]:
+            - paragraph [ref=f2e44]: E2E Company Owner
+            - paragraph [ref=f2e45]: owner@e2e-acme.example.com
+          - generic [ref=f2e46]: Kurum Sahibi

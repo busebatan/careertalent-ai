@@ -1,0 +1,54 @@
+- generic [active] [ref=e1]:
+  - link "İçeriğe geç" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - link "CareerTalent AI" [ref=e5] [cursor=pointer]:
+        - /url: http://127.0.0.1:18997
+      - generic [ref=e11]:
+        - generic [ref=e12]: ADMIN
+        - link "Siteye dön" [ref=e13] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997
+    - main [ref=e14]:
+      - region [ref=e15]:
+        - paragraph [ref=e16]: Yetki sınırı
+        - heading "Kontrol alanına yetkili geçiş." [level=2] [ref=e17]
+        - paragraph [ref=e18]: Öğrenci deneyiminden bilinçli biçimde ayrılan, denetlenebilir yönetici erişimi.
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - generic [ref=e21]: ROL
+            - generic [ref=e22]:
+              - strong [ref=e23]: Rol doğrulaması
+              - paragraph [ref=e24]: Yalnız yönetici yetkisine sahip hesaplar.
+          - generic [ref=e25]:
+            - generic [ref=e26]: İZ
+            - generic [ref=e27]:
+              - strong [ref=e28]: İzlenebilir erişim
+              - paragraph [ref=e29]: Yönetim bağlamı kullanıcı panelinden ayrı tutulur.
+          - generic [ref=e30]:
+            - generic [ref=e31]: AYRI
+            - generic [ref=e32]:
+              - strong [ref=e33]: Ayrı güvenlik yüzeyi
+              - paragraph [ref=e34]: Amber renk ve sol form konumuyla ayırt edilir.
+      - region [ref=e35]:
+        - generic [ref=e36]: Yönetici erişimi
+        - heading "Yönetim alanına giriş" [level=1] [ref=e38]
+        - paragraph [ref=e39]: Bu alan yalnız yetkili ekip üyeleri içindir.
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - generic [ref=e42]: E-posta
+            - textbox "E-posta" [ref=e43]
+          - generic [ref=e44]:
+            - generic [ref=e45]: Şifre
+            - generic [ref=e46]:
+              - textbox "Şifre Göster" [ref=e47]
+              - button "Göster" [ref=e48] [cursor=pointer]
+          - button "Yönetici olarak giriş yap" [ref=e49] [cursor=pointer]:
+            - generic [ref=e51]: →
+        - paragraph [ref=e52]:
+          - link "Panel girişine dön" [ref=e53] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/panel/login
+    - contentinfo [ref=e54]:
+      - generic [ref=e55]: CareerTalent AI
+      - link "İletişim" [ref=e57] [cursor=pointer]:
+        - /url: http://127.0.0.1:18997/iletisim

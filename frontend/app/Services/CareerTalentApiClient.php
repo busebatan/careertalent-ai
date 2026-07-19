@@ -124,6 +124,62 @@ class CareerTalentApiClient
         return $this->patchJson('/api/v1/admin/organizations/'.rawurlencode($organizationId), $payload, 15);
     }
 
+    public function inviteAdminOrganizationOwner(string $organizationId, string $email): array
+    {
+        return $this->postJson('/api/v1/admin/organizations/'.rawurlencode($organizationId).'/owner-invitations', [
+            'email' => $email,
+            'role' => 'owner',
+        ], 15);
+    }
+
+    public function companyContext(?string $accessToken = null): array
+    {
+        if ($accessToken !== null) {
+            try {
+                return $this->normalizeResponse(Http::withToken($accessToken)->timeout(10)->get($this->baseUrl().'/api/v1/company/context'));
+            } catch (ConnectionException $exception) {
+                return $this->connectionError($exception);
+            }
+        }
+
+        return $this->getJson('/api/v1/company/context', 10);
+    }
+
+    public function companyDashboard(string $organizationId): array
+    {
+        return $this->getJson('/api/v1/company/dashboard', 10, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function companyMembers(string $organizationId): array
+    {
+        return $this->getJson('/api/v1/company/members', 10, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function inviteCompanyMember(string $organizationId, array $payload): array
+    {
+        return $this->postJson('/api/v1/company/invitations', $payload, 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function updateCompanyMember(string $organizationId, string $membershipId, array $payload): array
+    {
+        return $this->patchJson('/api/v1/company/members/'.rawurlencode($membershipId), $payload, 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function updateCompanyOrganization(string $organizationId, array $payload): array
+    {
+        return $this->patchJson('/api/v1/company/organization', $payload, 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function companyInvitation(string $token): array
+    {
+        return $this->getJson('/api/v1/company/invitations/'.rawurlencode($token), 10);
+    }
+
+    public function acceptCompanyInvitation(string $token, array $payload): array
+    {
+        return $this->postJson('/api/v1/company/invitations/'.rawurlencode($token).'/accept', $payload, 15);
+    }
+
     /**
      * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
      */
@@ -181,7 +237,6 @@ class CareerTalentApiClient
     {
         return $this->postJson('/api/v1/panel/job-matches/analyze', ['url' => $url], 15);
     }
-
 
     /**
      * @param  array<string, mixed>  $target
@@ -254,6 +309,7 @@ class CareerTalentApiClient
             if (! $response->successful()) {
                 return $this->normalizeResponse($response);
             }
+
             return ['ok' => true, 'status' => $response->status(), 'body' => $response->json(), 'error' => null];
         } catch (ConnectionException $exception) {
             return $this->connectionError($exception);
@@ -279,6 +335,7 @@ class CareerTalentApiClient
     {
         try {
             $response = $this->request(30)->get($this->baseUrl().'/api/v1/cv/documents/'.rawurlencode($documentId).'/download');
+
             return ['ok' => $response->successful(), 'status' => $response->status(), 'content' => $response->body(), 'content_type' => $response->header('Content-Type'), 'content_disposition' => $response->header('Content-Disposition')];
         } catch (ConnectionException $exception) {
             return ['ok' => false, 'status' => 502, 'content' => '', 'content_type' => null, 'content_disposition' => null];
@@ -518,10 +575,10 @@ class CareerTalentApiClient
     /**
      * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
      */
-    private function getJson(string $path, int $timeout): array
+    private function getJson(string $path, int $timeout, array $headers = []): array
     {
         try {
-            return $this->normalizeResponse($this->request($timeout)->get($this->baseUrl().$path));
+            return $this->normalizeResponse($this->request($timeout, $headers)->get($this->baseUrl().$path));
         } catch (ConnectionException $exception) {
             return $this->connectionError($exception);
         }
@@ -531,15 +588,14 @@ class CareerTalentApiClient
      * @param  array<string, mixed>  $payload
      * @return array{ok: bool, status: ?int, body: ?array<string, mixed>, error: ?string}
      */
-    private function postJson(string $path, array $payload, int $timeout): array
+    private function postJson(string $path, array $payload, int $timeout, array $headers = []): array
     {
         try {
-            return $this->normalizeResponse($this->request($timeout)->post($this->baseUrl().$path, $payload));
+            return $this->normalizeResponse($this->request($timeout, $headers)->post($this->baseUrl().$path, $payload));
         } catch (ConnectionException $exception) {
             return $this->connectionError($exception);
         }
     }
-
 
     /**
      * @param  array<string, mixed>  $payload
@@ -554,10 +610,10 @@ class CareerTalentApiClient
         }
     }
 
-    private function patchJson(string $path, array $payload, int $timeout): array
+    private function patchJson(string $path, array $payload, int $timeout, array $headers = []): array
     {
         try {
-            return $this->normalizeResponse($this->request($timeout)->patch($this->baseUrl().$path, $payload));
+            return $this->normalizeResponse($this->request($timeout, $headers)->patch($this->baseUrl().$path, $payload));
         } catch (ConnectionException $exception) {
             return $this->connectionError($exception);
         }
@@ -599,9 +655,9 @@ class CareerTalentApiClient
         ];
     }
 
-    private function request(int $timeout): PendingRequest
+    private function request(int $timeout, array $headers = []): PendingRequest
     {
-        $request = Http::timeout($timeout);
+        $request = Http::timeout($timeout)->withHeaders($headers);
         $token = session('auth.access_token');
 
         return is_string($token) && $token !== ''

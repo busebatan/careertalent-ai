@@ -21,7 +21,7 @@ Global baseline: `/opt/codex-harness/agents/design-memory/GLOBAL_DESIGN.md`
 
 - Typography posture: Bricolage Grotesque başlık, Manrope gövde, IBM Plex Mono sistem/veri etiketi.
 - Density and spacing: Auth için tek görevli, nefesli fakat boş görünmeyen orta yoğunluk.
-- Color function: Slate/ink zemin; emerald kullanıcı eylemi; amber yalnız admin güvenlik ayrımı.
+- Color function: Slate/ink zemin; emerald kullanıcı eylemi; amber yalnız admin güvenlik ayrımı. Company paneli slate yüzey, `#0F766E` ana teal eylem, `#10B981` dekoratif marka sinyali ve koyu temada `#5EEAD4` vurgu metni kullanır; admin amber tokenlarını miras almaz.
 - Grid and composition: Panel formu masaüstünde sağda; admin formu solda. Mobilde form ilk erişilebilir görev olarak yukarı taşınır.
 - Imagery: Dekoratif stok görsel yok; kariyer rotası ve analiz sinyallerinden türetilen kod-native grafikler.
 - Motion budget: Bir giriş sekansı, form durum geçişi ve sınırlı rota/sinyal hareketi; reduced-motion desteği zorunlu.
@@ -40,6 +40,7 @@ Global baseline: `/opt/codex-harness/agents/design-memory/GLOBAL_DESIGN.md`
 <!-- Structured selection decisions are appended here by design_memory.py. -->
 
 - 2026-07-13 — **A / Rota Çizgisi**: CV → radar → hedef meslek → görev akışını doğrudan anlatıyor. Panel sağ form/emerald, admin sol form/amber ayrımını koruyor. İki bağımsız kör eleştirmenin ortak kazananı; resmi skor `9.10/10`.
+- 2026-07-19 — **Company / Kurumsal emerald**: Mevcut slate/emerald marka ailesini korur; derin teal ana eylem ve aktif navigasyonla B2B çalışma alanını kullanıcı panelinden ölçülü biçimde ayırır. Kartlar nötr kalır, emerald yalnız marka sinyali olur, admin amber kimliği korunur.
 
 ## Rejected directions
 

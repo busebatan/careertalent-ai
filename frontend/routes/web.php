@@ -1,18 +1,18 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\App\CareerLadderController;
 use App\Http\Controllers\App\ChatController;
 use App\Http\Controllers\App\CvBuilderController;
 use App\Http\Controllers\App\CvUploadController;
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\JobMatchesController;
-use App\Http\Controllers\App\LearningController;
 use App\Http\Controllers\App\LocaleController as PanelLocaleController;
 use App\Http\Controllers\App\ProfileController;
 use App\Http\Controllers\App\RoadmapController;
 use App\Http\Controllers\App\StudentFeaturesController;
 use App\Http\Controllers\App\TasksController;
-use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Company\CompanyController;
 use App\Http\Controllers\Marketing\AuthController;
 use App\Http\Controllers\Marketing\HomeController;
 use App\Http\Controllers\Marketing\LocaleController as MarketingLocaleController;
@@ -44,10 +44,24 @@ Route::middleware('marketing.locale')->group(function () {
     Route::post('/panel/register', [AuthController::class, 'store'])->name('register.submit');
     Route::get('/admin/login', [AuthController::class, 'adminLogin'])->name('admin.login');
     Route::post('/admin/login', [AuthController::class, 'authenticateAdmin'])->name('admin.login.submit');
+    Route::get('/company/login', [AuthController::class, 'companyLogin'])->name('company.login');
+    Route::post('/company/login', [AuthController::class, 'authenticateCompany'])->name('company.login.submit');
+    Route::get('/company/davet/{token}', [AuthController::class, 'companyInvitation'])->name('company.invitation');
+    Route::post('/company/davet/{token}', [AuthController::class, 'acceptCompanyInvitation'])->name('company.invitation.accept');
     Route::post('/cikis', [AuthController::class, 'logout'])->name('logout');
     Route::get('/locale/{locale}', [MarketingLocaleController::class, 'switch'])->name('marketing.locale');
 });
 
+Route::prefix('company')->name('company.')->middleware(['auth.api', 'auth.api.company', 'panel.locale'])->group(function () {
+    Route::get('/locale/{locale}', [PanelLocaleController::class, 'switch'])->name('locale');
+    Route::get('/', [CompanyController::class, 'dashboard'])->name('dashboard');
+    Route::get('/profil', [CompanyController::class, 'profile'])->name('profile');
+    Route::patch('/profil', [CompanyController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/ekip', [CompanyController::class, 'team'])->name('team');
+    Route::post('/ekip/davet', [CompanyController::class, 'invite'])->name('team.invite');
+    Route::patch('/ekip/{membership}', [CompanyController::class, 'updateMember'])->name('team.update');
+    Route::post('/kurum-degistir/{organization}', [CompanyController::class, 'switchOrganization'])->name('organization.switch');
+});
 
 // ── Admin panel ─────────────────────────────────────────────
 Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin', 'panel.locale'])->group(function () {
@@ -60,6 +74,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin'
     Route::patch('/hesaplar/{user}', [AdminController::class, 'updateAccount'])->name('accounts.update');
     Route::get('/kurumlar', [AdminController::class, 'organizations'])->name('organizations');
     Route::post('/kurumlar', [AdminController::class, 'storeOrganization'])->name('organizations.store');
+    Route::post('/kurumlar/{organization}/sahip-daveti', [AdminController::class, 'inviteOrganizationOwner'])->name('organizations.owner-invite');
     Route::patch('/kurumlar/{organization}', [AdminController::class, 'updateOrganization'])->name('organizations.update');
     Route::get('/kariyer-veri-merkezi', [AdminController::class, 'careerData'])->name('career-data');
     Route::post('/kariyer-veri-merkezi/{resource}', [AdminController::class, 'storeCareerData'])->name('career-data.store');
@@ -74,7 +89,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin'
 });
 
 // ── Öğrenci paneli ──────────────────────────────────────────
-Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'panel.locale'])->group(function () {
+Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candidate', 'panel.locale'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::redirect('/kariyer-profilim', '/panel/hesap');
     Route::get('/cv-merkezi', [CvBuilderController::class, 'show'])->name('cv-builder');

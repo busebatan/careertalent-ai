@@ -1,13 +1,14 @@
 @php($isAdmin = $portal === 'admin')
-@php($isRegister = ! $isAdmin && $mode === 'register')
-@php($action = $isAdmin ? route('admin.login.submit') : ($isRegister ? route('register.submit') : route('login.submit')))
+@php($isCompany = $portal === 'company')
+@php($isRegister = ! $isAdmin && ! $isCompany && $mode === 'register')
+@php($action = $isAdmin ? route('admin.login.submit') : ($isCompany ? route('company.login.submit') : ($isRegister ? route('register.submit') : route('login.submit'))))
 <section class="auth-form" aria-labelledby="auth-title">
     <div class="form-kicker">
         <span class="portal-dot" aria-hidden="true"></span>
-        {{ $isAdmin ? __('marketing.auth.admin_kicker') : ($isRegister ? __('marketing.auth.register_kicker') : __('marketing.auth.panel_kicker')) }}
+        {{ $isAdmin ? __('marketing.auth.admin_kicker') : ($isCompany ? __('marketing.auth.company_kicker') : ($isRegister ? __('marketing.auth.register_kicker') : __('marketing.auth.panel_kicker'))) }}
     </div>
-    <h1 id="auth-title">{{ $isAdmin ? __('marketing.auth.admin_heading') : ($isRegister ? __('marketing.auth.register_heading') : __('marketing.auth.panel_heading')) }}</h1>
-    <p class="form-intro">{{ $isAdmin ? __('marketing.auth.admin_intro') : ($isRegister ? __('marketing.auth.register_intro') : __('marketing.auth.panel_intro')) }}</p>
+    <h1 id="auth-title">{{ $isAdmin ? __('marketing.auth.admin_heading') : ($isCompany ? __('marketing.auth.company_heading') : ($isRegister ? __('marketing.auth.register_heading') : __('marketing.auth.panel_heading'))) }}</h1>
+    <p class="form-intro">{{ $isAdmin ? __('marketing.auth.admin_intro') : ($isCompany ? __('marketing.auth.company_intro') : ($isRegister ? __('marketing.auth.register_intro') : __('marketing.auth.panel_intro'))) }}</p>
 
     <form class="auth-native-form" data-auth-form action="{{ $action }}" method="post">
         @csrf
@@ -43,12 +44,14 @@
         @endif
 
         <button class="submit-button" type="submit">
-            <span>{{ $isAdmin ? __('marketing.auth.admin_submit') : ($isRegister ? __('marketing.auth.submit_register') : __('marketing.auth.panel_submit')) }}</span>
+            <span>{{ $isAdmin ? __('marketing.auth.admin_submit') : ($isCompany ? __('marketing.auth.company_submit') : ($isRegister ? __('marketing.auth.submit_register') : __('marketing.auth.panel_submit'))) }}</span>
             <i aria-hidden="true">→</i>
         </button>
     </form>
 
     @if ($isAdmin)
+        <p class="switch-link"><a href="{{ route('login') }}">{{ __('marketing.auth.back_to_panel') }}</a></p>
+    @elseif ($isCompany)
         <p class="switch-link"><a href="{{ route('login') }}">{{ __('marketing.auth.back_to_panel') }}</a></p>
     @elseif ($isRegister)
         <p class="switch-link">{{ __('marketing.auth.has_account') }} <a href="{{ route('login') }}">{{ __('marketing.nav.login') }}</a></p>

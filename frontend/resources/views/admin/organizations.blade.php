@@ -20,6 +20,7 @@
     @if ($errors->has('organizations'))<p class="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">{{ $errors->first('organizations') }}</p>@endif
 
     <section class="panel-card mb-8 p-6">
+        @if(session('company_invite_url'))<div class="mb-5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4"><p class="text-sm font-semibold">{{ __('admin.organizations.owner_invite_link') }}</p><input class="panel-input-block mt-2" readonly value="{{ session('company_invite_url') }}"></div>@endif
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h2 class="text-lg font-semibold text-slate-900 dark:text-white">{{ __('admin.organizations.create') }}</h2>
@@ -36,6 +37,7 @@
             <label class="text-sm font-medium">{{ __('admin.organizations.status') }}<select class="panel-input-block mt-2" name="status">@foreach ($statuses as $value => $label)<option value="{{ $value }}" @selected(old('status', 'onboarding') === $value)>{{ $label }}</option>@endforeach</select></label>
             <label class="text-sm font-medium">{{ __('admin.organizations.plan') }}<select class="panel-input-block mt-2" name="plan_code">@foreach ($plans as $value => $label)<option value="{{ $value }}" @selected(old('plan_code', 'pilot') === $value)>{{ $label }}</option>@endforeach</select></label>
             <label class="text-sm font-medium xl:col-span-2">{{ __('admin.organizations.billing_email') }}<input class="panel-input-block mt-2" name="billing_email" type="email" value="{{ old('billing_email') }}" required></label>
+            <label class="text-sm font-medium xl:col-span-2">{{ __('admin.organizations.owner_email') }}<input class="panel-input-block mt-2" name="owner_email" type="email" value="{{ old('owner_email') }}" required></label>
             <label class="text-sm font-medium xl:col-span-2">{{ __('admin.organizations.website') }}<input class="panel-input-block mt-2" name="website" type="url" value="{{ old('website') }}" placeholder="https://"></label>
             <div class="xl:col-span-4"><button class="admin-btn-primary" type="submit">{{ __('admin.organizations.create') }}</button></div>
         </form>
@@ -61,6 +63,11 @@
                     @if (! empty($organization['website']))<a class="admin-accent-text" href="{{ $organization['website'] }}" target="_blank" rel="noreferrer">{{ $organization['website'] }}</a>@endif
                     <span>{{ __('admin.organizations.created_at', ['date' => $organization['created_at']]) }}</span>
                 </div>
+                <form method="post" action="{{ route('admin.organizations.owner-invite', $organization['id']) }}" class="mt-4 flex flex-wrap items-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
+                    @csrf
+                    <label class="min-w-64 flex-1 text-sm">{{ __('admin.organizations.owner_email') }}<input class="panel-input-block mt-2" name="owner_email" type="email" required></label>
+                    <button class="panel-btn-secondary" type="submit">{{ __('admin.organizations.owner_invite') }}</button>
+                </form>
                 <details class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
                     <summary class="cursor-pointer text-sm font-semibold admin-accent-text">{{ __('admin.organizations.edit') }}</summary>
                     <form method="post" action="{{ route('admin.organizations.update', $organization['id']) }}" class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">

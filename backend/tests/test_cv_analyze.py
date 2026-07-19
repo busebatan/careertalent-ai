@@ -87,12 +87,46 @@ def test_cv_analyze_accepts_pdf_and_tracks_current_upload(client, monkeypatch, t
     target = CareerTarget(id="old-target", user_id=1, title="Financial Analyst", source="ladder", status="active")
     task = CareerTask(id="old-task", user_id=1, target_id=target.id, title="Excel", hint="", status="completed", evidence_types=["link"], skill_impacts=["Excel"])
     evidence = Evidence(id="old-evidence", user_id=1, task_id=task.id, kind="link", url="https://example.com", status="accepted")
-    other_target = CareerTarget(id="other-target", user_id=2, title="Backend Developer", source="ladder", status="active")
-    other_task = CareerTask(id="other-task", user_id=2, target_id=other_target.id, title="FastAPI", hint="", status="pending", evidence_types=["link"], skill_impacts=["Python"])
+    other_target = CareerTarget(
+        id="other-target",
+        user_id=2,
+        title="Backend Developer",
+        source="ladder",
+        status="active",
+        localizations={
+            "tr": {"title": "Backend Geliştirici", "task_titles": {"other-task": "FastAPI"}},
+            "en": {"title": "Backend Developer", "task_titles": {"other-task": "FastAPI"}},
+        },
+    )
+    other_task = CareerTask(
+        id="other-task",
+        user_id=2,
+        target_id=other_target.id,
+        title="FastAPI",
+        hint="",
+        status="pending",
+        evidence_types=["link"],
+        skill_impacts=["Python"],
+        localizations={
+            "tr": {"title": "FastAPI", "hint": "", "skill_impacts": ["Python"], "feedback": None},
+            "en": {"title": "FastAPI", "hint": "", "skill_impacts": ["Python"], "feedback": None},
+        },
+    )
     db.add_all([
         target, task, evidence,
         PersonalTask(id="linked-personal-task", user_id=1, target_id=target.id, title="Portfolyo notunu düzenle", completed=False),
-        CareerAnalysis(id="other-analysis", user_id=2, status="ready", source="upload", cv_text="Python FastAPI", current_role="Developer"),
+        CareerAnalysis(
+            id="other-analysis",
+            user_id=2,
+            status="ready",
+            source="upload",
+            cv_text="Python FastAPI",
+            current_role="Developer",
+            localizations={
+                "tr": {"current_role": "Geliştirici", "profile": {}, "skills": [], "radar": [], "career_ladder": []},
+                "en": {"current_role": "Developer", "profile": {}, "skills": [], "radar": [], "career_ladder": []},
+            },
+        ),
         other_target, other_task,
         CvDocument(id="other-document", user_id=2, kind="uploaded", display_name="other.pdf", original_name="other.pdf", file_path=str(other_path), file_size=len(_MINIMAL_PDF), is_current=True),
     ])

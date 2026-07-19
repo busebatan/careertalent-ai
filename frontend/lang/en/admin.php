@@ -61,7 +61,7 @@ return [
         'create_hint' => 'Register the tenant identity and commercial plan before opening its workspace.',
         'name' => 'Organization name', 'slug' => 'Organization key', 'type' => 'Organization type',
         'size' => 'Segment', 'status' => 'Status', 'plan' => 'Plan', 'billing_email' => 'Billing email',
-        'website' => 'Website', 'edit' => 'Edit organization settings', 'save' => 'Update organization',
+        'website' => 'Website', 'owner_email' => 'Initial owner email', 'owner_invite_link' => 'One-time owner invitation link', 'owner_invite' => 'Create owner invitation', 'owner_invited' => 'Owner invitation created.', 'created_invite_failed' => 'Organization was created but the owner invitation failed.', 'edit' => 'Edit organization settings', 'save' => 'Update organization',
         'created' => 'Organization created.', 'updated' => 'Organization updated.', 'empty' => 'No organizations yet.',
         'total' => '{0} No organizations|{1} :count organization|[2,*] :count organizations',
         'members' => '{0} No members|{1} :count member|[2,*] :count members',

@@ -1,0 +1,55 @@
+- generic [active] [ref=e1]:
+  - link "İçeriğe geç" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - link "CareerTalent AI" [ref=e5] [cursor=pointer]:
+        - /url: http://127.0.0.1:18997
+      - generic [ref=e11]:
+        - generic [ref=e12]: PANEL
+        - link "Yönetici girişi" [ref=e13] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin/login
+        - link "Siteye dön" [ref=e14] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997
+    - main [ref=e15]:
+      - region [ref=e16]:
+        - paragraph [ref=e17]: Kariyer rotası
+        - heading [level=2] [ref=e18]:
+          - text: Kariyer verin burada
+          - emphasis [ref=e19]: yola dönüşür.
+        - paragraph [ref=e20]: CV’ni analiz et, yetenek radarını gör ve hedef mesleğine giden görevleri tek yerde yönet.
+        - generic "CV'den kariyer rotasına ilerleme" [ref=e21]:
+          - img "CV YÜKLENDİ, YETENEK RADARI, HEDEF MESLEK, GÖREVLER" [ref=e22]:
+            - generic "CV YÜKLENDİ" [ref=e24]:
+              - generic [ref=e26]: CV
+              - generic [ref=e27]: YÜKLENDİ
+            - generic "YETENEK RADARI" [ref=e28]:
+              - generic [ref=e30]: RADAR
+              - generic [ref=e31]: YETENEKLER
+            - generic "HEDEF MESLEK" [ref=e32]:
+              - generic [ref=e34]: HEDEF
+              - generic [ref=e35]: MESLEK
+            - generic "GÖREVLER" [ref=e36]: İLERLEME
+      - region [ref=e40]:
+        - generic [ref=e41]: Kullanıcı paneli
+        - heading "Kaldığın yerden devam et" [level=1] [ref=e43]
+        - paragraph [ref=e44]: CV analizin, hedeflerin ve görevlerin seni bekliyor.
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - generic [ref=e47]: E-posta
+            - textbox "E-posta" [ref=e48]
+          - generic [ref=e49]:
+            - generic [ref=e50]: Şifre
+            - generic [ref=e51]:
+              - textbox "Şifre Göster" [ref=e52]
+              - button "Göster" [ref=e53] [cursor=pointer]
+          - button "Panele giriş yap" [ref=e54] [cursor=pointer]:
+            - generic [ref=e56]: →
+        - paragraph [ref=e57]:
+          - text: Hesabın yok mu?
+          - link "Kayıt Ol" [ref=e58] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/panel/register
+    - contentinfo [ref=e59]:
+      - generic [ref=e60]: CareerTalent AI
+      - link "İletişim" [ref=e62] [cursor=pointer]:
+        - /url: http://127.0.0.1:18997/iletisim

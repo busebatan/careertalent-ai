@@ -23,7 +23,7 @@
             <span>CareerTalent <b>AI</b></span>
         </a>
         <div class="top-actions">
-            <span class="portal-badge">{{ $portal === 'admin' ? 'ADMIN' : 'PANEL' }}</span>
+            <span class="portal-badge">{{ $portal === 'admin' ? 'ADMIN' : ($portal === 'company' ? 'COMPANY' : 'PANEL') }}</span>
             @if ($portal === 'panel' && $mode === 'login')
                 <a href="{{ route('admin.login') }}">{{ __('marketing.auth.admin_login_link') }}</a>
             @endif
@@ -33,21 +33,29 @@
 
     <main id="main-content">
         <section class="visual" aria-labelledby="auth-visual-title">
-            <p class="eyebrow">{{ $portal === 'admin' ? __('marketing.auth.admin_boundary') : __('marketing.auth.career_route') }}</p>
+            <p class="eyebrow">{{ $portal === 'admin' ? __('marketing.auth.admin_boundary') : ($portal === 'company' ? __('marketing.auth.company_boundary') : __('marketing.auth.career_route')) }}</p>
             <h2 id="auth-visual-title">
                 @if ($portal === 'admin')
                     {{ __('marketing.auth.admin_visual_heading') }}
+                @elseif ($portal === 'company')
+                    {{ __('marketing.auth.company_visual_heading') }}
                 @else
                     {!! str_replace('yola dönüşür.', '<em>yola dönüşür.</em>', e(__('marketing.auth.career_heading'))) !!}
                 @endif
             </h2>
-            <p class="lead">{{ $portal === 'admin' ? __('marketing.auth.admin_visual_lead') : __('marketing.auth.career_lead') }}</p>
+            <p class="lead">{{ $portal === 'admin' ? __('marketing.auth.admin_visual_lead') : ($portal === 'company' ? __('marketing.auth.company_visual_lead') : __('marketing.auth.career_lead')) }}</p>
 
             @if ($portal === 'admin')
                 <div class="admin-cues">
                     <div><span>ROL</span><section><strong>Rol doğrulaması</strong><p>Yalnız yönetici yetkisine sahip hesaplar.</p></section></div>
                     <div><span>İZ</span><section><strong>İzlenebilir erişim</strong><p>Yönetim bağlamı kullanıcı panelinden ayrı tutulur.</p></section></div>
                     <div><span>AYRI</span><section><strong>Ayrı güvenlik yüzeyi</strong><p>Amber renk ve sol form konumuyla ayırt edilir.</p></section></div>
+                </div>
+            @elseif ($portal === 'company')
+                <div class="admin-cues">
+                    <div><span>KUR</span><section><strong>{{ __('marketing.auth.company_cue_org') }}</strong><p>{{ __('marketing.auth.company_cue_org_text') }}</p></section></div>
+                    <div><span>ROL</span><section><strong>{{ __('marketing.auth.company_cue_role') }}</strong><p>{{ __('marketing.auth.company_cue_role_text') }}</p></section></div>
+                    <div><span>İZ</span><section><strong>{{ __('marketing.auth.company_cue_audit') }}</strong><p>{{ __('marketing.auth.company_cue_audit_text') }}</p></section></div>
                 </div>
             @else
                 <div class="route-map" aria-label="CV'den kariyer rotasına ilerleme">

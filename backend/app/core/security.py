@@ -134,6 +134,16 @@ def require_admin(
     return current_user
 
 
+def require_candidate_portal_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Keep organization accounts outside candidate-owned API surfaces."""
+    if current_user.role == "company":
+        raise HTTPException(status_code=403, detail="Candidate account required")
+
+    return current_user
+
+
 def is_admin_user(user: User) -> bool:
     return user.role in {"admin", "super_admin"} or user.is_admin
 

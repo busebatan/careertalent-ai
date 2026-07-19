@@ -1,0 +1,148 @@
+- generic [ref=f1e2]:
+  - complementary "CareerTalent Admin" [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - link "CareerTalent Admin" [ref=f1e5] [cursor=pointer]:
+        - /url: http://127.0.0.1:18997/admin
+      - navigation [ref=f1e6]:
+        - paragraph [ref=f1e7]: GENEL
+        - link "Yönetim Özeti" [ref=f1e8] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin
+        - link "Admin Hesapları" [ref=f1e15] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin/hesaplar
+        - paragraph [ref=f1e21]: KURUM YÖNETİMİ
+        - link "Kurumlar" [ref=f1e22] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin/kurumlar
+        - paragraph [ref=f1e28]: VERİ YÖNETİMİ
+        - link "Kariyer Veri Merkezi" [ref=f1e29] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin/kariyer-veri-merkezi
+        - paragraph [ref=f1e38]: ÖĞRENCİ YÖNETİMİ
+        - link "Öğrenciler" [ref=f1e39] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin/ogrenciler
+        - link "Readiness Analizi" [ref=f1e44] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin/readiness
+        - link "Yetenek Pasaportu" [ref=f1e47] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin/yetenek-pasaportu
+        - paragraph [ref=f1e53]: KARİYER OPERASYONLARI
+        - link "İş Radarı" [ref=f1e54] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin/is-radari
+        - link "Başvurular" [ref=f1e63] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin/basvurular
+        - link "Mülakatlar" [ref=f1e69] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin/mulakatlar
+      - generic [ref=f1e74]:
+        - generic [ref=f1e75]:
+          - link "↗ Öğrenci paneli" [ref=f1e76] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/panel
+            - text: ↗
+            - generic [ref=f1e77]: Öğrenci paneli
+          - link "⌂ Tanıtım sitesi" [ref=f1e78] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997
+            - text: ⌂
+            - generic [ref=f1e79]: Tanıtım sitesi
+        - link "EA E2E Platform Admin platform-e2e@example.com" [ref=f1e80] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/admin/profil
+          - generic [ref=f1e81]: EA
+          - generic [ref=f1e82]:
+            - generic [ref=f1e83]: E2E Platform Admin
+            - generic [ref=f1e84]: platform-e2e@example.com
+        - button "Çıkış yap" [ref=f1e86]
+  - generic [ref=f1e90]:
+    - banner [ref=f1e91]:
+      - generic [ref=f1e92]:
+        - generic [ref=f1e93]:
+          - generic [ref=f1e94]: API bağlı
+          - generic [ref=f1e96]:
+            - generic [ref=f1e97]: 19 Tem 2026 Paz
+            - generic [ref=f1e98]: 17:27:42
+        - button "Açık tema" [ref=f1e99]
+        - generic [ref=f1e106]:
+          - button "Bildirimler" [ref=f1e108]:
+            - generic [ref=f1e112]: "2"
+          - button "Dil" [ref=f1e114]:
+            - generic [ref=f1e119]: tr
+    - main [ref=f1e122]:
+      - generic [ref=f1e123]:
+        - generic [ref=f1e124]:
+          - heading "Yönetim Özeti" [level=1] [ref=f1e125]
+          - paragraph [ref=f1e126]: Yalnız aktif öğrenci hesapları ve ilişkili gerçek kayıtlar.
+        - generic [ref=f1e127]:
+          - article [ref=f1e128]:
+            - paragraph [ref=f1e129]: Aktif öğrenci
+            - paragraph [ref=f1e130]: "2"
+            - paragraph [ref=f1e131]: Admin hesapları hariç
+          - article [ref=f1e132]:
+            - paragraph [ref=f1e133]: Mevcut CV
+            - paragraph [ref=f1e134]: "0"
+            - paragraph [ref=f1e135]: Aktif CV kaydı
+          - article [ref=f1e136]:
+            - paragraph [ref=f1e137]: Hazır analiz
+            - paragraph [ref=f1e138]: "0"
+            - paragraph [ref=f1e139]: Analizi tamamlanan CV
+          - article [ref=f1e140]:
+            - paragraph [ref=f1e141]: Aktif başvuru
+            - paragraph [ref=f1e142]: "0"
+            - paragraph [ref=f1e143]: Reddedilenler hariç
+        - generic [ref=f1e144]:
+          - generic [ref=f1e145]:
+            - heading "Son kaydolan öğrenciler" [level=2] [ref=f1e146]
+            - paragraph [ref=f1e147]: Admin hesapları bu listede yer almaz.
+          - generic [ref=f1e148]:
+            - article [ref=f1e149]:
+              - generic [ref=f1e150]:
+                - paragraph [ref=f1e151]: E2E Candidate
+                - paragraph [ref=f1e152]: candidate-e2e@example.com
+              - paragraph [ref=f1e153]: "Kayıt: 2026-07-19T17:23:22.714593"
+            - article [ref=f1e154]:
+              - generic [ref=f1e155]:
+                - paragraph [ref=f1e156]: E2E Company Owner
+                - paragraph [ref=f1e157]: owner@e2e-acme.example.com
+              - paragraph [ref=f1e158]: "Kayıt: 2026-07-19T17:23:22.569159"
+        - generic [ref=f1e159]:
+          - article [ref=f1e160]:
+            - generic [ref=f1e161]:
+              - generic [ref=f1e162]:
+                - heading "Öğrenciler" [level=2] [ref=f1e163]
+                - paragraph [ref=f1e164]: Aktif öğrenci hesapları ve CV/analiz durumu.
+              - generic [ref=f1e165]: 2 kayıt
+            - link "Kayıtları aç" [ref=f1e166] [cursor=pointer]:
+              - /url: http://127.0.0.1:18997/admin/ogrenciler
+          - article [ref=f1e167]:
+            - generic [ref=f1e168]:
+              - generic [ref=f1e169]:
+                - heading "Readiness Analizi" [level=2] [ref=f1e170]
+                - paragraph [ref=f1e171]: CV analizlerinin gerçek işlem durumu ve yetenek sayısı.
+              - generic [ref=f1e172]: 0 kayıt
+            - link "Kayıtları aç" [ref=f1e173] [cursor=pointer]:
+              - /url: http://127.0.0.1:18997/admin/readiness
+          - article [ref=f1e174]:
+            - generic [ref=f1e175]:
+              - generic [ref=f1e176]:
+                - heading "Yetenek Pasaportu" [level=2] [ref=f1e177]
+                - paragraph [ref=f1e178]: Öğrencilerin yüklediği kanıt kayıtları.
+              - generic [ref=f1e179]: 0 kayıt
+            - link "Kayıtları aç" [ref=f1e180] [cursor=pointer]:
+              - /url: http://127.0.0.1:18997/admin/yetenek-pasaportu
+          - article [ref=f1e181]:
+            - generic [ref=f1e182]:
+              - generic [ref=f1e183]:
+                - heading "İş Radarı" [level=2] [ref=f1e184]
+                - paragraph [ref=f1e185]: Öğrencilerin analiz ettiği iş ilanları.
+              - generic [ref=f1e186]: 0 kayıt
+            - link "Kayıtları aç" [ref=f1e187] [cursor=pointer]:
+              - /url: http://127.0.0.1:18997/admin/is-radari
+          - article [ref=f1e188]:
+            - generic [ref=f1e189]:
+              - generic [ref=f1e190]:
+                - heading "Başvurular" [level=2] [ref=f1e191]
+                - paragraph [ref=f1e192]: Öğrencilerin kaydettiği başvuru kayıtları.
+              - generic [ref=f1e193]: 0 kayıt
+            - link "Kayıtları aç" [ref=f1e194] [cursor=pointer]:
+              - /url: http://127.0.0.1:18997/admin/basvurular
+          - article [ref=f1e195]:
+            - generic [ref=f1e196]:
+              - generic [ref=f1e197]:
+                - heading "Mülakatlar" [level=2] [ref=f1e198]
+                - paragraph [ref=f1e199]: Başlatılan mülakat simülasyonları.
+              - generic [ref=f1e200]: 0 kayıt
+            - link "Kayıtları aç" [ref=f1e201] [cursor=pointer]:
+              - /url: http://127.0.0.1:18997/admin/mulakatlar

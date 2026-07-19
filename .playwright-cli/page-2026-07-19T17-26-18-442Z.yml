@@ -1,0 +1,56 @@
+- generic [ref=f4e2]:
+  - complementary "CareerTalent Company" [ref=f4e3]:
+    - generic [ref=f4e4]:
+      - link "CareerTalent Company" [ref=f4e5] [cursor=pointer]:
+        - /url: http://127.0.0.1:18997/company
+        - text: CareerTalent
+        - generic [ref=f4e6]: Company
+      - generic [ref=f4e7]:
+        - paragraph [ref=f4e8]: E2E Acme Teknoloji
+        - paragraph [ref=f4e9]: Kurum Sahibi
+      - navigation [ref=f4e10]:
+        - paragraph [ref=f4e11]: Genel
+        - link "▦ Kurum Özeti" [ref=f4e12] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company
+          - text: ▦
+          - generic [ref=f4e13]: Kurum Özeti
+        - paragraph [ref=f4e14]: Kurum Yönetimi
+        - link "♙ Ekip ve Yetkiler" [ref=f4e15] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company/ekip
+          - text: ♙
+          - generic [ref=f4e16]: Ekip ve Yetkiler
+        - link "⚙ Kurum Profili" [ref=f4e17] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company/profil
+          - text: ⚙
+          - generic [ref=f4e18]: Kurum Profili
+      - generic [ref=f4e19]:
+        - generic [ref=f4e20]:
+          - paragraph [ref=f4e21]: E2E Company Owner
+          - paragraph [ref=f4e22]: owner@e2e-acme.example.com
+        - button "Çıkış yap" [ref=f4e24]
+  - generic [ref=f4e25]:
+    - banner [ref=f4e26]:
+      - generic [ref=f4e27]:
+        - generic [ref=f4e28]: Kurum bağlamı doğrulandı
+        - generic [ref=f4e29]:
+          - link "TR" [ref=f4e30] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/company/locale/tr
+          - link "EN" [ref=f4e31] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/company/locale/en
+        - button "Tema" [ref=f4e32]: ◐
+    - main [ref=f4e33]:
+      - generic [ref=f4e34]: Kurum profili güncellendi.
+      - generic [ref=f4e35]:
+        - heading "Kurum Profili" [level=1] [ref=f4e36]
+        - paragraph [ref=f4e37]: Aday ve ekip ekranlarında kullanılacak kurum bilgileri.
+        - generic [ref=f4e38]:
+          - generic [ref=f4e39]:
+            - text: Kurum adı
+            - textbox "Kurum adı" [ref=f4e40]: E2E Acme Teknoloji
+          - generic [ref=f4e41]:
+            - text: Fatura e-postası
+            - textbox "Fatura e-postası" [ref=f4e42]: billing@e2e-acme.example.com
+          - generic [ref=f4e43]:
+            - text: Web sitesi
+            - textbox "Web sitesi" [ref=f4e44]: https://example.org
+          - button "Bilgileri kaydet" [ref=f4e46]

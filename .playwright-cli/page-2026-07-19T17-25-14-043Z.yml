@@ -1,0 +1,62 @@
+- generic [ref=f1e2]:
+  - complementary "CareerTalent Company" [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - link "CareerTalent Company" [ref=f1e5] [cursor=pointer]:
+        - /url: http://127.0.0.1:18997/company
+        - text: CareerTalent
+        - generic [ref=f1e6]: Company
+      - generic [ref=f1e7]:
+        - paragraph [ref=f1e8]: E2E Acme Teknoloji
+        - paragraph [ref=f1e9]: Kurum Sahibi
+      - navigation [ref=f1e10]:
+        - paragraph [ref=f1e11]: Genel
+        - link "▦ Kurum Özeti" [ref=f1e12] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company
+          - text: ▦
+          - generic [ref=f1e13]: Kurum Özeti
+        - paragraph [ref=f1e14]: Kurum Yönetimi
+        - link "♙ Ekip ve Yetkiler" [ref=f1e15] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company/ekip
+          - text: ♙
+          - generic [ref=f1e16]: Ekip ve Yetkiler
+        - link "⚙ Kurum Profili" [ref=f1e17] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company/profil
+          - text: ⚙
+          - generic [ref=f1e18]: Kurum Profili
+      - generic [ref=f1e19]:
+        - generic [ref=f1e20]:
+          - paragraph [ref=f1e21]: E2E Company Owner
+          - paragraph [ref=f1e22]: owner@e2e-acme.example.com
+        - button "Çıkış yap" [ref=f1e24]
+  - generic [ref=f1e25]:
+    - banner [ref=f1e26]:
+      - generic [ref=f1e27]:
+        - generic [ref=f1e28]: Kurum bağlamı doğrulandı
+        - generic [ref=f1e29]:
+          - link "TR" [ref=f1e30] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/company/locale/tr
+          - link "EN" [ref=f1e31] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/company/locale/en
+        - button "Tema" [ref=f1e32]: ◐
+    - main [ref=f1e33]:
+      - generic [ref=f1e34]:
+        - generic [ref=f1e35]:
+          - paragraph [ref=f1e36]: E2E Acme Teknoloji
+          - heading "Kurum Özeti" [level=1] [ref=f1e37]
+          - paragraph [ref=f1e38]: Kurum hesabı, ekip erişimi ve onboarding durumunun gerçek özeti.
+        - generic [ref=f1e39]:
+          - article [ref=f1e40]:
+            - paragraph [ref=f1e41]: Toplam ekip üyesi
+            - paragraph [ref=f1e42]: "1"
+          - article [ref=f1e43]:
+            - paragraph [ref=f1e44]: Aktif üye
+            - paragraph [ref=f1e45]: "1"
+          - article [ref=f1e46]:
+            - paragraph [ref=f1e47]: Bekleyen davet
+            - paragraph [ref=f1e48]: "0"
+        - generic [ref=f1e50]:
+          - generic [ref=f1e51]:
+            - heading "Güvenli kurum temeli hazır" [level=2] [ref=f1e52]
+            - paragraph [ref=f1e53]: Pozisyon ve aday değerlendirme modüllerinden önce ekip rollerini ve kurum bilgilerini tamamlayın.
+          - link "Ekibi yönet" [ref=f1e54] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/company/ekip

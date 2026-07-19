@@ -1,0 +1,62 @@
+- generic [ref=f7e2]:
+  - complementary "CareerTalent Company" [ref=f7e3]:
+    - generic [ref=f7e4]:
+      - link "CareerTalent Company" [ref=f7e5] [cursor=pointer]:
+        - /url: http://127.0.0.1:18997/company
+        - text: CareerTalent
+        - generic [ref=f7e6]: Company
+      - generic [ref=f7e7]:
+        - paragraph [ref=f7e8]: E2E Acme Teknoloji
+        - paragraph [ref=f7e9]: Owner
+      - navigation [ref=f7e10]:
+        - paragraph [ref=f7e11]: General
+        - link "▦ Company Overview" [ref=f7e12] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company
+          - text: ▦
+          - generic [ref=f7e13]: Company Overview
+        - paragraph [ref=f7e14]: Organization Management
+        - link "♙ Team & Permissions" [ref=f7e15] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company/ekip
+          - text: ♙
+          - generic [ref=f7e16]: Team & Permissions
+        - link "⚙ Company Profile" [ref=f7e17] [cursor=pointer]:
+          - /url: http://127.0.0.1:18997/company/profil
+          - text: ⚙
+          - generic [ref=f7e18]: Company Profile
+      - generic [ref=f7e19]:
+        - generic [ref=f7e20]:
+          - paragraph [ref=f7e21]: E2E Company Owner
+          - paragraph [ref=f7e22]: owner@e2e-acme.example.com
+        - button "Log out" [ref=f7e24]
+  - generic [ref=f7e25]:
+    - banner [ref=f7e26]:
+      - generic [ref=f7e27]:
+        - generic [ref=f7e28]: Organization context verified
+        - generic [ref=f7e29]:
+          - link "TR" [ref=f7e30] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/company/locale/tr
+          - link "EN" [ref=f7e31] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/company/locale/en
+        - button "Tema" [ref=f7e32]: ◐
+    - main [ref=f7e33]:
+      - generic [ref=f7e34]:
+        - generic [ref=f7e35]:
+          - paragraph [ref=f7e36]: E2E Acme Teknoloji
+          - heading "Company Overview" [level=1] [ref=f7e37]
+          - paragraph [ref=f7e38]: Live organization, team access, and onboarding summary.
+        - generic [ref=f7e39]:
+          - article [ref=f7e40]:
+            - paragraph [ref=f7e41]: Team members
+            - paragraph [ref=f7e42]: "1"
+          - article [ref=f7e43]:
+            - paragraph [ref=f7e44]: Active members
+            - paragraph [ref=f7e45]: "1"
+          - article [ref=f7e46]:
+            - paragraph [ref=f7e47]: Pending invitations
+            - paragraph [ref=f7e48]: "0"
+        - generic [ref=f7e50]:
+          - generic [ref=f7e51]:
+            - heading "Secure company foundation is ready" [level=2] [ref=f7e52]
+            - paragraph [ref=f7e53]: Complete company information and team roles before opening hiring modules.
+          - link "Manage team" [ref=f7e54] [cursor=pointer]:
+            - /url: http://127.0.0.1:18997/company/ekip

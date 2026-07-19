@@ -42,6 +42,10 @@ class EnsureApiAuthenticated
             return route('admin.login');
         }
 
+        if ($request->is('company', 'company/*') && ! $request->is('company/login', 'company/davet/*')) {
+            return route('company.login');
+        }
+
         return route('login');
     }
 }

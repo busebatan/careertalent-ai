@@ -40,6 +40,8 @@ from app.schemas.admin import (
     AdminProfileUpdate,
     AdminTableRow,
 )
+from app.schemas.company import CompanyInviteCreate, CompanyInviteResponse
+from app.services.company import CompanyInvitationConflict, create_company_invitation
 
 router = APIRouter()
 DB = Annotated[Session, Depends(get_db)]
@@ -260,6 +262,36 @@ def update_organization(
         raise HTTPException(status_code=409, detail="Organization slug already exists") from exception
     db.refresh(organization)
     return _organization_response(db, organization)
+
+
+@router.post(
+    "/organizations/{organization_id}/owner-invitations",
+    response_model=CompanyInviteResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def invite_organization_owner(
+    organization_id: str,
+    payload: CompanyInviteCreate,
+    db: DB,
+    current_user: User = Depends(require_admin_permission("organizations.manage")),
+) -> CompanyInviteResponse:
+    if payload.role != "owner":
+        raise HTTPException(status_code=422, detail="Initial organization invitation must be owner")
+    organization = _organization_or_404(db, organization_id)
+    try:
+        invitation, token = create_company_invitation(
+            db, organization, str(payload.email), "owner", current_user
+        )
+    except CompanyInvitationConflict as exception:
+        raise HTTPException(status_code=409, detail=str(exception)) from exception
+    return CompanyInviteResponse(
+        token=token,
+        email=invitation.email,
+        role="owner",
+        organization_id=organization.id,
+        organization_name=organization.name,
+        expires_at=invitation.expires_at,
+    )
 
 
 @router.get("/dashboard", response_model=AdminDashboardResponse)

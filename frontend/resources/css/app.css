@@ -338,6 +338,133 @@ html:not(.dark) { color-scheme: light; }
     .admin-shell .admin-sidebar-footer {
         border-top: 1px solid var(--admin-accent-border-soft);
     }
+
+    .company-shell {
+        --company-accent: #0f766e;
+        --company-accent-hover: #115e59;
+        --company-accent-ink: #0f766e;
+        --company-accent-ink-dark: #5eead4;
+        --company-brand: #10b981;
+        --company-accent-soft: rgb(13 148 136 / 0.1);
+        --company-accent-soft-strong: rgb(20 184 166 / 0.16);
+        --company-accent-border: rgb(13 148 136 / 0.28);
+        --company-accent-border-soft: rgb(13 148 136 / 0.18);
+        --company-focus: rgb(20 184 166 / 0.45);
+    }
+
+    .company-shell .panel-sidebar {
+        border-right-color: var(--company-accent-border);
+    }
+
+    .company-shell .panel-header {
+        border-bottom: 1px solid var(--company-accent-border-soft);
+    }
+
+    .company-shell .panel-nav-link-active {
+        background: var(--company-accent-soft);
+        color: var(--company-accent-ink);
+        box-shadow: inset 3px 0 0 var(--company-brand);
+        font-weight: 600;
+    }
+
+    :is(.dark) .company-shell .panel-nav-link-active {
+        background: var(--company-accent-soft-strong);
+        color: var(--company-accent-ink-dark);
+    }
+
+    .company-shell .company-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--company-accent-ink);
+    }
+
+    .company-shell .company-brand::before {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 9999px;
+        background: var(--company-brand);
+        content: '';
+        box-shadow: 0 0 0 4px var(--company-accent-soft);
+    }
+
+    :is(.dark) .company-shell .company-brand,
+    :is(.dark) .company-shell .company-accent-text {
+        color: var(--company-accent-ink-dark);
+    }
+
+    .company-shell .company-accent-text {
+        color: var(--company-accent-ink);
+    }
+
+    .company-shell .company-context-card,
+    .company-shell .company-membership-active,
+    .company-shell .company-feedback-success {
+        border-color: var(--company-accent-border);
+        background: var(--company-accent-soft);
+        color: var(--company-accent-ink);
+    }
+
+    :is(.dark) .company-shell .company-context-card,
+    :is(.dark) .company-shell .company-membership-active,
+    :is(.dark) .company-shell .company-feedback-success {
+        background: var(--company-accent-soft-strong);
+        color: var(--company-accent-ink-dark);
+    }
+
+    .company-shell .company-btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.75rem;
+        background: var(--company-accent);
+        padding: 0.5rem 1rem;
+        color: #fff;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: background-color 150ms, box-shadow 150ms;
+    }
+
+    .company-shell .company-btn-primary:hover {
+        background: var(--company-accent-hover);
+    }
+
+    .company-shell .company-btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--company-accent-border);
+        border-radius: 0.75rem;
+        padding: 0.5rem 0.875rem;
+        color: var(--company-accent-ink);
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: background-color 150ms, border-color 150ms, color 150ms, box-shadow 150ms;
+    }
+
+    .company-shell .company-btn-secondary:hover {
+        background: var(--company-accent-soft);
+    }
+
+    :is(.dark) .company-shell .company-btn-secondary {
+        color: var(--company-accent-ink-dark);
+    }
+
+    .company-shell .company-lang-active {
+        background: var(--company-accent);
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .company-shell :is(.company-btn-primary, .company-btn-secondary, .company-icon-button, .company-lang-link, .company-membership-option):focus-visible,
+    .company-shell :is(.panel-input, .panel-input-block):focus-visible {
+        outline: 3px solid var(--company-focus);
+        outline-offset: 2px;
+    }
+
+    .company-shell :is(.panel-input, .panel-input-block):focus-visible {
+        border-color: var(--company-accent);
+    }
 }
 
 /* Marketing — Career trajectory visual system */
