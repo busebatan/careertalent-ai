@@ -141,6 +141,13 @@ class PanelPagesI18nTest extends TestCase
     }
   }
 
+  public function test_student_panel_loads_the_livewire_alpine_runtime(): void
+  {
+    $this->get('/panel')
+      ->assertOk()
+      ->assertSee('/livewire/livewire.js', false);
+  }
+
   public function test_legacy_student_panel_urls_redirect_to_canonical_pages(): void
   {
     $redirects = [

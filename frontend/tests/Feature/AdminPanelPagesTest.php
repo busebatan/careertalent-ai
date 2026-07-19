@@ -193,6 +193,22 @@ class AdminPanelPagesTest extends TestCase
         $this->assertLessThan(strpos($html, 'data-admin-logout'), strpos($html, 'data-admin-profile'));
     }
 
+    public function test_admin_panel_loads_the_livewire_alpine_runtime(): void
+    {
+        Http::fake([
+            'http://localhost:8000/api/v1/admin/dashboard' => Http::response([
+                'stats' => [],
+                'module_counts' => [],
+                'recent_students' => [],
+            ]),
+        ]);
+
+        $this->withSession($this->superAdminSession())
+            ->get('/admin')
+            ->assertOk()
+            ->assertSee('/livewire/livewire.js', false);
+    }
+
     public function test_admin_profile_and_account_management_pages_render_real_contracts(): void
     {
         $profile = $this->superAdminSession()['auth.user'];
