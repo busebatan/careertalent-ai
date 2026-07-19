@@ -11,6 +11,7 @@ class EnsureApiAdmin
     private const ROUTE_PERMISSIONS = [
         'admin.dashboard' => 'dashboard.view',
         'admin.organizations' => 'organizations.view',
+        'admin.organizations.show' => 'organizations.view',
         'admin.organizations.store' => 'organizations.write',
         'admin.organizations.update' => 'organizations.write',
         'admin.organizations.owner-invite' => 'organizations.write',
@@ -20,6 +21,7 @@ class EnsureApiAdmin
         'admin.career-data.update' => 'career_data.write',
         'admin.career-data.destroy' => 'career_data.delete',
         'admin.students' => 'students.view',
+        'admin.students.show' => 'students.view',
         'admin.students.store' => 'students.write',
         'admin.students.update' => 'students.write',
         'admin.students.destroy' => 'students.delete',

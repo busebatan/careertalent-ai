@@ -72,6 +72,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin'
     Route::patch('/hesaplar/{user}', [AdminController::class, 'updateAccount'])->name('accounts.update');
     Route::delete('/hesaplar/{user}', [AdminController::class, 'destroyAccount'])->name('accounts.destroy');
     Route::get('/kurumlar', [AdminController::class, 'organizations'])->name('organizations');
+    Route::get('/kurumlar/{organization}', [AdminController::class, 'showOrganization'])->name('organizations.show');
     Route::post('/kurumlar', [AdminController::class, 'storeOrganization'])->name('organizations.store');
     Route::post('/kurumlar/{organization}/sahip-daveti', [AdminController::class, 'inviteOrganizationOwner'])->name('organizations.owner-invite');
     Route::patch('/kurumlar/{organization}', [AdminController::class, 'updateOrganization'])->name('organizations.update');
@@ -81,6 +82,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin'
     Route::put('/kariyer-veri-merkezi/{resource}/{record}', [AdminController::class, 'updateCareerData'])->name('career-data.update');
     Route::delete('/kariyer-veri-merkezi/{resource}/{record}', [AdminController::class, 'destroyCareerData'])->name('career-data.destroy');
     Route::get('/ogrenciler', [AdminController::class, 'students'])->name('students');
+    Route::get('/ogrenciler/{user}', [AdminController::class, 'showStudent'])->name('students.show');
     Route::post('/ogrenciler', [AdminController::class, 'storeStudent'])->name('students.store');
     Route::patch('/ogrenciler/{user}', [AdminController::class, 'updateStudent'])->name('students.update');
     Route::delete('/ogrenciler/{user}', [AdminController::class, 'destroyStudent'])->name('students.destroy');

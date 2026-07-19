@@ -25,8 +25,8 @@ from app.core.security import (
     verify_password,
 )
 from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence, JobOpportunity
-from app.models.engagement import CareerInterview, CareerInterviewAnswer, CvDocument, JobApplication
-from app.models.recruiting import Organization, OrganizationMembership
+from app.models.engagement import CareerInterview, CareerInterviewAnswer, CvDocument, JobApplication, UserProfile
+from app.models.recruiting import Organization, OrganizationInvitation, OrganizationMembership
 from app.models.user import User
 from app.schemas.admin import (
     AdminAccountCreate,
@@ -44,15 +44,25 @@ from app.schemas.admin import (
     AdminInterviewUpdate,
     AdminModuleResponse,
     AdminOrganizationCreate,
+    AdminOrganizationDetailResponse,
+    AdminOrganizationInvitationItem,
+    AdminOrganizationMemberItem,
     AdminOrganizationResponse,
     AdminOrganizationsResponse,
     AdminOrganizationUpdate,
     AdminProfileResponse,
     AdminProfileUpdate,
     AdminStudentCreate,
+    AdminStudentAnalysisItem,
+    AdminStudentApplicationItem,
+    AdminStudentCvItem,
+    AdminStudentDetailResponse,
+    AdminStudentInterviewItem,
     AdminStudentOption,
+    AdminStudentProfileSummary,
     AdminStudentResponse,
     AdminStudentsResponse,
+    AdminStudentTargetItem,
     AdminStudentUpdate,
     AdminTableRow,
 )
@@ -114,6 +124,48 @@ def _organization_or_404(db: Session, organization_id: str) -> Organization:
     return organization
 
 
+def _organization_detail_response(db: Session, organization: Organization) -> AdminOrganizationDetailResponse:
+    base = _organization_response(db, organization)
+    member_rows = db.execute(
+        select(OrganizationMembership, User)
+        .join(User, User.id == OrganizationMembership.user_id)
+        .where(OrganizationMembership.organization_id == organization.id)
+        .order_by(User.full_name.asc())
+        .limit(MAX_ROWS)
+    ).all()
+    invitations = db.scalars(
+        select(OrganizationInvitation)
+        .where(OrganizationInvitation.organization_id == organization.id)
+        .order_by(OrganizationInvitation.created_at.desc())
+        .limit(MAX_ROWS)
+    ).all()
+    return AdminOrganizationDetailResponse(
+        **base.model_dump(),
+        members=[
+            AdminOrganizationMemberItem(
+                id=membership.id,
+                full_name=user.full_name,
+                email=user.email,
+                role=membership.role,
+                status=membership.status,
+                created_at=_date(membership.created_at),
+            )
+            for membership, user in member_rows
+        ],
+        invitations=[
+            AdminOrganizationInvitationItem(
+                id=invitation.id,
+                email=invitation.email,
+                role=invitation.role,
+                expires_at=_date(invitation.expires_at),
+                accepted_at=_date(invitation.accepted_at),
+                created_at=_date(invitation.created_at),
+            )
+            for invitation in invitations
+        ],
+    )
+
+
 def _permissions(values: list[str]) -> list[str]:
     known = set(ADMIN_PERMISSION_KEYS) | set(LEGACY_ADMIN_PERMISSION_ALIASES)
     unknown = sorted(set(values) - known)
@@ -154,6 +206,130 @@ def _student_response(user: User) -> AdminStudentResponse:
         preferred_locale=user.preferred_locale,
         must_change_password=user.must_change_password,
         created_at=user.created_at.isoformat() if user.created_at else None,
+    )
+
+
+def _readiness_from_radar(radar: list) -> int | None:
+    scores = [
+        int(item["score"])
+        for item in radar
+        if isinstance(item, dict) and isinstance(item.get("score"), (int, float))
+    ]
+    return round(sum(scores) / len(scores)) if scores else None
+
+
+def _student_detail_response(db: Session, user: User) -> AdminStudentDetailResponse:
+    profile_row = db.get(UserProfile, user.id)
+    profile = (
+        AdminStudentProfileSummary(
+            phone=profile_row.phone,
+            location=profile_row.location,
+            headline=profile_row.headline,
+            linkedin=profile_row.linkedin,
+        )
+        if profile_row is not None
+        else None
+    )
+    cv_documents = db.scalars(
+        select(CvDocument)
+        .where(CvDocument.user_id == user.id)
+        .order_by(CvDocument.is_current.desc(), CvDocument.created_at.desc())
+        .limit(MAX_ROWS)
+    ).all()
+    analyses = db.scalars(
+        select(CareerAnalysis)
+        .where(CareerAnalysis.user_id == user.id)
+        .order_by(CareerAnalysis.created_at.desc())
+        .limit(MAX_ROWS)
+    ).all()
+    interviews = db.scalars(
+        select(CareerInterview)
+        .where(CareerInterview.user_id == user.id)
+        .order_by(CareerInterview.created_at.desc())
+        .limit(MAX_ROWS)
+    ).all()
+    applications = db.scalars(
+        select(JobApplication)
+        .where(JobApplication.user_id == user.id)
+        .order_by(JobApplication.applied_at.desc(), JobApplication.id.desc())
+        .limit(MAX_ROWS)
+    ).all()
+    targets = db.scalars(
+        select(CareerTarget)
+        .where(CareerTarget.user_id == user.id)
+        .order_by(CareerTarget.created_at.desc())
+        .limit(MAX_ROWS)
+    ).all()
+    interview_items: list[AdminStudentInterviewItem] = []
+    for interview in interviews:
+        answer_count = db.scalar(
+            select(func.count())
+            .select_from(CareerInterviewAnswer)
+            .where(CareerInterviewAnswer.interview_id == interview.id)
+        ) or 0
+        average_score = db.scalar(
+            select(func.avg(CareerInterviewAnswer.score))
+            .where(CareerInterviewAnswer.interview_id == interview.id)
+        )
+        interview_items.append(
+            AdminStudentInterviewItem(
+                id=interview.id,
+                target_role=interview.target_role,
+                status=interview.status,
+                language=interview.language,
+                question_count=len(interview.questions),
+                answer_count=answer_count,
+                average_score=round(average_score) if average_score is not None else None,
+                created_at=_date(interview.created_at),
+            )
+        )
+
+    base = _student_response(user)
+    return AdminStudentDetailResponse(
+        **base.model_dump(),
+        profile=profile,
+        cv_documents=[
+            AdminStudentCvItem(
+                id=document.id,
+                display_name=document.display_name,
+                kind=document.kind,
+                is_current=document.is_current,
+                created_at=_date(document.created_at),
+            )
+            for document in cv_documents
+        ],
+        analyses=[
+            AdminStudentAnalysisItem(
+                id=analysis.id,
+                status=analysis.status,
+                current_role=analysis.current_role,
+                file_name=analysis.file_name,
+                skill_count=len(analysis.skills) if isinstance(analysis.skills, list) else 0,
+                readiness_score=_readiness_from_radar(analysis.radar if isinstance(analysis.radar, list) else []),
+                created_at=_date(analysis.created_at),
+            )
+            for analysis in analyses
+        ],
+        interviews=interview_items,
+        applications=[
+            AdminStudentApplicationItem(
+                id=application.id,
+                company=application.company,
+                role=application.role,
+                stage=application.stage,
+                applied_at=_date(application.applied_at),
+            )
+            for application in applications
+        ],
+        targets=[
+            AdminStudentTargetItem(
+                id=target.id,
+                title=target.title,
+                status=target.status,
+                created_at=_date(target.created_at),
+            )
+            for target in targets
+        ],
     )
 
 
@@ -314,6 +490,16 @@ def organizations(
     )
 
 
+@router.get("/organizations/{organization_id}", response_model=AdminOrganizationDetailResponse)
+def organization_detail(
+    organization_id: str,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("organizations.view")),
+) -> AdminOrganizationDetailResponse:
+    organization = _organization_or_404(db, organization_id)
+    return _organization_detail_response(db, organization)
+
+
 @router.post(
     "/organizations",
     response_model=AdminOrganizationResponse,
@@ -456,6 +642,16 @@ def students(
     ).all()
     total = db.scalar(select(func.count()).select_from(User).where(*CANDIDATE_FILTER)) or 0
     return AdminStudentsResponse(total=total, students=[_student_response(row) for row in rows])
+
+
+@router.get("/students/{user_id}", response_model=AdminStudentDetailResponse)
+def student_detail(
+    user_id: int,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("students.view")),
+) -> AdminStudentDetailResponse:
+    student = _candidate_or_404(db, user_id)
+    return _student_detail_response(db, student)
 
 
 @router.post("/students", response_model=AdminStudentResponse, status_code=status.HTTP_201_CREATED)

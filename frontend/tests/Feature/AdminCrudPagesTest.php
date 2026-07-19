@@ -59,8 +59,11 @@ class AdminCrudPagesTest extends TestCase
         $studentPage = $this->withSession($this->adminSession())->get('/admin/ogrenciler');
         $studentPage->assertOk()->assertSee('Aday Kullanıcı')
             ->assertSee('action="'.route('admin.students.store').'"', false)
-            ->assertSee('action="'.route('admin.students.update', 42).'"', false)
-            ->assertSee('action="'.route('admin.students.destroy', 42).'"', false);
+            ->assertSee('admin-data-table', false)
+            ->assertSee('admin/ogrenciler/__ID__', false)
+            ->assertSee(__('admin.students.edit'), false)
+            ->assertSee(__('admin.students.delete'), false)
+            ->assertDontSee('action="'.route('admin.students.update', 42).'"', false);
 
         $applicationPage = $this->withSession($this->adminSession())->get('/admin/basvurular');
         $applicationPage->assertOk()->assertSee('Acme · Data Analyst')
@@ -86,9 +89,11 @@ class AdminCrudPagesTest extends TestCase
             ->get('/admin/ogrenciler');
 
         $response->assertOk()->assertSee('Aday Kullanıcı')
+            ->assertSee('admin-data-table', false)
+            ->assertSee('openDrawer(student)', false)
             ->assertDontSee('action="'.route('admin.students.store').'"', false)
-            ->assertDontSee('action="'.route('admin.students.update', 42).'"', false)
-            ->assertDontSee('action="'.route('admin.students.destroy', 42).'"', false);
+            ->assertDontSee(__('admin.students.edit'), false)
+            ->assertDontSee(__('admin.students.delete'), false);
     }
 
     public function test_crud_forms_forward_only_validated_payloads_and_delete_methods(): void

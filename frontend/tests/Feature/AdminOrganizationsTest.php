@@ -59,11 +59,11 @@ class AdminOrganizationsTest extends TestCase
             ->assertSee('Kurumlar')
             ->assertSee('Acme Teknoloji')
             ->assertSee('billing@acme.example.com')
-            ->assertSee(route('company.dashboard', ['organizationSlug' => 'acme-teknoloji']))
-            ->assertSee('data-admin-organization="org-1"', false)
+            ->assertSee('admin-data-table', false)
+            ->assertSee('openDrawer(organization)', false)
+            ->assertSee('admin/kurumlar/__ID__', false)
             ->assertSee('action="'.route('admin.organizations.store').'"', false)
-            ->assertSee('action="'.route('admin.organizations.owner-invite', 'org-1').'"', false)
-            ->assertSee('/admin/kurumlar', false);
+            ->assertDontSee('data-admin-organization=', false);
     }
 
     public function test_organization_forms_forward_validated_create_and_update_payloads(): void

@@ -118,6 +118,11 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/admin/organizations', 10);
     }
 
+    public function adminOrganizationDetail(string $organizationId): array
+    {
+        return $this->getJson('/api/v1/admin/organizations/'.rawurlencode($organizationId), 15);
+    }
+
     /** @param array<string, mixed> $payload */
     public function createAdminOrganization(array $payload): array
     {
@@ -146,6 +151,11 @@ class CareerTalentApiClient
     public function adminStudents(): array
     {
         return $this->getJson('/api/v1/admin/students', 10);
+    }
+
+    public function adminStudentDetail(int $userId): array
+    {
+        return $this->getJson('/api/v1/admin/students/'.$userId, 15);
     }
 
     /** @param array<string, mixed> $payload */

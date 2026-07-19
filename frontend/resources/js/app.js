@@ -19,6 +19,8 @@ import { profileSocialLinks } from './panel-profile-links';
 import { careerChat } from './panel-career-chat';
 import { careerInterview } from './panel-career-interview';
 import { careerApplications } from './panel-applications';
+import { adminStudents } from './admin-students';
+import { adminOrganizations } from './admin-organizations';
 
 window.PanelCvStore = PanelCvStore;
 window.panelCvRadar = panelCvRadar;
@@ -34,6 +36,8 @@ window.profileSocialLinks = profileSocialLinks;
 window.careerChat = careerChat;
 window.careerInterview = careerInterview;
 window.careerApplications = careerApplications;
+window.adminStudents = adminStudents;
+window.adminOrganizations = adminOrganizations;
 window.panelJobMatches = panelJobMatches;
 window.exportHarvardCvPdf = exportHarvardCvPdf;
 window.renderHarvardCvPdf = renderHarvardCvPdf;

@@ -21,6 +21,7 @@ rsync -a --delete \
   --exclude 'frontend/.env' \
   --exclude 'frontend/database/database.sqlite' \
   --exclude 'frontend/storage' \
+  --exclude 'frontend/bootstrap/cache/*.php' \
   --exclude 'backend/.env' \
   --exclude 'backend/.venv' \
   --exclude 'backend/uploads' \
@@ -62,6 +63,8 @@ chmod -R ug+rwx "$DEST/frontend/storage" "$DEST/frontend/bootstrap/cache"
 
 echo "→ Laravel caches (yigit user — PHP-FPM ile aynı sahip)"
 cd "$DEST/frontend"
+rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
+sudo -u yigit php artisan package:discover --no-interaction
 sudo -u yigit php artisan route:clear
 sudo -u yigit php artisan config:cache
 sudo -u yigit php artisan route:cache

@@ -348,6 +348,74 @@ html:not(.dark) { color-scheme: light; }
         border-top: 1px solid var(--admin-accent-border-soft);
     }
 
+    .admin-shell .admin-data-table {
+        @apply w-full min-w-[720px] border-collapse text-left text-sm;
+    }
+
+    .admin-shell .admin-data-table thead th {
+        @apply border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400;
+    }
+
+    .admin-shell .admin-data-table tbody td {
+        @apply border-b border-slate-100 px-4 py-3 align-middle dark:border-slate-800/80;
+    }
+
+    .admin-shell .admin-data-table tbody tr:hover {
+        @apply bg-slate-50/80 dark:bg-slate-900/40;
+    }
+
+    .admin-shell .admin-drawer-backdrop {
+        @apply fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm;
+    }
+
+    .admin-shell .admin-drawer-panel {
+        @apply fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950;
+    }
+
+    .admin-shell .admin-drawer-body {
+        @apply min-h-0 flex-1 overflow-y-auto overscroll-contain p-6;
+    }
+
+    .admin-shell .admin-detail-section {
+        @apply mt-6 border-t border-slate-200 pt-6 dark:border-slate-800;
+    }
+
+    .admin-shell .admin-detail-list {
+        @apply mt-3 space-y-2;
+    }
+
+    .admin-shell .admin-detail-row {
+        @apply rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/50;
+    }
+
+    .admin-shell .admin-btn-secondary {
+        @apply inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800;
+    }
+
+    .admin-shell .admin-btn-danger {
+        @apply inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50;
+    }
+
+    .admin-shell .admin-btn-success {
+        @apply inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-950/50;
+    }
+
+    .admin-shell .admin-student-name-link {
+        @apply text-left font-medium text-slate-900 underline-offset-2 transition hover:text-emerald-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:text-white dark:hover:text-emerald-300;
+    }
+
+    .admin-shell .admin-confirm-modal {
+        @apply fixed inset-0 z-[60] flex items-center justify-center p-4;
+    }
+
+    .admin-shell .admin-confirm-backdrop {
+        @apply absolute inset-0 bg-slate-950/50;
+    }
+
+    .admin-shell .admin-confirm-dialog {
+        @apply relative z-10 w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950;
+    }
+
     .company-shell {
         --company-accent: #0f766e;
         --company-accent-hover: #115e59;

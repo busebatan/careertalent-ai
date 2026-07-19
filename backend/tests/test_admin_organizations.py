@@ -302,3 +302,24 @@ def test_organization_delete_closes_without_removing_tenant_data(client):
         stored = db.get(Organization, organization["id"])
         assert stored is not None
         assert stored.status == "closed"
+
+
+def test_admin_organization_detail_returns_members_and_invitations(client):
+    _register(client, "admin@example.com")
+    _promote("admin@example.com")
+    headers = _headers(client, "admin@example.com")
+    organization = client.post(
+        "/api/v1/admin/organizations", headers=headers, json=_payload()
+    ).json()
+
+    response = client.get(
+        f"/api/v1/admin/organizations/{organization['id']}", headers=headers
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == organization["id"]
+    assert body["name"] == "Acme Teknoloji"
+    assert body["members"] == []
+    assert body["invitations"] == []
+    assert client.get("/api/v1/admin/organizations/missing-id", headers=headers).status_code == 404

@@ -152,13 +152,73 @@ class AdminStudentsResponse(BaseModel):
     students: list[AdminStudentResponse]
 
 
+class AdminStudentProfileSummary(BaseModel):
+    phone: str | None = None
+    location: str | None = None
+    headline: str | None = None
+    linkedin: str | None = None
+
+
+class AdminStudentCvItem(BaseModel):
+    id: str
+    display_name: str
+    kind: str
+    is_current: bool
+    created_at: str | None = None
+
+
+class AdminStudentAnalysisItem(BaseModel):
+    id: str
+    status: str
+    current_role: str | None = None
+    file_name: str | None = None
+    skill_count: int = Field(ge=0)
+    readiness_score: int | None = Field(default=None, ge=0, le=100)
+    created_at: str | None = None
+
+
+class AdminStudentInterviewItem(BaseModel):
+    id: str
+    target_role: str
+    status: str
+    language: Literal["tr", "en"]
+    question_count: int = Field(ge=0)
+    answer_count: int = Field(ge=0)
+    average_score: int | None = Field(default=None, ge=0, le=100)
+    created_at: str | None = None
+
+
+ApplicationStage = Literal["applied", "interview", "offer", "rejected"]
+
+
+class AdminStudentApplicationItem(BaseModel):
+    id: str
+    company: str
+    role: str
+    stage: ApplicationStage
+    applied_at: str | None = None
+
+
+class AdminStudentTargetItem(BaseModel):
+    id: str
+    title: str
+    status: str
+    created_at: str | None = None
+
+
+class AdminStudentDetailResponse(AdminStudentResponse):
+    profile: AdminStudentProfileSummary | None = None
+    cv_documents: list[AdminStudentCvItem] = Field(default_factory=list)
+    analyses: list[AdminStudentAnalysisItem] = Field(default_factory=list)
+    interviews: list[AdminStudentInterviewItem] = Field(default_factory=list)
+    applications: list[AdminStudentApplicationItem] = Field(default_factory=list)
+    targets: list[AdminStudentTargetItem] = Field(default_factory=list)
+
+
 class AdminStudentOption(BaseModel):
     id: int
     full_name: str
     email: EmailStr
-
-
-ApplicationStage = Literal["applied", "interview", "offer", "rejected"]
 
 
 class AdminApplicationCreate(BaseModel):
@@ -321,6 +381,29 @@ class AdminOrganizationResponse(BaseModel):
     members_count: int = Field(ge=0)
     created_at: str
     updated_at: str
+
+
+class AdminOrganizationMemberItem(BaseModel):
+    id: str
+    full_name: str
+    email: EmailStr
+    role: str
+    status: str
+    created_at: str | None = None
+
+
+class AdminOrganizationInvitationItem(BaseModel):
+    id: str
+    email: EmailStr
+    role: str
+    expires_at: str | None = None
+    accepted_at: str | None = None
+    created_at: str | None = None
+
+
+class AdminOrganizationDetailResponse(AdminOrganizationResponse):
+    members: list[AdminOrganizationMemberItem] = Field(default_factory=list)
+    invitations: list[AdminOrganizationInvitationItem] = Field(default_factory=list)
 
 
 class AdminOrganizationsResponse(BaseModel):

@@ -276,3 +276,26 @@ def test_company_accounts_never_appear_as_students_or_in_student_metrics(client)
     assert [row["email"] for row in students.json()["students"]] == ["student@example.com"]
     assert dashboard.status_code == 200
     assert dashboard.json()["module_counts"]["students"] == 1
+
+
+def test_admin_student_detail_returns_profile_and_related_records(client):
+    _user("root@example.com", role="super_admin")
+    student_id = _user("detail@example.com")
+    root = _headers(client, "root@example.com")
+
+    response = client.get(f"/api/v1/admin/students/{student_id}", headers=root)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == student_id
+    assert body["email"] == "detail@example.com"
+    assert body["cv_documents"] == []
+    assert body["analyses"] == []
+    assert body["interviews"] == []
+    assert body["applications"] == []
+    assert body["targets"] == []
+
+    _user("viewer@example.com", role="admin", permissions=["students.view"])
+    viewer = _headers(client, "viewer@example.com")
+    assert client.get(f"/api/v1/admin/students/{student_id}", headers=viewer).status_code == 200
+    assert client.get("/api/v1/admin/students/999999", headers=root).status_code == 404

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\CareerTalentApiClient;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -160,6 +161,18 @@ class AdminController extends Controller
         ], $api);
     }
 
+    public function showOrganization(CareerTalentApiClient $api, string $organization): JsonResponse
+    {
+        $response = $api->adminOrganizationDetail($organization);
+        if (! ($response['ok'] ?? false) || ! is_array($response['body'] ?? null)) {
+            return response()->json([
+                'message' => $response['error'] ?? __('admin.organizations.detail_error'),
+            ], $response['status'] ?? 502);
+        }
+
+        return response()->json($response['body']);
+    }
+
     public function storeOrganization(Request $request, CareerTalentApiClient $api): RedirectResponse
     {
         $owner = $request->validate(['owner_email' => ['required', 'email']]);
@@ -224,6 +237,18 @@ class AdminController extends Controller
         ], $api);
     }
 
+    public function showStudent(CareerTalentApiClient $api, int $user): JsonResponse
+    {
+        $response = $api->adminStudentDetail($user);
+        if (! ($response['ok'] ?? false) || ! is_array($response['body'] ?? null)) {
+            return response()->json([
+                'message' => $response['error'] ?? __('admin.students.detail_error'),
+            ], $response['status'] ?? 502);
+        }
+
+        return response()->json($response['body']);
+    }
+
     public function storeStudent(Request $request, CareerTalentApiClient $api): RedirectResponse
     {
         $data = $request->validate([
@@ -255,7 +280,12 @@ class AdminController extends Controller
         $response = $api->updateAdminStudent($user, $data);
 
         return $response['ok']
-            ? redirect()->route('admin.students')->with('status', __('admin.students.updated'))
+            ? redirect()->route('admin.students')->with(
+                'status',
+                $request->boolean('is_active')
+                    ? __('admin.students.activated')
+                    : __('admin.students.updated')
+            )
             : back()->withErrors(['students' => $response['error']]);
     }
 
