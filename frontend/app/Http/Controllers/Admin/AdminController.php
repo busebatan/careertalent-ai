@@ -149,7 +149,7 @@ class AdminController extends Controller
     public function storeOrganization(Request $request, CareerTalentApiClient $api): RedirectResponse
     {
         $owner = $request->validate(['owner_email' => ['required', 'email']]);
-        $response = $api->createAdminOrganization($this->organizationPayload($request));
+        $response = $api->createAdminOrganization($this->organizationPayload($request, true));
         if (! $response['ok']) {
             return back()->withInput()->withErrors(['organizations' => $response['error']]);
         }
@@ -384,18 +384,24 @@ class AdminController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function organizationPayload(Request $request): array
+    private function organizationPayload(Request $request, bool $creating = false): array
     {
-        return $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'min:2', 'max:160'],
-            'slug' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/'],
             'organization_type' => ['required', 'in:employer,agency'],
             'size_band' => ['required', 'in:smb,mid_market,enterprise'],
             'status' => ['required', 'in:onboarding,active,suspended,closed'],
             'plan_code' => ['required', 'in:pilot,starter,growth,agency,enterprise'],
             'billing_email' => ['required', 'email', 'max:255'],
             'website' => ['nullable', 'url:http,https', 'max:2048'],
-        ]);
+            'description' => ['nullable', 'string', 'max:1000'],
+            'logo_url' => ['nullable', 'url:https', 'max:2048'],
+        ];
+        if (! $creating) {
+            $rules['slug'] = ['required', 'string', 'min:2', 'max:100', 'regex:/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/'];
+        }
+
+        return $request->validate($rules);
     }
 
     private function assertCareerDataResource(string $resource): void

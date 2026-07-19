@@ -49,6 +49,8 @@ def _payload(**overrides) -> dict:
         "plan_code": "pilot",
         "billing_email": "billing@acme.example.com",
         "website": "https://acme.test",
+        "description": "Teknoloji ekipleri için sürdürülebilir işe alım.",
+        "logo_url": "https://cdn.acme.test/logo.svg",
     }
     payload.update(overrides)
     return payload
@@ -90,6 +92,8 @@ def test_admin_can_create_list_and_update_tenant_organizations(client):
         "plan_code": "pilot",
         "billing_email": "billing@acme.example.com",
         "website": "https://acme.test/",
+        "description": "Teknoloji ekipleri için sürdürülebilir işe alım.",
+        "logo_url": "https://cdn.acme.test/logo.svg",
         "members_count": 0,
         "created_at": created.json()["created_at"],
         "updated_at": created.json()["updated_at"],
@@ -135,6 +139,56 @@ def test_organization_slug_is_normalized_and_unique(client):
     assert duplicate.json()["detail"] == "Organization slug already exists"
 
 
+def test_organization_slug_is_generated_from_name_and_collision_safe(client):
+    _register(client, "admin@example.com")
+    _promote("admin@example.com")
+    headers = _headers(client, "admin@example.com")
+    payload = _payload(name="Büşe Kurum")
+    payload.pop("slug")
+
+    first = client.post("/api/v1/admin/organizations", headers=headers, json=payload)
+    second = client.post(
+        "/api/v1/admin/organizations",
+        headers=headers,
+        json={**payload, "billing_email": "second@acme.example.com"},
+    )
+
+    assert first.status_code == 201
+    assert first.json()["slug"] == "buse-kurum"
+    assert second.status_code == 201
+    assert second.json()["slug"] == "buse-kurum-2"
+
+
+def test_public_company_profile_exposes_branding_only_for_available_organization(client):
+    _register(client, "admin@example.com")
+    _promote("admin@example.com")
+    headers = _headers(client, "admin@example.com")
+    organization = client.post(
+        "/api/v1/admin/organizations",
+        headers=headers,
+        json=_payload(status="active"),
+    ).json()
+
+    profile = client.get("/api/v1/company/organizations/acme-teknoloji")
+
+    assert profile.status_code == 200
+    assert profile.json() == {
+        "name": "Acme Teknoloji",
+        "slug": "acme-teknoloji",
+        "website": "https://acme.test/",
+        "description": "Teknoloji ekipleri için sürdürülebilir işe alım.",
+        "logo_url": "https://cdn.acme.test/logo.svg",
+    }
+    assert "billing_email" not in profile.json()
+
+    client.patch(
+        f"/api/v1/admin/organizations/{organization['id']}",
+        headers=headers,
+        json={"status": "suspended"},
+    )
+    assert client.get("/api/v1/company/organizations/acme-teknoloji").status_code == 404
+
+
 def test_organization_contract_rejects_unknown_enum_values(client):
     _register(client, "admin@example.com")
     _promote("admin@example.com")
@@ -146,6 +200,27 @@ def test_organization_contract_rejects_unknown_enum_values(client):
     )
 
     assert response.status_code == 422
+
+
+def test_organization_contract_rejects_reserved_slug_and_insecure_logo(client):
+    _register(client, "admin@example.com")
+    _promote("admin@example.com")
+    headers = _headers(client, "admin@example.com")
+
+    reserved = client.post(
+        "/api/v1/admin/organizations",
+        headers=headers,
+        json=_payload(slug="admin"),
+    )
+    insecure_logo = client.post(
+        "/api/v1/admin/organizations",
+        headers=headers,
+        json=_payload(slug="guvenli-kurum", logo_url="http://cdn.acme.test/logo.svg"),
+    )
+
+    assert reserved.status_code == 422
+    assert reserved.json()["detail"] == "Organization slug is reserved"
+    assert insecure_logo.status_code == 422
 
 
 def test_user_can_join_multiple_tenants_but_only_once_per_organization(client):

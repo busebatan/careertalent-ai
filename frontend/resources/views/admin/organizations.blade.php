@@ -31,7 +31,10 @@
         <form method="post" action="{{ route('admin.organizations.store') }}" class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             @csrf
             <label class="text-sm font-medium xl:col-span-2">{{ __('admin.organizations.name') }}<input class="panel-input-block mt-2" name="name" value="{{ old('name') }}" required></label>
-            <label class="text-sm font-medium xl:col-span-2">{{ __('admin.organizations.slug') }}<input class="panel-input-block mt-2" name="slug" value="{{ old('slug') }}" pattern="[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*" required></label>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm dark:border-slate-800 dark:bg-slate-950/50 xl:col-span-2">
+                <span class="font-medium">{{ __('admin.organizations.profile_url') }}</span>
+                <p class="panel-muted mt-2 text-xs">{{ __('admin.organizations.profile_url_auto') }}</p>
+            </div>
             <label class="text-sm font-medium">{{ __('admin.organizations.type') }}<select class="panel-input-block mt-2" name="organization_type">@foreach ($types as $value => $label)<option value="{{ $value }}" @selected(old('organization_type', 'employer') === $value)>{{ $label }}</option>@endforeach</select></label>
             <label class="text-sm font-medium">{{ __('admin.organizations.size') }}<select class="panel-input-block mt-2" name="size_band">@foreach ($sizes as $value => $label)<option value="{{ $value }}" @selected(old('size_band', 'smb') === $value)>{{ $label }}</option>@endforeach</select></label>
             <label class="text-sm font-medium">{{ __('admin.organizations.status') }}<select class="panel-input-block mt-2" name="status">@foreach ($statuses as $value => $label)<option value="{{ $value }}" @selected(old('status', 'onboarding') === $value)>{{ $label }}</option>@endforeach</select></label>
@@ -39,6 +42,8 @@
             <label class="text-sm font-medium xl:col-span-2">{{ __('admin.organizations.billing_email') }}<input class="panel-input-block mt-2" name="billing_email" type="email" value="{{ old('billing_email') }}" required></label>
             <label class="text-sm font-medium xl:col-span-2">{{ __('admin.organizations.owner_email') }}<input class="panel-input-block mt-2" name="owner_email" type="email" value="{{ old('owner_email') }}" required></label>
             <label class="text-sm font-medium xl:col-span-2">{{ __('admin.organizations.website') }}<input class="panel-input-block mt-2" name="website" type="url" value="{{ old('website') }}" placeholder="https://"></label>
+            <label class="text-sm font-medium xl:col-span-2">{{ __('admin.organizations.logo_url') }}<input class="panel-input-block mt-2" name="logo_url" type="url" value="{{ old('logo_url') }}" placeholder="https://"></label>
+            <label class="text-sm font-medium xl:col-span-4">{{ __('admin.organizations.description') }}<textarea class="panel-input-block mt-2 min-h-28" name="description" maxlength="1000">{{ old('description') }}</textarea></label>
             <div class="xl:col-span-4"><button class="admin-btn-primary" type="submit">{{ __('admin.organizations.create') }}</button></div>
         </form>
     </section>
@@ -60,6 +65,7 @@
                 </div>
                 <div class="panel-muted mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs">
                     <span>{{ trans_choice('admin.organizations.members', $organization['members_count'], ['count' => $organization['members_count']]) }}</span>
+                    <a class="admin-accent-text" href="{{ route('company.organization.login', $organization['slug']) }}" target="_blank" rel="noreferrer">{{ route('company.organization.login', $organization['slug']) }}</a>
                     @if (! empty($organization['website']))<a class="admin-accent-text" href="{{ $organization['website'] }}" target="_blank" rel="noreferrer">{{ $organization['website'] }}</a>@endif
                     <span>{{ __('admin.organizations.created_at', ['date' => $organization['created_at']]) }}</span>
                 </div>
@@ -80,6 +86,8 @@
                         <label class="text-sm">{{ __('admin.organizations.plan') }}<select class="panel-input-block mt-2" name="plan_code">@foreach ($plans as $value => $label)<option value="{{ $value }}" @selected($organization['plan_code'] === $value)>{{ $label }}</option>@endforeach</select></label>
                         <label class="text-sm xl:col-span-2">{{ __('admin.organizations.billing_email') }}<input class="panel-input-block mt-2" name="billing_email" type="email" value="{{ $organization['billing_email'] }}" required></label>
                         <label class="text-sm xl:col-span-2">{{ __('admin.organizations.website') }}<input class="panel-input-block mt-2" name="website" type="url" value="{{ $organization['website'] ?? '' }}"></label>
+                        <label class="text-sm xl:col-span-2">{{ __('admin.organizations.logo_url') }}<input class="panel-input-block mt-2" name="logo_url" type="url" value="{{ $organization['logo_url'] ?? '' }}"></label>
+                        <label class="text-sm xl:col-span-4">{{ __('admin.organizations.description') }}<textarea class="panel-input-block mt-2 min-h-28" name="description" maxlength="1000">{{ $organization['description'] ?? '' }}</textarea></label>
                         <div class="xl:col-span-4"><button class="admin-btn-primary" type="submit">{{ __('admin.organizations.save') }}</button></div>
                     </form>
                 </details>

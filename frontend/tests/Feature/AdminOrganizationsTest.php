@@ -35,6 +35,8 @@ class AdminOrganizationsTest extends TestCase
             'plan_code' => 'pilot',
             'billing_email' => 'billing@acme.example.com',
             'website' => 'https://acme.test',
+            'description' => 'Teknoloji ekipleri için sürdürülebilir işe alım.',
+            'logo_url' => 'https://cdn.acme.test/logo.svg',
             'members_count' => 0,
             'created_at' => '2026-07-19T10:00:00+00:00',
             'updated_at' => '2026-07-19T10:00:00+00:00',
@@ -57,6 +59,7 @@ class AdminOrganizationsTest extends TestCase
             ->assertSee('Kurumlar')
             ->assertSee('Acme Teknoloji')
             ->assertSee('billing@acme.example.com')
+            ->assertSee(route('company.organization.login', 'acme-teknoloji'))
             ->assertSee('data-admin-organization="org-1"', false)
             ->assertSee('action="'.route('admin.organizations.store').'"', false)
             ->assertSee('action="'.route('admin.organizations.owner-invite', 'org-1').'"', false)
@@ -77,13 +80,14 @@ class AdminOrganizationsTest extends TestCase
 
         $this->withSession($this->adminSession())->post('/admin/kurumlar', [
             'name' => 'Acme Teknoloji',
-            'slug' => 'acme-teknoloji',
             'organization_type' => 'employer',
             'size_band' => 'smb',
             'status' => 'onboarding',
             'plan_code' => 'pilot',
             'billing_email' => 'billing@acme.example.com',
             'website' => 'https://acme.test',
+            'description' => 'Teknoloji ekipleri için sürdürülebilir işe alım.',
+            'logo_url' => 'https://cdn.acme.test/logo.svg',
             'owner_email' => 'owner@acme.example.com',
         ])->assertRedirect('/admin/kurumlar');
 
@@ -96,17 +100,23 @@ class AdminOrganizationsTest extends TestCase
             'plan_code' => 'growth',
             'billing_email' => 'billing@acme.example.com',
             'website' => 'https://acme.test',
+            'description' => 'Yeni kurum açıklaması',
+            'logo_url' => 'https://cdn.acme.test/new-logo.svg',
         ])->assertRedirect('/admin/kurumlar');
 
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
             && $request->url() === 'http://localhost:8000/api/v1/admin/organizations'
+            && ! isset($request['slug'])
             && $request['organization_type'] === 'employer'
             && $request['plan_code'] === 'pilot'
+            && $request['description'] === 'Teknoloji ekipleri için sürdürülebilir işe alım.'
         );
         Http::assertSent(fn (Request $request): bool => $request->method() === 'PATCH'
             && $request->url() === 'http://localhost:8000/api/v1/admin/organizations/org-1'
             && $request['status'] === 'active'
             && $request['size_band'] === 'mid_market'
+            && $request['slug'] === 'acme-teknoloji'
+            && $request['logo_url'] === 'https://cdn.acme.test/new-logo.svg'
         );
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
             && $request->url() === 'http://localhost:8000/api/v1/admin/organizations/org-1/owner-invitations'

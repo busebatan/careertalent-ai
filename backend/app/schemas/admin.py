@@ -113,13 +113,15 @@ class AdminAccountsResponse(BaseModel):
 
 class AdminOrganizationCreate(BaseModel):
     name: str = Field(min_length=2, max_length=160)
-    slug: str = Field(min_length=2, max_length=100)
+    slug: str | None = Field(default=None, min_length=2, max_length=100)
     organization_type: OrganizationType
     size_band: OrganizationSizeBand
     status: OrganizationStatus = "onboarding"
     plan_code: OrganizationPlan = "pilot"
     billing_email: EmailStr
     website: AnyHttpUrl | None = None
+    description: str | None = Field(default=None, max_length=1000)
+    logo_url: AnyHttpUrl | None = None
 
     @field_validator("name")
     @classmethod
@@ -128,13 +130,20 @@ class AdminOrganizationCreate(BaseModel):
 
     @field_validator("slug")
     @classmethod
-    def normalize_slug(cls, value: str) -> str:
-        return _normalized_slug(value)
+    def normalize_slug(cls, value: str | None) -> str | None:
+        return _normalized_slug(value) if value is not None else None
 
-    @field_validator("website", mode="before")
+    @field_validator("website", "description", "logo_url", mode="before")
     @classmethod
     def normalize_optional_website(cls, value):
         return _blank_to_none(value)
+
+    @field_validator("logo_url")
+    @classmethod
+    def require_https_logo(cls, value: AnyHttpUrl | None) -> AnyHttpUrl | None:
+        if value is not None and value.scheme != "https":
+            raise ValueError("Logo URL must use HTTPS")
+        return value
 
 
 class AdminOrganizationUpdate(BaseModel):
@@ -146,6 +155,8 @@ class AdminOrganizationUpdate(BaseModel):
     plan_code: OrganizationPlan | None = None
     billing_email: EmailStr | None = None
     website: AnyHttpUrl | None = None
+    description: str | None = Field(default=None, max_length=1000)
+    logo_url: AnyHttpUrl | None = None
 
     @field_validator("name")
     @classmethod
@@ -157,14 +168,21 @@ class AdminOrganizationUpdate(BaseModel):
     def normalize_slug(cls, value: str | None) -> str | None:
         return _normalized_slug(value) if value is not None else None
 
-    @field_validator("website", mode="before")
+    @field_validator("website", "description", "logo_url", mode="before")
     @classmethod
     def normalize_optional_website(cls, value):
         return _blank_to_none(value)
 
+    @field_validator("logo_url")
+    @classmethod
+    def require_https_logo(cls, value: AnyHttpUrl | None) -> AnyHttpUrl | None:
+        if value is not None and value.scheme != "https":
+            raise ValueError("Logo URL must use HTTPS")
+        return value
+
     @model_validator(mode="after")
     def reject_null_for_required_fields(self):
-        nullable = {"website"}
+        nullable = {"website", "description", "logo_url"}
         for field in self.model_fields_set - nullable:
             if getattr(self, field) is None:
                 raise ValueError(f"{field} cannot be null")
@@ -181,6 +199,8 @@ class AdminOrganizationResponse(BaseModel):
     plan_code: OrganizationPlan
     billing_email: EmailStr
     website: str | None
+    description: str | None
+    logo_url: str | None
     members_count: int = Field(ge=0)
     created_at: str
     updated_at: str

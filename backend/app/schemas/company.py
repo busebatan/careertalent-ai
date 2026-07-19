@@ -26,6 +26,14 @@ class CompanyInviteAccept(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class CompanyOrganizationProfile(BaseModel):
+    name: str
+    slug: str
+    website: str | None
+    description: str | None
+    logo_url: str | None
+
+
 class CompanyMembershipSummary(BaseModel):
     organization_id: str
     organization_name: str

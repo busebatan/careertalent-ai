@@ -31,6 +31,18 @@ class AuthController extends Controller
         return view('auth.page', ['portal' => 'company', 'mode' => 'login']);
     }
 
+    public function organizationLogin(string $organizationSlug, CareerTalentApiClient $api): View
+    {
+        $profile = $api->companyOrganizationProfile($organizationSlug);
+        abort_unless($profile['ok'], $profile['status'] === 404 ? 404 : 503);
+
+        return view('auth.page', [
+            'portal' => 'company',
+            'mode' => 'login',
+            'organizationProfile' => $profile['body'],
+        ]);
+    }
+
     public function authenticate(Request $request, CareerTalentApiClient $api): RedirectResponse
     {
         return $this->attemptLogin($request, $api, false);
@@ -43,6 +55,25 @@ class AuthController extends Controller
 
     public function authenticateCompany(Request $request, CareerTalentApiClient $api): RedirectResponse
     {
+        return $this->attemptCompanyLogin($request, $api);
+    }
+
+    public function authenticateOrganization(
+        Request $request,
+        string $organizationSlug,
+        CareerTalentApiClient $api,
+    ): RedirectResponse {
+        $profile = $api->companyOrganizationProfile($organizationSlug);
+        abort_unless($profile['ok'], $profile['status'] === 404 ? 404 : 503);
+
+        return $this->attemptCompanyLogin($request, $api, $profile['body']['slug']);
+    }
+
+    private function attemptCompanyLogin(
+        Request $request,
+        CareerTalentApiClient $api,
+        ?string $requiredOrganizationSlug = null,
+    ): RedirectResponse {
         $credentials = $request->validate(['email' => ['required', 'email'], 'password' => ['required', 'string']]);
         $result = $api->login($credentials['email'], $credentials['password']);
         if (! $result['ok']) {
@@ -63,12 +94,24 @@ class AuthController extends Controller
 
             return back()->withInput($request->only('email'))->withErrors(['email' => __('marketing.auth.company_membership_required')]);
         }
+        $membership = $requiredOrganizationSlug === null
+            ? $memberships[0]
+            : collect($memberships)->first(
+                fn (array $item): bool => ($item['organization_slug'] ?? null) === $requiredOrganizationSlug
+            );
+        if (! is_array($membership)) {
+            $request->session()->forget([PortalAuthSession::COMPANY, 'company']);
+
+            return back()->withInput($request->only('email'))->withErrors([
+                'email' => __('marketing.auth.company_organization_required'),
+            ]);
+        }
         if (($request->session()->get('auth.user.role') ?? null) === 'company') {
             $request->session()->forget(PortalAuthSession::DEFAULT);
         }
         $this->startSession($request, $result['body']['access_token'], $me['body'], PortalAuthSession::COMPANY);
         $request->session()->put('company.memberships', $memberships);
-        $request->session()->put('company.organization_id', $memberships[0]['organization_id']);
+        $request->session()->put('company.organization_id', $membership['organization_id']);
 
         return redirect()->route('company.dashboard');
     }

@@ -22,6 +22,7 @@ from app.schemas.company import (
     CompanyMemberUpdate,
     CompanyMembershipSummary,
     CompanyOrganizationUpdate,
+    CompanyOrganizationProfile,
     CompanyPendingInviteResponse,
 )
 from app.services.company import CompanyInvitationConflict, create_company_invitation, invitation_hash
@@ -89,6 +90,26 @@ def _require_permission(context, permission: str):
 def _expired(value: datetime) -> bool:
     comparable = value if value.tzinfo is not None else value.replace(tzinfo=UTC)
     return comparable.astimezone(UTC) <= datetime.now(UTC)
+
+
+@router.get("/organizations/{slug}", response_model=CompanyOrganizationProfile)
+def organization_profile(slug: str, db: DB) -> CompanyOrganizationProfile:
+    organization = db.scalar(
+        select(Organization).where(
+            Organization.slug == slug.lower(),
+            Organization.status.in_(["onboarding", "active"]),
+        )
+    )
+    if organization is None:
+        raise HTTPException(status_code=404, detail="Company organization not found")
+    settings = organization.settings if isinstance(organization.settings, dict) else {}
+    return CompanyOrganizationProfile(
+        name=organization.name,
+        slug=organization.slug,
+        website=organization.website,
+        description=settings.get("description"),
+        logo_url=settings.get("logo_url"),
+    )
 
 
 @router.get("/context", response_model=CompanyContextResponse)

@@ -158,3 +158,12 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::redirect('/sohbet', '/panel/ai-yardimcisi');
     Route::get('/locale/{locale}', [PanelLocaleController::class, 'switch'])->name('locale');
 });
+
+Route::middleware('marketing.locale')->group(function () {
+    Route::get('/{organizationSlug}', [AuthController::class, 'organizationLogin'])
+        ->where('organizationSlug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->name('company.organization.login');
+    Route::post('/{organizationSlug}', [AuthController::class, 'authenticateOrganization'])
+        ->where('organizationSlug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->name('company.organization.login.submit');
+});

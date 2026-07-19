@@ -1,5 +1,7 @@
 import hashlib
+import re
 import secrets
+import unicodedata
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -10,12 +12,61 @@ from app.models.recruiting import Organization, OrganizationInvitation, Organiza
 from app.models.user import User
 
 
+RESERVED_ORGANIZATION_SLUGS = frozenset(
+    {
+        "admin",
+        "api",
+        "blog",
+        "bootcamp",
+        "company",
+        "faq",
+        "galeri",
+        "giris",
+        "hakkimizda",
+        "health",
+        "iletisim",
+        "kayit",
+        "locale",
+        "meslekler",
+        "nasil-calisir",
+        "ozellikler",
+        "panel",
+        "fiyatlandirma",
+        "storage",
+        "vendor",
+    }
+)
+_TURKISH_ASCII = str.maketrans(
+    {"ç": "c", "ğ": "g", "ı": "i", "İ": "I", "ö": "o", "ş": "s", "ü": "u"}
+)
+
+
 class CompanyInvitationConflict(ValueError):
     pass
 
 
 def invitation_hash(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def organization_slug(value: str) -> str:
+    translated = value.translate(_TURKISH_ASCII)
+    ascii_value = unicodedata.normalize("NFKD", translated).encode("ascii", "ignore").decode()
+    slug = re.sub(r"[^a-z0-9]+", "-", ascii_value.lower()).strip("-")
+    return (slug or "kurum")[:100].rstrip("-")
+
+
+def available_organization_slug(db: Session, name: str) -> str:
+    base = organization_slug(name)
+    candidate = base
+    suffix = 2
+    while candidate in RESERVED_ORGANIZATION_SLUGS or db.scalar(
+        select(Organization.id).where(Organization.slug == candidate)
+    ):
+        ending = f"-{suffix}"
+        candidate = f"{base[: 100 - len(ending)].rstrip('-')}{ending}"
+        suffix += 1
+    return candidate
 
 
 def create_company_invitation(

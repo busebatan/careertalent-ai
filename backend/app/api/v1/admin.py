@@ -41,7 +41,12 @@ from app.schemas.admin import (
     AdminTableRow,
 )
 from app.schemas.company import CompanyInviteCreate, CompanyInviteResponse
-from app.services.company import CompanyInvitationConflict, create_company_invitation
+from app.services.company import (
+    RESERVED_ORGANIZATION_SLUGS,
+    CompanyInvitationConflict,
+    available_organization_slug,
+    create_company_invitation,
+)
 
 router = APIRouter()
 DB = Annotated[Session, Depends(get_db)]
@@ -64,6 +69,7 @@ def _organization_response(db: Session, organization: Organization) -> AdminOrga
         .select_from(OrganizationMembership)
         .where(OrganizationMembership.organization_id == organization.id)
     ) or 0
+    settings = organization.settings if isinstance(organization.settings, dict) else {}
     return AdminOrganizationResponse(
         id=organization.id,
         name=organization.name,
@@ -74,6 +80,8 @@ def _organization_response(db: Session, organization: Organization) -> AdminOrga
         plan_code=organization.plan_code,
         billing_email=organization.billing_email,
         website=organization.website,
+        description=settings.get("description"),
+        logo_url=settings.get("logo_url"),
         members_count=members_count,
         created_at=organization.created_at.isoformat(),
         updated_at=organization.updated_at.isoformat(),
@@ -209,19 +217,27 @@ def create_organization(
     db: DB,
     _current_user: User = Depends(require_admin_permission("organizations.manage")),
 ) -> AdminOrganizationResponse:
-    if db.scalar(select(Organization.id).where(Organization.slug == payload.slug)):
+    organization_slug = payload.slug or available_organization_slug(db, payload.name)
+    if organization_slug in RESERVED_ORGANIZATION_SLUGS:
+        raise HTTPException(status_code=422, detail="Organization slug is reserved")
+    if db.scalar(select(Organization.id).where(Organization.slug == organization_slug)):
         raise HTTPException(status_code=409, detail="Organization slug already exists")
+    settings = {}
+    if payload.description is not None:
+        settings["description"] = payload.description
+    if payload.logo_url is not None:
+        settings["logo_url"] = str(payload.logo_url)
     organization = Organization(
         id=str(uuid4()),
         name=payload.name,
-        slug=payload.slug,
+        slug=organization_slug,
         organization_type=payload.organization_type,
         size_band=payload.size_band,
         status=payload.status,
         plan_code=payload.plan_code,
         billing_email=str(payload.billing_email).lower(),
         website=str(payload.website) if payload.website is not None else None,
-        settings={},
+        settings=settings,
     )
     db.add(organization)
     try:
@@ -243,6 +259,8 @@ def update_organization(
     organization = _organization_or_404(db, organization_id)
     changes = payload.model_dump(exclude_unset=True)
     if "slug" in changes and changes["slug"] != organization.slug:
+        if changes["slug"] in RESERVED_ORGANIZATION_SLUGS:
+            raise HTTPException(status_code=422, detail="Organization slug is reserved")
         if db.scalar(
             select(Organization.id).where(
                 Organization.slug == changes["slug"], Organization.id != organization.id
@@ -253,6 +271,16 @@ def update_organization(
         changes["billing_email"] = str(changes["billing_email"]).lower()
     if "website" in changes and changes["website"] is not None:
         changes["website"] = str(changes["website"])
+    settings = dict(organization.settings or {})
+    for field in ("description", "logo_url"):
+        if field not in changes:
+            continue
+        value = changes.pop(field)
+        if value is None:
+            settings.pop(field, None)
+        else:
+            settings[field] = str(value)
+    organization.settings = settings
     for key, value in changes.items():
         setattr(organization, key, value)
     try:

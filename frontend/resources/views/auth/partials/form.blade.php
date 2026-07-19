@@ -1,14 +1,14 @@
 @php($isAdmin = $portal === 'admin')
 @php($isCompany = $portal === 'company')
 @php($isRegister = ! $isAdmin && ! $isCompany && $mode === 'register')
-@php($action = $isAdmin ? route('admin.login.submit') : ($isCompany ? route('company.login.submit') : ($isRegister ? route('register.submit') : route('login.submit'))))
+@php($action = $isAdmin ? route('admin.login.submit') : ($isCompany ? (isset($organizationProfile) ? route('company.organization.login.submit', $organizationProfile['slug']) : route('company.login.submit')) : ($isRegister ? route('register.submit') : route('login.submit'))))
 <section class="auth-form" aria-labelledby="auth-title">
     <div class="form-kicker">
         <span class="portal-dot" aria-hidden="true"></span>
-        {{ $isAdmin ? __('marketing.auth.admin_kicker') : ($isCompany ? __('marketing.auth.company_kicker') : ($isRegister ? __('marketing.auth.register_kicker') : __('marketing.auth.panel_kicker'))) }}
+        {{ $isAdmin ? __('marketing.auth.admin_kicker') : ($isCompany ? ($organizationProfile['name'] ?? __('marketing.auth.company_kicker')) : ($isRegister ? __('marketing.auth.register_kicker') : __('marketing.auth.panel_kicker'))) }}
     </div>
-    <h1 id="auth-title">{{ $isAdmin ? __('marketing.auth.admin_heading') : ($isCompany ? __('marketing.auth.company_heading') : ($isRegister ? __('marketing.auth.register_heading') : __('marketing.auth.panel_heading'))) }}</h1>
-    <p class="form-intro">{{ $isAdmin ? __('marketing.auth.admin_intro') : ($isCompany ? __('marketing.auth.company_intro') : ($isRegister ? __('marketing.auth.register_intro') : __('marketing.auth.panel_intro'))) }}</p>
+    <h1 id="auth-title">{{ $isAdmin ? __('marketing.auth.admin_heading') : ($isCompany ? (isset($organizationProfile) ? __('marketing.auth.organization_heading', ['organization' => $organizationProfile['name']]) : __('marketing.auth.company_heading')) : ($isRegister ? __('marketing.auth.register_heading') : __('marketing.auth.panel_heading'))) }}</h1>
+    <p class="form-intro">{{ $isAdmin ? __('marketing.auth.admin_intro') : ($isCompany ? ($organizationProfile['description'] ?? __('marketing.auth.company_intro')) : ($isRegister ? __('marketing.auth.register_intro') : __('marketing.auth.panel_intro'))) }}</p>
 
     <form class="auth-native-form" data-auth-form action="{{ $action }}" method="post">
         @csrf

@@ -146,6 +146,11 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/company/context', 10);
     }
 
+    public function companyOrganizationProfile(string $slug): array
+    {
+        return $this->getJson('/api/v1/company/organizations/'.rawurlencode($slug), 10);
+    }
+
     public function companyDashboard(string $organizationId): array
     {
         return $this->getJson('/api/v1/company/dashboard', 10, ['X-Organization-ID' => $organizationId]);
