@@ -31,7 +31,7 @@ Sprint 1 tablosu ve backlog [sprint-1-ilk-sprint.md](sprint-1-ilk-sprint.md) dos
 
 Sprint 2 sonunda öğrenci ve admin auth yüzeyleri ayrıldı; CV yükleme/oluşturma, AI analiz, kişiye özel kariyer rotası, hedef planı, görevler, kanıt, başvuru, mülakat ve admin veri yönetimi gerçek API akışlarına bağlandı. Kariyer analizi sabit beş meslekle sınırlı değil; geçerli CV analizinden 3–15 kişiye özel A/B/C rolü üretir.
 
-> **Kanıt sınırı:** 19 Temmuz görselleri canlı marketing, auth ve yetkili admin yüzeylerinden alındı. Admin ekranları aktif `super_admin` oturumunda gerçek FastAPI/DB verisiyle doğrulandı; public README için kişisel kayıt satırları maskelendi. PR #10 ve #11 aynı gün `main` dalına merge edildi ve yerelde test edildi; bu iki PR için ayrıca canlı deploy iddiası yoktur.
+> **Kanıt sınırı:** 19 Temmuz görselleri canlı marketing, auth ve yetkili admin yüzeylerinden alındı. Admin ekranları aktif `super_admin` oturumunda gerçek FastAPI/DB verisiyle doğrulandı; public README için kişisel kayıt satırları maskelendi. PR #9–#11 dahil 11 PR'ın tamamı `main` içinde ve canlı kaynaklarda doğrulandı; SSS, iletişim, özellikler, nasıl çalışır, bootcamp ve yeni görsel assetler dış HTTPS/browser readback ile geçti.
 
 **Canlı URL'ler:**
 - Tanıtım: https://careertalent.ygtlabs.ai/
@@ -160,7 +160,7 @@ Sprint 2 sonunda öğrenci ve admin auth yüzeyleri ayrıldı; CV yükleme/oluş
 | 16.07 | Buse | Dashboard “CV yükle / CV oluştur” kartı, admin yönlendirme ve hesap rolleri | Sprint 1 kaydı korunarak ara doküman güncellendi |
 | 17.07 | Buse + Yiğit | CV drag-drop, panel dili kalıcılığı, kariyer içeriği lokalizasyonu, CV anonimleştirme ve AI mülakat iyileştirmeleri | AI/DB transaction ve FK hataları için düzeltmeler eklendi |
 | 18.07 | Bithanya + Buse | PR #9 UI güncellemeleri merge edildi; matcher/anonymizer ve frontend middleware testleri sağlamlaştırıldı | Doküman güncelliği geride kaldı |
-| 19.07 | Buse + takım | PR #10 ve #11 merge edildi; SSS/iletişim/bootcamp, session middleware ve Alpine temizliği tamamlandı | Merge regresyonu düzeltilip full test/build yeşile getirildi |
+| 19.07 | Buse + takım | PR #10 ve #11 merge edildi; SSS/iletişim/bootcamp, session middleware ve Alpine temizliği tamamlandı; PR #9–#11 canlıya deploy edildi | Full test/build, HTTP içerik doğrulaması ve browser console smoke yeşil |
 
 </details>
 
