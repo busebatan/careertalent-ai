@@ -94,6 +94,33 @@ def start_interview(db: Session, user_id: int, language: str = INTERVIEW_LANG_TR
         or ("General career interview" if lang == INTERVIEW_LANG_EN else "Genel kariyer görüşmesi")
     )
 
+    if lang == INTERVIEW_LANG_EN:
+        rules = [
+            "Balance behavioural and technical questions equally.",
+            "Each question must test a different competency.",
+            (
+                "The 'guidance' field MUST be a short, encouraging tip addressed DIRECTLY to the "
+                "candidate (the person answering, not the interviewer). "
+                "Write it in second person ('Think about...', 'Consider mentioning...'). "
+                "Do NOT write internal HR/interviewer instructions "
+                "(e.g. 'Ask the candidate to...' or 'Probe for...'). "
+                "Keep it under 80 words."
+            ),
+        ]
+    else:
+        rules = [
+            "Davranışsal ve teknik soruları dengeli dağıt",
+            "Her soru farklı yetkinliği ölsün",
+            (
+                "'guidance' alanı MÜLAKATA GİREN ADAYA (yanıtlayan kişiye) kısa ve "
+                "teşvik edici bir ipucu olmalıdır. "
+                "'Düşün...', 'Göz önünde bulundur...' gibi ikinci tekil şahsla yaz. "
+                "HIÇBİR ZAMAN İK'ya/mülakatcıya yönelik iç yönerge yazma "
+                "(rön. 'Adayın iş birliği becerilerini ölçmek için...' gibi ifadeler kullanamazsın). "
+                "80 kelimeyi geçme."
+            ),
+        ]
+
     prompt = _build_prompt_with_lang({
         "purpose": (
             "Generate tailored interview questions for the candidate's target role and CV gaps."
@@ -102,17 +129,10 @@ def start_interview(db: Session, user_id: int, language: str = INTERVIEW_LANG_TR
         ),
         "target_role": target_role,
         "career_context": context,
-        "rules": [
-            "Balance behavioural and technical questions equally."
-            if lang == INTERVIEW_LANG_EN
-            else "Davranışsal ve teknik soruları dengeli dağıt",
-            "Each question must test a different competency."
-            if lang == INTERVIEW_LANG_EN
-            else "Her soru farklı yetkinliği ölçsün",
-        ],
+        "rules": rules,
     }, lang)
 
-    output = _invoke(prompt, InterviewQuestionsAI)
+    output = _invoke(prompt, InterviewQuestionsAI, language=lang)
 
     row = CareerInterview(
         id=str(uuid4()),
@@ -171,7 +191,7 @@ def evaluate_interview_answer(db: Session, user_id: int, interview: CareerInterv
         "rules": rules,
     }, lang)
 
-    output = _invoke(prompt, InterviewEvaluationAI)
+    output = _invoke(prompt, InterviewEvaluationAI, language=lang)
     row = CareerInterviewAnswer(
         id=str(uuid4()),
         interview_id=interview.id,

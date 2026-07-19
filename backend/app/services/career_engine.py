@@ -50,13 +50,25 @@ def normalize_panel_locale(locale: str | None) -> str:
 def _has_complete_localizations(value: object) -> bool:
     return isinstance(value, dict) and all(isinstance(value.get(locale), dict) for locale in SUPPORTED_PANEL_LOCALES)
 
-def _invoke(prompt: str, schema: type[T]) -> T:
+# Language codes for system-level instructions
+_SYSTEM_MSG_TR = (
+    "Yalnızca verilen JSON Schema ile birebir uyumlu tek JSON nesnesi üret; "
+    "markdown, kod bloğu veya açıklama ekleme."
+)
+_SYSTEM_MSG_EN = (
+    "Produce exactly one JSON object that strictly conforms to the provided JSON Schema. "
+    "Do not add markdown, code fences, or any explanation."
+)
+
+
+def _invoke(prompt: str, schema: type[T], language: str = "tr") -> T:
     if not ai_configured():
         raise AIUnavailableError("AI sağlayıcısı yapılandırılmamış")
     try:
+        system_msg = _SYSTEM_MSG_EN if language == "en" else _SYSTEM_MSG_TR
         contract = prompt + "\n\nZorunlu JSON Schema:\n" + json.dumps(schema.model_json_schema(), ensure_ascii=False)
         messages = [
-            SystemMessage(content="Yalnızca verilen JSON Schema ile birebir uyumlu tek JSON nesnesi üret; markdown, kod bloğu veya açıklama ekleme."),
+            SystemMessage(content=system_msg),
             HumanMessage(content=contract),
         ]
         model = create_chat_model()
