@@ -10,7 +10,7 @@
             <article class="panel-card p-5"><p class="panel-muted text-sm">{{ __('company.dashboard.members_active') }}</p><p class="company-accent-text mt-2 text-3xl font-bold">{{ $dashboard['members_active'] }}</p></article>
             <article class="panel-card p-5"><p class="panel-muted text-sm">{{ __('company.dashboard.invitations') }}</p><p class="mt-2 text-3xl font-bold">{{ $dashboard['invitations_pending'] }}</p></article>
         </section>
-        <section class="panel-card mt-6 p-6"><div class="flex flex-wrap items-start justify-between gap-4"><div><h2 class="text-lg font-semibold">{{ __('company.dashboard.foundation_title') }}</h2><p class="panel-muted mt-2 max-w-2xl text-sm">{{ __('company.dashboard.foundation_text') }}</p></div><a class="company-btn-primary" href="{{ route('company.team') }}">{{ __('company.dashboard.manage_team') }}</a></div></section>
+        <section class="panel-card mt-6 p-6"><div class="flex flex-wrap items-start justify-between gap-4"><div><h2 class="text-lg font-semibold">{{ __('company.dashboard.foundation_title') }}</h2><p class="panel-muted mt-2 max-w-2xl text-sm">{{ __('company.dashboard.foundation_text') }}</p></div>@if (in_array('members.view', $companyMembership['permissions'], true))<a class="company-btn-primary" href="{{ route('company.team') }}">{{ __('company.dashboard.manage_team') }}</a>@endif</div></section>
     @endif
 </div>
 @endsection

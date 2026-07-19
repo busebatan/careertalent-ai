@@ -8,6 +8,8 @@
     $sizes = trans('admin.organizations.sizes');
     $statuses = trans('admin.organizations.statuses');
     $plans = trans('admin.organizations.plans');
+    $canWrite = $isSuperAdmin || in_array('organizations.write', $adminPermissions, true);
+    $canDelete = $isSuperAdmin || in_array('organizations.delete', $adminPermissions, true);
 @endphp
 <div class="mx-auto max-w-7xl">
     <header class="mb-8">
@@ -19,6 +21,7 @@
     @if ($adminError)<p class="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">{{ $adminError }}</p>@endif
     @if ($errors->has('organizations'))<p class="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">{{ $errors->first('organizations') }}</p>@endif
 
+    @if ($canWrite)
     <section class="panel-card mb-8 p-6">
         @if(session('company_invite_url'))<div class="mb-5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4"><p class="text-sm font-semibold">{{ __('admin.organizations.owner_invite_link') }}</p><input class="panel-input-block mt-2" readonly value="{{ session('company_invite_url') }}"></div>@endif
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -47,6 +50,7 @@
             <div class="xl:col-span-4"><button class="admin-btn-primary" type="submit">{{ __('admin.organizations.create') }}</button></div>
         </form>
     </section>
+    @endif
 
     <section class="space-y-4">
         @forelse ($organizations as $organization)
@@ -65,10 +69,11 @@
                 </div>
                 <div class="panel-muted mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs">
                     <span>{{ trans_choice('admin.organizations.members', $organization['members_count'], ['count' => $organization['members_count']]) }}</span>
-                    <a class="admin-accent-text" href="{{ route('company.organization.login', $organization['slug']) }}" target="_blank" rel="noreferrer">{{ route('company.organization.login', $organization['slug']) }}</a>
+                    <a class="admin-accent-text" href="{{ route('company.dashboard', ['organizationSlug' => $organization['slug']]) }}" target="_blank" rel="noreferrer">{{ route('company.dashboard', ['organizationSlug' => $organization['slug']]) }}</a>
                     @if (! empty($organization['website']))<a class="admin-accent-text" href="{{ $organization['website'] }}" target="_blank" rel="noreferrer">{{ $organization['website'] }}</a>@endif
                     <span>{{ __('admin.organizations.created_at', ['date' => $organization['created_at']]) }}</span>
                 </div>
+                @if ($canWrite)
                 <form method="post" action="{{ route('admin.organizations.owner-invite', $organization['id']) }}" class="mt-4 flex flex-wrap items-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
                     @csrf
                     <label class="min-w-64 flex-1 text-sm">{{ __('admin.organizations.owner_email') }}<input class="panel-input-block mt-2" name="owner_email" type="email" required></label>
@@ -91,6 +96,13 @@
                         <div class="xl:col-span-4"><button class="admin-btn-primary" type="submit">{{ __('admin.organizations.save') }}</button></div>
                     </form>
                 </details>
+                @endif
+                @if ($canDelete && $organization['status'] !== 'closed')
+                    <form method="post" action="{{ route('admin.organizations.destroy', $organization['id']) }}" class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800" onsubmit="return confirm(@js(__('admin.organizations.confirm_delete')))">
+                        @csrf @method('DELETE')
+                        <button class="text-sm font-semibold text-red-600 hover:text-red-700 dark:text-red-400" type="submit">{{ __('admin.organizations.delete') }}</button>
+                    </form>
+                @endif
             </article>
         @empty
             <p class="panel-card p-6 text-sm text-slate-500">{{ __('admin.organizations.empty') }}</p>

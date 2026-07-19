@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.core.database import get_db
 from app.main import app
-from app.models.recruiting import OrganizationMembership
+from app.models.recruiting import Organization, OrganizationMembership
 from app.models.user import User
 
 
@@ -202,7 +202,8 @@ def test_organization_contract_rejects_unknown_enum_values(client):
     assert response.status_code == 422
 
 
-def test_organization_contract_rejects_reserved_slug_and_insecure_logo(client):
+@pytest.mark.parametrize("reserved_slug", ["admin", "up", "cikis", "livewire-update"])
+def test_organization_contract_rejects_reserved_slug_and_insecure_logo(client, reserved_slug):
     _register(client, "admin@example.com")
     _promote("admin@example.com")
     headers = _headers(client, "admin@example.com")
@@ -210,7 +211,7 @@ def test_organization_contract_rejects_reserved_slug_and_insecure_logo(client):
     reserved = client.post(
         "/api/v1/admin/organizations",
         headers=headers,
-        json=_payload(slug="admin"),
+        json=_payload(slug=reserved_slug),
     )
     insecure_logo = client.post(
         "/api/v1/admin/organizations",
@@ -284,7 +285,7 @@ def test_user_can_join_multiple_tenants_but_only_once_per_organization(client):
             db.commit()
 
 
-def test_organization_contract_has_no_hard_delete_endpoint(client):
+def test_organization_delete_closes_without_removing_tenant_data(client):
     _register(client, "admin@example.com")
     _promote("admin@example.com")
     headers = _headers(client, "admin@example.com")
@@ -296,4 +297,8 @@ def test_organization_contract_has_no_hard_delete_endpoint(client):
         f"/api/v1/admin/organizations/{organization['id']}", headers=headers
     )
 
-    assert response.status_code == 405
+    assert response.status_code == 204
+    with next(app.dependency_overrides[get_db]()) as db:
+        stored = db.get(Organization, organization["id"])
+        assert stored is not None
+        assert stored.status == "closed"

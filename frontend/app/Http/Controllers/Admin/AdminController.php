@@ -11,8 +11,13 @@ use Illuminate\View\View;
 class AdminController extends Controller
 {
     private const PERMISSION_KEYS = [
-        'dashboard.view', 'organizations.manage', 'career_data.manage', 'students.view', 'readiness.view',
-        'skill_passport.view', 'job_radar.view', 'applications.view', 'interviews.view',
+        'dashboard.view',
+        'organizations.view', 'organizations.write', 'organizations.delete',
+        'career_data.view', 'career_data.write', 'career_data.delete',
+        'students.view', 'students.write', 'students.delete',
+        'readiness.view', 'skill_passport.view', 'job_radar.view',
+        'applications.view', 'applications.write', 'applications.delete',
+        'interviews.view', 'interviews.write', 'interviews.delete',
     ];
 
     /**
@@ -134,6 +139,15 @@ class AdminController extends Controller
             : back()->withErrors(['accounts' => $response['error']]);
     }
 
+    public function destroyAccount(CareerTalentApiClient $api, int $user): RedirectResponse
+    {
+        $response = $api->deleteAdminAccount($user);
+
+        return $response['ok']
+            ? redirect()->route('admin.accounts')->with('status', __('admin.accounts.deleted'))
+            : back()->withErrors(['accounts' => $response['error']]);
+    }
+
     public function organizations(CareerTalentApiClient $api): View
     {
         $response = $api->adminOrganizations();
@@ -174,6 +188,15 @@ class AdminController extends Controller
             : back()->withErrors(['organizations' => $response['error']]);
     }
 
+    public function destroyOrganization(CareerTalentApiClient $api, string $organization): RedirectResponse
+    {
+        $response = $api->deleteAdminOrganization($organization);
+
+        return $response['ok']
+            ? redirect()->route('admin.organizations')->with('status', __('admin.organizations.deleted'))
+            : back()->withErrors(['organizations' => $response['error']]);
+    }
+
     public function inviteOrganizationOwner(
         Request $request,
         CareerTalentApiClient $api,
@@ -189,9 +212,60 @@ class AdminController extends Controller
             : back()->withInput()->withErrors(['organizations' => $response['error']]);
     }
 
-    public function students(CareerTalentApiClient $api)
+    public function students(CareerTalentApiClient $api): View
     {
-        return $this->page('students', $api);
+        $response = $api->adminStudents();
+        $body = $response['ok'] && is_array($response['body']) ? $response['body'] : [];
+
+        return $this->adminView('admin.students', [
+            'students' => $body['students'] ?? [],
+            'total' => $body['total'] ?? 0,
+            'adminError' => $response['ok'] ? null : $this->apiError($response['error']),
+        ], $api);
+    }
+
+    public function storeStudent(Request $request, CareerTalentApiClient $api): RedirectResponse
+    {
+        $data = $request->validate([
+            'full_name' => ['required', 'string', 'min:2', 'max:100'],
+            'email' => ['required', 'email', 'max:255'],
+            'temporary_password' => ['required', 'string', 'min:8', 'max:128', 'confirmed'],
+            'preferred_locale' => ['required', 'in:tr,en'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+        unset($data['temporary_password_confirmation']);
+        $data['is_active'] = $request->boolean('is_active');
+        $response = $api->createAdminStudent($data);
+
+        return $response['ok']
+            ? redirect()->route('admin.students')->with('status', __('admin.students.created'))
+            : back()->withInput($request->except('temporary_password', 'temporary_password_confirmation'))->withErrors(['students' => $response['error']]);
+    }
+
+    public function updateStudent(Request $request, CareerTalentApiClient $api, int $user): RedirectResponse
+    {
+        $data = $request->validate([
+            'full_name' => ['required', 'string', 'min:2', 'max:100'],
+            'email' => ['required', 'email', 'max:255'],
+            'temporary_password' => ['nullable', 'string', 'min:8', 'max:128'],
+            'preferred_locale' => ['required', 'in:tr,en'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+        $data['is_active'] = $request->boolean('is_active');
+        $response = $api->updateAdminStudent($user, $data);
+
+        return $response['ok']
+            ? redirect()->route('admin.students')->with('status', __('admin.students.updated'))
+            : back()->withErrors(['students' => $response['error']]);
+    }
+
+    public function destroyStudent(CareerTalentApiClient $api, int $user): RedirectResponse
+    {
+        $response = $api->deleteAdminStudent($user);
+
+        return $response['ok']
+            ? redirect()->route('admin.students')->with('status', __('admin.students.deleted'))
+            : back()->withErrors(['students' => $response['error']]);
     }
 
     public function readiness(CareerTalentApiClient $api)
@@ -209,14 +283,91 @@ class AdminController extends Controller
         return $this->page('job-radar', $api);
     }
 
-    public function applications(CareerTalentApiClient $api)
+    public function applications(CareerTalentApiClient $api): View
     {
-        return $this->page('applications', $api);
+        $response = $api->adminApplications();
+        $body = $response['ok'] && is_array($response['body']) ? $response['body'] : [];
+
+        return $this->adminView('admin.applications', [
+            'applications' => $body['applications'] ?? [],
+            'studentOptions' => $body['student_options'] ?? [],
+            'total' => $body['total'] ?? 0,
+            'adminError' => $response['ok'] ? null : $this->apiError($response['error']),
+        ], $api);
     }
 
-    public function interviews(CareerTalentApiClient $api)
+    public function storeApplication(Request $request, CareerTalentApiClient $api): RedirectResponse
     {
-        return $this->page('interviews', $api);
+        $response = $api->createAdminApplication($this->applicationPayload($request, true));
+
+        return $response['ok']
+            ? redirect()->route('admin.applications')->with('status', __('admin.applications.created'))
+            : back()->withInput()->withErrors(['applications' => $response['error']]);
+    }
+
+    public function updateApplication(Request $request, CareerTalentApiClient $api, string $application): RedirectResponse
+    {
+        $response = $api->updateAdminApplication($application, $this->applicationPayload($request));
+
+        return $response['ok']
+            ? redirect()->route('admin.applications')->with('status', __('admin.applications.updated'))
+            : back()->withErrors(['applications' => $response['error']]);
+    }
+
+    public function destroyApplication(CareerTalentApiClient $api, string $application): RedirectResponse
+    {
+        $response = $api->deleteAdminApplication($application);
+
+        return $response['ok']
+            ? redirect()->route('admin.applications')->with('status', __('admin.applications.deleted'))
+            : back()->withErrors(['applications' => $response['error']]);
+    }
+
+    public function interviews(CareerTalentApiClient $api): View
+    {
+        $response = $api->adminInterviews();
+        $body = $response['ok'] && is_array($response['body']) ? $response['body'] : [];
+
+        return $this->adminView('admin.interviews', [
+            'interviews' => $body['interviews'] ?? [],
+            'studentOptions' => $body['student_options'] ?? [],
+            'total' => $body['total'] ?? 0,
+            'adminError' => $response['ok'] ? null : $this->apiError($response['error']),
+        ], $api);
+    }
+
+    public function storeInterview(Request $request, CareerTalentApiClient $api): RedirectResponse
+    {
+        $data = $request->validate([
+            'user_id' => ['required', 'integer', 'min:1'],
+            'language' => ['required', 'in:tr,en'],
+        ]);
+        $response = $api->createAdminInterview($data);
+
+        return $response['ok']
+            ? redirect()->route('admin.interviews')->with('status', __('admin.interviews.created'))
+            : back()->withInput()->withErrors(['interviews' => $response['error']]);
+    }
+
+    public function updateInterview(Request $request, CareerTalentApiClient $api, string $interview): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', 'in:active,completed,cancelled'],
+        ]);
+        $response = $api->updateAdminInterview($interview, $data);
+
+        return $response['ok']
+            ? redirect()->route('admin.interviews')->with('status', __('admin.interviews.updated'))
+            : back()->withErrors(['interviews' => $response['error']]);
+    }
+
+    public function destroyInterview(CareerTalentApiClient $api, string $interview): RedirectResponse
+    {
+        $response = $api->deleteAdminInterview($interview);
+
+        return $response['ok']
+            ? redirect()->route('admin.interviews')->with('status', __('admin.interviews.deleted'))
+            : back()->withErrors(['interviews' => $response['error']]);
     }
 
     public function careerData(Request $request, CareerTalentApiClient $api): View
@@ -334,6 +485,7 @@ class AdminController extends Controller
             'adminNav' => $this->adminNav(),
             'adminUser' => $adminUser,
             'isSuperAdmin' => ($adminUser['role'] ?? null) === 'super_admin' || ! array_key_exists('role', $adminUser),
+            'adminPermissions' => $this->adminPermissions($adminUser),
         ]));
     }
 
@@ -344,7 +496,7 @@ class AdminController extends Controller
     {
         $user = session('auth.user', []);
         $super = ($user['role'] ?? null) === 'super_admin' || ! array_key_exists('role', $user);
-        $permissions = $super ? self::PERMISSION_KEYS : ($user['admin_permissions'] ?? []);
+        $permissions = $this->adminPermissions($user);
         $item = fn (string $route, string $label, string $icon, string $permission): ?array => in_array($permission, $permissions, true)
             ? compact('route', 'label', 'icon', 'permission') : null;
 
@@ -354,10 +506,10 @@ class AdminController extends Controller
                 $super ? ['route' => 'admin.accounts', 'label' => __('admin.nav.accounts'), 'icon' => 'admins'] : null,
             ])],
             ['label' => __('admin.nav_groups.organizations'), 'items' => array_filter([
-                $item('admin.organizations', __('admin.nav.organizations'), 'organizations', 'organizations.manage'),
+                $item('admin.organizations', __('admin.nav.organizations'), 'organizations', 'organizations.view'),
             ])],
             ['label' => __('admin.nav_groups.data'), 'items' => array_filter([
-                $item('admin.career-data', __('career-data.title'), 'radar', 'career_data.manage'),
+                $item('admin.career-data', __('career-data.title'), 'radar', 'career_data.view'),
             ])],
             ['label' => __('admin.nav_groups.students'), 'items' => array_filter(array_map(
                 fn (string $key): ?array => in_array($key, ['students', 'readiness', 'skill-passport'], true)
@@ -372,6 +524,26 @@ class AdminController extends Controller
         ];
 
         return array_values(array_filter($groups, fn (array $group): bool => $group['items'] !== []));
+    }
+
+    /** @return list<string> */
+    private function adminPermissions(?array $user = null): array
+    {
+        $user ??= session('auth.user', []);
+        $super = ($user['role'] ?? null) === 'super_admin' || ! array_key_exists('role', $user);
+        if ($super) {
+            return self::PERMISSION_KEYS;
+        }
+
+        $permissions = is_array($user['admin_permissions'] ?? null) ? $user['admin_permissions'] : [];
+        if (in_array('organizations.manage', $permissions, true)) {
+            $permissions = array_merge($permissions, ['organizations.view', 'organizations.write', 'organizations.delete']);
+        }
+        if (in_array('career_data.manage', $permissions, true)) {
+            $permissions = array_merge($permissions, ['career_data.view', 'career_data.write', 'career_data.delete']);
+        }
+
+        return array_values(array_intersect(self::PERMISSION_KEYS, array_unique($permissions)));
     }
 
     private function apiError(?string $error): string
@@ -399,6 +571,23 @@ class AdminController extends Controller
         ];
         if (! $creating) {
             $rules['slug'] = ['required', 'string', 'min:2', 'max:100', 'regex:/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/'];
+        }
+
+        return $request->validate($rules);
+    }
+
+    /** @return array<string, mixed> */
+    private function applicationPayload(Request $request, bool $creating = false): array
+    {
+        $rules = [
+            'company' => ['required', 'string', 'min:2', 'max:160'],
+            'role' => ['required', 'string', 'min:2', 'max:200'],
+            'stage' => ['required', 'in:applied,interview,offer,rejected'],
+            'next_action' => ['nullable', 'string', 'max:300'],
+            'note' => ['nullable', 'string', 'max:4000'],
+        ];
+        if ($creating) {
+            $rules['user_id'] = ['required', 'integer', 'min:1'];
         }
 
         return $request->validate($rules);

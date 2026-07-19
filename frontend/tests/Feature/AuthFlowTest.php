@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Http\Middleware\EnsureApiAdmin;
 use App\Http\Middleware\EnsureApiAuthenticated;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -226,7 +227,7 @@ class AuthFlowTest extends TestCase
         ]);
         Http::fake([
             '*/api/v1/auth/me' => Http::response($admin),
-            '*/api/v1/admin/modules/students' => Http::response(['title' => 'Öğrenciler', 'subtitle' => '', 'total' => 0, 'rows' => []]),
+            '*/api/v1/admin/students' => Http::response(['total' => 0, 'students' => []]),
             '*/health' => Http::response(['status' => 'ok']),
         ]);
 
@@ -234,6 +235,51 @@ class AuthFlowTest extends TestCase
         $this->withSession(['auth.access_token' => 'admin-token'])->get('/admin/mulakatlar')->assertForbidden();
         $this->withSession(['auth.access_token' => 'admin-token'])->get('/admin/kurumlar')->assertForbidden();
         $this->withSession(['auth.access_token' => 'admin-token'])->get('/admin/hesaplar')->assertForbidden();
+    }
+
+    public function test_student_view_write_and_delete_routes_require_distinct_permissions(): void
+    {
+        $payload = [
+            'full_name' => 'Yeni Öğrenci', 'email' => 'yeni@example.com',
+            'temporary_password' => 'GeciciParola123!', 'temporary_password_confirmation' => 'GeciciParola123!',
+            'preferred_locale' => 'tr', 'is_active' => '1',
+        ];
+
+        Http::fake(function (Request $request) {
+            if (str_ends_with($request->url(), '/api/v1/auth/me')) {
+                $authorization = $request->header('Authorization')[0] ?? '';
+                $permissions = match ($authorization) {
+                    'Bearer view-token' => ['students.view'],
+                    'Bearer write-token' => ['students.write'],
+                    'Bearer delete-token' => ['students.delete'],
+                    default => [],
+                };
+                return Http::response(array_merge($this->user(true), [
+                    'role' => 'admin', 'admin_permissions' => $permissions, 'must_change_password' => false,
+                ]));
+            }
+            if (str_ends_with($request->url(), '/api/v1/admin/students/42') && $request->method() === 'DELETE') {
+                return Http::response(null, 204);
+            }
+            if (str_ends_with($request->url(), '/api/v1/admin/students')) {
+                return $request->method() === 'GET'
+                    ? Http::response(['total' => 0, 'students' => []])
+                    : Http::response(['id' => 42], 201);
+            }
+
+            return Http::response(['status' => 'ok']);
+        });
+        $this->withSession(['auth.access_token' => 'view-token'])->get('/admin/ogrenciler')->assertOk();
+        $this->withSession(['auth.access_token' => 'view-token'])->post('/admin/ogrenciler', $payload)->assertForbidden();
+
+        $this->withSession(['auth.access_token' => 'write-token'])->get('/admin/ogrenciler')->assertForbidden();
+        $this->withSession(['auth.access_token' => 'write-token'])->post('/admin/ogrenciler', $payload)->assertRedirect('/admin/ogrenciler');
+        $this->withSession(['auth.access_token' => 'write-token'])->delete('/admin/ogrenciler/42')->assertForbidden();
+
+        $this->withSession(['auth.access_token' => 'delete-token'])->delete('/admin/ogrenciler/42')->assertRedirect('/admin/ogrenciler');
+        $this->withSession(['auth.access_token' => 'delete-token'])->patch('/admin/ogrenciler/42', [
+            'full_name' => 'Yeni Öğrenci', 'email' => 'yeni@example.com', 'preferred_locale' => 'tr', 'is_active' => '1',
+        ])->assertForbidden();
     }
 
     public function test_scoped_admin_with_organization_permission_can_open_tenant_management(): void

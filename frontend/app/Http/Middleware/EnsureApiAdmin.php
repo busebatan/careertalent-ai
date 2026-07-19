@@ -10,14 +10,30 @@ class EnsureApiAdmin
 {
     private const ROUTE_PERMISSIONS = [
         'admin.dashboard' => 'dashboard.view',
-        'admin.organizations*' => 'organizations.manage',
-        'admin.career-data*' => 'career_data.manage',
+        'admin.organizations' => 'organizations.view',
+        'admin.organizations.store' => 'organizations.write',
+        'admin.organizations.update' => 'organizations.write',
+        'admin.organizations.owner-invite' => 'organizations.write',
+        'admin.organizations.destroy' => 'organizations.delete',
+        'admin.career-data' => 'career_data.view',
+        'admin.career-data.store' => 'career_data.write',
+        'admin.career-data.update' => 'career_data.write',
+        'admin.career-data.destroy' => 'career_data.delete',
         'admin.students' => 'students.view',
+        'admin.students.store' => 'students.write',
+        'admin.students.update' => 'students.write',
+        'admin.students.destroy' => 'students.delete',
         'admin.readiness' => 'readiness.view',
         'admin.skill-passport' => 'skill_passport.view',
         'admin.job-radar' => 'job_radar.view',
         'admin.applications' => 'applications.view',
+        'admin.applications.store' => 'applications.write',
+        'admin.applications.update' => 'applications.write',
+        'admin.applications.destroy' => 'applications.delete',
         'admin.interviews' => 'interviews.view',
+        'admin.interviews.store' => 'interviews.write',
+        'admin.interviews.update' => 'interviews.write',
+        'admin.interviews.destroy' => 'interviews.delete',
     ];
 
     public function handle(Request $request, Closure $next): Response
@@ -37,6 +53,12 @@ class EnsureApiAdmin
 
         if (! $isSuperAdmin) {
             $permissions = is_array($user['admin_permissions'] ?? null) ? $user['admin_permissions'] : [];
+            if (in_array('organizations.manage', $permissions, true)) {
+                $permissions = array_merge($permissions, ['organizations.view', 'organizations.write', 'organizations.delete']);
+            }
+            if (in_array('career_data.manage', $permissions, true)) {
+                $permissions = array_merge($permissions, ['career_data.view', 'career_data.write', 'career_data.delete']);
+            }
             foreach (self::ROUTE_PERMISSIONS as $route => $permission) {
                 if ($request->routeIs($route)) {
                     abort_unless(in_array($permission, $permissions, true), 403);

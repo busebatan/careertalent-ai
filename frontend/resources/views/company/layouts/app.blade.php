@@ -63,7 +63,7 @@
                                 </summary>
                                 <div class="mt-1 space-y-1 pl-2">
                                     @foreach ($companyMemberships as $membership)
-                                        <form method="post" action="{{ route('company.organization.switch', $membership['organization_id']) }}">
+                                        <form method="post" action="{{ route('company.organization.switch', ['organization' => $membership['organization_id']]) }}">
                                             @csrf
                                             <button type="submit" class="company-membership-option w-full rounded-lg px-3 py-2 text-left text-xs {{ $membership['organization_id'] === $companyMembership['organization_id'] ? 'company-membership-active' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800' }}">
                                                 {{ $membership['organization_name'] }}
@@ -83,14 +83,22 @@
                             <span>{{ __('company.nav.marketing_site') }}</span>
                         </a>
                     </div>
-                    <a data-company-profile href="{{ route('company.profile') }}"
-                        class="mb-3 flex items-center gap-3 rounded-xl border border-slate-200 p-2.5 transition hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:border-slate-800 dark:hover:bg-slate-800/60 {{ request()->routeIs('company.profile') ? 'bg-slate-100 dark:bg-slate-800/60' : '' }}">
+                    @if (in_array('organization.update', $companyMembership['permissions'], true))
+                        <a data-company-profile href="{{ route('company.profile') }}"
+                            class="mb-3 flex items-center gap-3 rounded-xl border border-slate-200 p-2.5 transition hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:border-slate-800 dark:hover:bg-slate-800/60 {{ request()->routeIs('company.profile') ? 'bg-slate-100 dark:bg-slate-800/60' : '' }}">
+                    @else
+                        <div class="mb-3 flex items-center gap-3 rounded-xl border border-slate-200 p-2.5 dark:border-slate-800">
+                    @endif
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white ring-2 ring-emerald-500/25 dark:bg-emerald-500">{{ $companyInitials }}</span>
                         <span class="min-w-0">
                             <span class="block truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $companyName }}</span>
                             <span class="block truncate text-xs text-slate-500 dark:text-slate-400">{{ $companyEmail }}</span>
                         </span>
-                    </a>
+                    @if (in_array('organization.update', $companyMembership['permissions'], true))
+                        </a>
+                    @else
+                        </div>
+                    @endif
                     <form data-company-logout method="post" action="{{ route('company.logout') }}" class="border-t border-slate-200 pt-3 dark:border-slate-800">
                         @csrf
                         <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 dark:text-red-400 dark:hover:bg-red-950/30">

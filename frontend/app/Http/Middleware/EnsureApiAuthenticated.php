@@ -70,11 +70,11 @@ class EnsureApiAuthenticated
 
     private function loginRoute(Request $request): string
     {
-        if ($request->is('admin', 'admin/*') && ! $request->is('admin/login')) {
+        if ($request->routeIs('admin.*')) {
             return route('admin.login');
         }
 
-        if ($request->is('company', 'company/*') && ! $request->is('company/login', 'company/davet/*')) {
+        if ($request->routeIs('company.*')) {
             return route('company.login');
         }
 

@@ -14,15 +14,38 @@ from app.core.config import settings
 
 ADMIN_PERMISSION_KEYS = (
     "dashboard.view",
-    "organizations.manage",
-    "career_data.manage",
+    "organizations.view",
+    "organizations.write",
+    "organizations.delete",
+    "career_data.view",
+    "career_data.write",
+    "career_data.delete",
     "students.view",
+    "students.write",
+    "students.delete",
     "readiness.view",
     "skill_passport.view",
     "job_radar.view",
     "applications.view",
+    "applications.write",
+    "applications.delete",
     "interviews.view",
+    "interviews.write",
+    "interviews.delete",
 )
+
+LEGACY_ADMIN_PERMISSION_ALIASES = {
+    "organizations.manage": (
+        "organizations.view",
+        "organizations.write",
+        "organizations.delete",
+    ),
+    "career_data.manage": (
+        "career_data.view",
+        "career_data.write",
+        "career_data.delete",
+    ),
+}
 
 password_hash = PasswordHash.recommended()
 DUMMY_PASSWORD_HASH = password_hash.hash("timing-attack-placeholder")
@@ -156,14 +179,26 @@ def is_super_admin(user: User) -> bool:
     return user.is_admin and user.role == "student" and not user.admin_permissions
 
 
+def normalize_admin_permissions(values: list[str] | None) -> list[str]:
+    expanded = set(values or [])
+    for legacy, replacements in LEGACY_ADMIN_PERMISSION_ALIASES.items():
+        if legacy in expanded:
+            expanded.update(replacements)
+    return [
+        key
+        for key in ADMIN_PERMISSION_KEYS
+        if key == "dashboard.view" or key in expanded
+    ]
+
+
 def effective_admin_permissions(user: User) -> list[str]:
-    return list(ADMIN_PERMISSION_KEYS) if is_super_admin(user) else list(user.admin_permissions or [])
+    return list(ADMIN_PERMISSION_KEYS) if is_super_admin(user) else normalize_admin_permissions(user.admin_permissions)
 
 
 def ensure_admin_permission(user: User, permission: str) -> User:
     if user.must_change_password:
         raise HTTPException(status_code=403, detail="Password change required")
-    if not is_super_admin(user) and permission not in (user.admin_permissions or []):
+    if permission not in effective_admin_permissions(user):
         raise HTTPException(status_code=403, detail="Admin permission required")
     return user
 

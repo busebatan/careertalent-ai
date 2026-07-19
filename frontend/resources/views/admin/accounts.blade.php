@@ -65,6 +65,12 @@
                             <div class="md:col-span-2"><button class="admin-btn-primary" type="submit">{{ __('admin.accounts.save') }}</button></div>
                         </form>
                     </details>
+                    @if ($account['is_active'])
+                        <form method="post" action="{{ route('admin.accounts.destroy', $account['id']) }}" class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800" onsubmit="return confirm(@js(__('admin.accounts.confirm_delete')))">
+                            @csrf @method('DELETE')
+                            <button class="text-sm font-semibold text-red-600 hover:text-red-700 dark:text-red-400" type="submit">{{ __('admin.accounts.delete') }}</button>
+                        </form>
+                    @endif
                 @endif
             </article>
         @empty

@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureApiAuthenticated;
 use App\Http\Middleware\EnsureApiAdmin;
 use App\Http\Middleware\EnsureApiCandidate;
 use App\Http\Middleware\EnsureApiCompany;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -45,12 +46,13 @@ class CompanyPanelTest extends TestCase
             '*/api/v1/company/context' => Http::response(['memberships' => [$this->membership()]]),
         ]);
 
-        $this->withSession(['auth.access_token' => 'admin-token'])
+        $this->withSession(['auth.access_token' => 'admin-token', 'url.intended' => url('/panel')])
             ->post('/company/login', ['email' => 'owner@acme.example.com', 'password' => 'password'])
-            ->assertRedirect('/company')
+            ->assertRedirect('/acme')
             ->assertSessionHas('company_auth.access_token', 'company-token')
             ->assertSessionHas('auth.access_token', 'admin-token')
-            ->assertSessionHas('company.organization_id', 'org-1');
+            ->assertSessionHas('company.organization_id', 'org-1')
+            ->assertSessionMissing('url.intended');
     }
 
     public function test_company_dashboard_team_and_profile_render_real_api_contracts(): void
@@ -59,13 +61,19 @@ class CompanyPanelTest extends TestCase
             '*/api/v1/auth/me' => Http::response($this->user()),
             '*/api/v1/company/context' => Http::response(['memberships' => [$this->membership()]]),
             '*/api/v1/company/dashboard' => Http::response(['organization' => $this->membership(), 'members_total' => 2, 'members_active' => 1, 'invitations_pending' => 1]),
-            '*/api/v1/company/members' => Http::response(['members' => [[
-                'membership_id' => 'm1', 'user_id' => 44, 'full_name' => 'Acme Owner', 'email' => 'owner@acme.example.com', 'role' => 'owner', 'status' => 'active', 'created_at' => '2026-07-19T10:00:00Z',
-            ]], 'pending_invitations' => []]),
+            '*/api/v1/company/members' => Http::response([
+                'permission_keys' => ['dashboard.view', 'organization.update', 'members.view', 'members.invite', 'members.manage'],
+                'members' => [[
+                    'membership_id' => 'm1', 'user_id' => 44, 'full_name' => 'Acme Owner', 'email' => 'owner@acme.example.com', 'role' => 'owner',
+                    'permissions' => ['dashboard.view', 'organization.update', 'members.view', 'members.invite', 'members.manage'],
+                    'status' => 'active', 'created_at' => '2026-07-19T10:00:00Z',
+                ]],
+                'pending_invitations' => [],
+            ]),
         ]);
         $session = ['company_auth.access_token' => 'company-token', 'company_auth.user' => $this->user()];
 
-        $this->withSession($session)->get('/company')
+        $this->withSession($session)->get('/acme')
             ->assertOk()
             ->assertSee('Acme Teknoloji')
             ->assertSee('2')
@@ -79,8 +87,13 @@ class CompanyPanelTest extends TestCase
             ->assertDontSee('♙', false)
             ->assertDontSee('⚙', false)
             ->assertDontSee('◐', false);
-        $this->withSession($session)->get('/company/ekip')->assertOk()->assertSee('Acme Owner')->assertSee('Ekip ve Yetkiler');
-        $this->withSession($session)->get('/company/profil')
+        $this->withSession($session)->get('/acme/ekip')
+            ->assertOk()
+            ->assertSee('Acme Owner')
+            ->assertSee('Ekip ve Yetkiler')
+            ->assertSee('data-company-invite-form', false)
+            ->assertSee('Kurum profilini güncelleme');
+        $this->withSession($session)->get('/acme/profil')
             ->assertOk()
             ->assertSee('billing@acme.example.com')
             ->assertSee('action="'.route('company.logout').'"', false);
@@ -119,7 +132,7 @@ class CompanyPanelTest extends TestCase
     {
         Http::fake(['*/api/v1/auth/me' => Http::response(array_merge($this->user(), ['role' => 'student']))]);
         $this->withSession(['auth.access_token' => 'candidate-token'])
-            ->get('/company')
+            ->get('/acme')
             ->assertRedirect(route('company.login'))
             ->assertSessionHas('auth.access_token', 'candidate-token');
     }
@@ -129,7 +142,7 @@ class CompanyPanelTest extends TestCase
         Http::fake(['*/api/v1/auth/me' => Http::response($this->user(['is_admin' => true, 'role' => 'super_admin']))]);
 
         $this->withSession(['auth.access_token' => 'admin-token'])
-            ->get('/company')
+            ->get('/acme')
             ->assertRedirect(route('company.login'))
             ->assertSessionHas('auth.access_token', 'admin-token');
     }
@@ -151,11 +164,118 @@ class CompanyPanelTest extends TestCase
         ]);
 
         $this->withSession(['company_auth.access_token' => 'company-token'])
-            ->from('/company')
-            ->get('/company/locale/en')
-            ->assertRedirect('/company')
+            ->from('/acme')
+            ->get('/acme/locale/en')
+            ->assertRedirect('/acme')
             ->assertSessionHas('panel_locale', 'en')
             ->assertSessionHas('company_auth.user.preferred_locale', 'en');
+    }
+
+    public function test_company_navigation_and_routes_follow_persisted_permissions(): void
+    {
+        $dashboardOnly = $this->membership(['role' => 'viewer', 'permissions' => ['dashboard.view']]);
+        Http::fake([
+            '*/api/v1/auth/me' => Http::response($this->user()),
+            '*/api/v1/company/context' => Http::response(['memberships' => [$dashboardOnly]]),
+            '*/api/v1/company/dashboard' => Http::response([
+                'organization' => $dashboardOnly, 'members_total' => 1, 'members_active' => 1, 'invitations_pending' => 0,
+            ]),
+        ]);
+
+        $session = ['company_auth.access_token' => 'company-token'];
+        $this->withSession($session)->get('/acme')
+            ->assertOk()
+            ->assertDontSee('/acme/ekip', false)
+            ->assertDontSee('/acme/profil', false)
+            ->assertDontSee('data-company-profile', false);
+        $this->withSession($session)->get('/acme/ekip')->assertForbidden();
+        $this->withSession($session)->get('/acme/profil')->assertForbidden();
+    }
+
+    public function test_members_view_permission_is_read_only_in_team_ui(): void
+    {
+        $readOnly = $this->membership([
+            'role' => 'viewer',
+            'permissions' => ['dashboard.view', 'members.view'],
+        ]);
+        Http::fake([
+            '*/api/v1/auth/me' => Http::response($this->user()),
+            '*/api/v1/company/context' => Http::response(['memberships' => [$readOnly]]),
+            '*/api/v1/company/members' => Http::response([
+                'permission_keys' => ['dashboard.view', 'organization.update', 'members.view', 'members.invite', 'members.manage'],
+                'members' => [[
+                    'membership_id' => 'm2', 'user_id' => 45, 'full_name' => 'Read Only Member', 'email' => 'viewer@acme.example.com',
+                    'role' => 'viewer', 'permissions' => ['dashboard.view', 'members.view'], 'status' => 'active', 'created_at' => '2026-07-19T10:00:00Z',
+                ]],
+                'pending_invitations' => [],
+            ]),
+        ]);
+
+        $this->withSession(['company_auth.access_token' => 'company-token'])
+            ->get('/acme/ekip')
+            ->assertOk()
+            ->assertSee('Read Only Member')
+            ->assertDontSee('data-company-invite-form', false)
+            ->assertDontSee('data-company-member-form', false);
+    }
+
+    public function test_company_permission_forms_forward_selected_permissions_and_tenant_header(): void
+    {
+        Http::fake(function (Request $request) {
+            if (str_ends_with($request->url(), '/api/v1/auth/me')) {
+                return Http::response($this->user());
+            }
+            if (str_ends_with($request->url(), '/api/v1/company/context')) {
+                return Http::response(['memberships' => [$this->membership()]]);
+            }
+            if (str_ends_with($request->url(), '/api/v1/company/invitations')) {
+                return Http::response(['token' => 'invite-token'], 201);
+            }
+            if (str_ends_with($request->url(), '/api/v1/company/members/m2')) {
+                return Http::response(['membership_id' => 'm2']);
+            }
+
+            return Http::response(['status' => 'ok']);
+        });
+        $session = ['company_auth.access_token' => 'company-token'];
+
+        $this->withSession($session)->from('/acme/ekip')->post('/acme/ekip/davet', [
+            'email' => 'recruiter@acme.example.com',
+            'role' => 'recruiter',
+            'permissions' => ['dashboard.view', 'members.view', 'members.invite'],
+        ])->assertRedirect('/acme/ekip');
+
+        $this->withSession($session)->from('/acme/ekip')->patch('/acme/ekip/m2', [
+            'role' => 'hiring_manager',
+            'status' => 'active',
+            'permissions' => ['dashboard.view', 'members.view'],
+        ])->assertRedirect('/acme/ekip');
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/api/v1/company/invitations')
+            && $request->hasHeader('X-Organization-ID', 'org-1')
+            && $request['permissions'] === ['dashboard.view', 'members.view', 'members.invite']);
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'PATCH'
+            && str_ends_with($request->url(), '/api/v1/company/members/m2')
+            && $request->hasHeader('X-Organization-ID', 'org-1')
+            && $request['permissions'] === ['dashboard.view', 'members.view']);
+    }
+
+    public function test_company_switch_redirects_to_the_selected_organization_slug(): void
+    {
+        $memberships = [
+            $this->membership(),
+            $this->membership(['organization_id' => 'org-2', 'organization_name' => 'Beta', 'organization_slug' => 'beta']),
+        ];
+        Http::fake([
+            '*/api/v1/auth/me' => Http::response($this->user()),
+            '*/api/v1/company/context' => Http::response(['memberships' => $memberships]),
+        ]);
+
+        $this->withSession(['company_auth.access_token' => 'company-token'])
+            ->post('/acme/kurum-degistir/org-2')
+            ->assertRedirect('/beta')
+            ->assertSessionHas('company.organization_id', 'org-2');
     }
 
     public function test_legacy_company_session_is_migrated_without_relogin(): void
@@ -167,7 +287,7 @@ class CompanyPanelTest extends TestCase
         ]);
 
         $this->withSession(['auth.access_token' => 'legacy-company-token', 'auth.user' => $this->user()])
-            ->get('/company')
+            ->get('/acme')
             ->assertOk()
             ->assertSessionHas('company_auth.access_token', 'legacy-company-token')
             ->assertSessionMissing('auth.access_token');
@@ -206,11 +326,11 @@ class CompanyPanelTest extends TestCase
 
         $this->withSession(['auth.access_token' => 'admin-token', 'auth.user' => $admin])
             ->post('/company/login', ['email' => 'owner@acme.example.com', 'password' => 'password'])
-            ->assertRedirect('/company')
+            ->assertRedirect('/acme')
             ->assertSessionHas('auth.access_token', 'admin-token')
             ->assertSessionHas('company_auth.access_token', 'company-token');
 
-        $this->get('/company')->assertOk()->assertSee('data-workspace-shell="company"', false);
+        $this->get('/acme')->assertOk()->assertSee('data-workspace-shell="company"', false);
         $this->get('/admin')->assertOk()->assertSee('data-workspace-shell="admin"', false);
 
         Http::assertSent(fn ($request) => str_ends_with($request->url(), '/api/v1/company/dashboard')

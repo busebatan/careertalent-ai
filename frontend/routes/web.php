@@ -53,16 +53,13 @@ Route::middleware('marketing.locale')->group(function () {
     Route::get('/locale/{locale}', [MarketingLocaleController::class, 'switch'])->name('marketing.locale');
 });
 
-Route::prefix('company')->name('company.')->middleware(['auth.api', 'auth.api.company', 'panel.locale'])->group(function () {
-    Route::get('/locale/{locale}', [PanelLocaleController::class, 'switch'])->name('locale');
-    Route::get('/', [CompanyController::class, 'dashboard'])->name('dashboard');
-    Route::get('/profil', [CompanyController::class, 'profile'])->name('profile');
-    Route::patch('/profil', [CompanyController::class, 'updateProfile'])->name('profile.update');
-    Route::get('/ekip', [CompanyController::class, 'team'])->name('team');
-    Route::post('/ekip/davet', [CompanyController::class, 'invite'])->name('team.invite');
-    Route::patch('/ekip/{membership}', [CompanyController::class, 'updateMember'])->name('team.update');
-    Route::post('/kurum-degistir/{organization}', [CompanyController::class, 'switchOrganization'])->name('organization.switch');
-});
+Route::get('/company', function () {
+    $membership = request()->attributes->get('company.membership');
+
+    return redirect()->route('company.dashboard', [
+        'organizationSlug' => $membership['organization_slug'],
+    ]);
+})->name('company.entry')->middleware(['auth.api', 'auth.api.company', 'panel.locale']);
 
 // ── Admin panel ─────────────────────────────────────────────
 Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin', 'panel.locale'])->group(function () {
@@ -73,20 +70,31 @@ Route::prefix('admin')->name('admin.')->middleware(['auth.api', 'auth.api.admin'
     Route::get('/hesaplar', [AdminController::class, 'accounts'])->name('accounts');
     Route::post('/hesaplar', [AdminController::class, 'storeAccount'])->name('accounts.store');
     Route::patch('/hesaplar/{user}', [AdminController::class, 'updateAccount'])->name('accounts.update');
+    Route::delete('/hesaplar/{user}', [AdminController::class, 'destroyAccount'])->name('accounts.destroy');
     Route::get('/kurumlar', [AdminController::class, 'organizations'])->name('organizations');
     Route::post('/kurumlar', [AdminController::class, 'storeOrganization'])->name('organizations.store');
     Route::post('/kurumlar/{organization}/sahip-daveti', [AdminController::class, 'inviteOrganizationOwner'])->name('organizations.owner-invite');
     Route::patch('/kurumlar/{organization}', [AdminController::class, 'updateOrganization'])->name('organizations.update');
+    Route::delete('/kurumlar/{organization}', [AdminController::class, 'destroyOrganization'])->name('organizations.destroy');
     Route::get('/kariyer-veri-merkezi', [AdminController::class, 'careerData'])->name('career-data');
     Route::post('/kariyer-veri-merkezi/{resource}', [AdminController::class, 'storeCareerData'])->name('career-data.store');
     Route::put('/kariyer-veri-merkezi/{resource}/{record}', [AdminController::class, 'updateCareerData'])->name('career-data.update');
     Route::delete('/kariyer-veri-merkezi/{resource}/{record}', [AdminController::class, 'destroyCareerData'])->name('career-data.destroy');
     Route::get('/ogrenciler', [AdminController::class, 'students'])->name('students');
+    Route::post('/ogrenciler', [AdminController::class, 'storeStudent'])->name('students.store');
+    Route::patch('/ogrenciler/{user}', [AdminController::class, 'updateStudent'])->name('students.update');
+    Route::delete('/ogrenciler/{user}', [AdminController::class, 'destroyStudent'])->name('students.destroy');
     Route::get('/readiness', [AdminController::class, 'readiness'])->name('readiness');
     Route::get('/yetenek-pasaportu', [AdminController::class, 'skillPassport'])->name('skill-passport');
     Route::get('/is-radari', [AdminController::class, 'jobRadar'])->name('job-radar');
     Route::get('/basvurular', [AdminController::class, 'applications'])->name('applications');
+    Route::post('/basvurular', [AdminController::class, 'storeApplication'])->name('applications.store');
+    Route::patch('/basvurular/{application}', [AdminController::class, 'updateApplication'])->name('applications.update');
+    Route::delete('/basvurular/{application}', [AdminController::class, 'destroyApplication'])->name('applications.destroy');
     Route::get('/mulakatlar', [AdminController::class, 'interviews'])->name('interviews');
+    Route::post('/mulakatlar', [AdminController::class, 'storeInterview'])->name('interviews.store');
+    Route::patch('/mulakatlar/{interview}', [AdminController::class, 'updateInterview'])->name('interviews.update');
+    Route::delete('/mulakatlar/{interview}', [AdminController::class, 'destroyInterview'])->name('interviews.destroy');
 });
 
 // ── Öğrenci paneli ──────────────────────────────────────────
@@ -159,11 +167,17 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::get('/locale/{locale}', [PanelLocaleController::class, 'switch'])->name('locale');
 });
 
-Route::middleware('marketing.locale')->group(function () {
-    Route::get('/{organizationSlug}', [AuthController::class, 'organizationLogin'])
-        ->where('organizationSlug', '[a-z0-9]+(?:-[a-z0-9]+)*')
-        ->name('company.organization.login');
-    Route::post('/{organizationSlug}', [AuthController::class, 'authenticateOrganization'])
-        ->where('organizationSlug', '[a-z0-9]+(?:-[a-z0-9]+)*')
-        ->name('company.organization.login.submit');
-});
+Route::prefix('{organizationSlug}')
+    ->where(['organizationSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*'])
+    ->name('company.')
+    ->middleware(['auth.api', 'auth.api.company', 'panel.locale'])
+    ->group(function () {
+        Route::get('/', [CompanyController::class, 'dashboard'])->name('dashboard');
+        Route::get('/locale/{locale}', [PanelLocaleController::class, 'switch'])->name('locale');
+        Route::get('/profil', [CompanyController::class, 'profile'])->name('profile');
+        Route::patch('/profil', [CompanyController::class, 'updateProfile'])->name('profile.update');
+        Route::get('/ekip', [CompanyController::class, 'team'])->name('team');
+        Route::post('/ekip/davet', [CompanyController::class, 'invite'])->name('team.invite');
+        Route::patch('/ekip/{membership}', [CompanyController::class, 'updateMember'])->name('team.update');
+        Route::post('/kurum-degistir/{organization}', [CompanyController::class, 'switchOrganization'])->name('organization.switch');
+    });

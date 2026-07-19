@@ -59,7 +59,7 @@ class AdminOrganizationsTest extends TestCase
             ->assertSee('Kurumlar')
             ->assertSee('Acme Teknoloji')
             ->assertSee('billing@acme.example.com')
-            ->assertSee(route('company.organization.login', 'acme-teknoloji'))
+            ->assertSee(route('company.dashboard', ['organizationSlug' => 'acme-teknoloji']))
             ->assertSee('data-admin-organization="org-1"', false)
             ->assertSee('action="'.route('admin.organizations.store').'"', false)
             ->assertSee('action="'.route('admin.organizations.owner-invite', 'org-1').'"', false)
@@ -104,6 +104,9 @@ class AdminOrganizationsTest extends TestCase
             'logo_url' => 'https://cdn.acme.test/new-logo.svg',
         ])->assertRedirect('/admin/kurumlar');
 
+        $this->withSession($this->adminSession())->delete('/admin/kurumlar/org-1')
+            ->assertRedirect('/admin/kurumlar');
+
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
             && $request->url() === 'http://localhost:8000/api/v1/admin/organizations'
             && ! isset($request['slug'])
@@ -118,6 +121,8 @@ class AdminOrganizationsTest extends TestCase
             && $request['slug'] === 'acme-teknoloji'
             && $request['logo_url'] === 'https://cdn.acme.test/new-logo.svg'
         );
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'DELETE'
+            && $request->url() === 'http://localhost:8000/api/v1/admin/organizations/org-1');
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
             && $request->url() === 'http://localhost:8000/api/v1/admin/organizations/org-1/owner-invitations'
             && $request['email'] === 'owner@acme.example.com'

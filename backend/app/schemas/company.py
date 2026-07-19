@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.core.company_permissions import normalize_explicit_company_permissions
 
 
 CompanyRole = Literal["owner", "admin", "recruiter", "hiring_manager", "viewer"]
@@ -10,12 +12,19 @@ CompanyRole = Literal["owner", "admin", "recruiter", "hiring_manager", "viewer"]
 class CompanyInviteCreate(BaseModel):
     email: EmailStr
     role: CompanyRole = "owner"
+    permissions: list[str] | None = None
+
+    @field_validator("permissions")
+    @classmethod
+    def validate_permissions(cls, value: list[str] | None) -> list[str] | None:
+        return normalize_explicit_company_permissions(value) if value is not None else None
 
 
 class CompanyInviteResponse(BaseModel):
     token: str
     email: EmailStr
     role: CompanyRole
+    permissions: list[str]
     organization_id: str
     organization_name: str
     expires_at: datetime
@@ -64,6 +73,7 @@ class CompanyMemberResponse(BaseModel):
     full_name: str
     email: EmailStr
     role: CompanyRole
+    permissions: list[str]
     status: str
     created_at: datetime
 
@@ -72,10 +82,12 @@ class CompanyPendingInviteResponse(BaseModel):
     id: str
     email: EmailStr
     role: CompanyRole
+    permissions: list[str]
     expires_at: datetime
 
 
 class CompanyMembersResponse(BaseModel):
+    permission_keys: list[str]
     members: list[CompanyMemberResponse]
     pending_invitations: list[CompanyPendingInviteResponse]
 
@@ -83,6 +95,12 @@ class CompanyMembersResponse(BaseModel):
 class CompanyMemberUpdate(BaseModel):
     role: CompanyRole | None = None
     status: Literal["active", "suspended"] | None = None
+    permissions: list[str] | None = None
+
+    @field_validator("permissions")
+    @classmethod
+    def validate_permissions(cls, value: list[str] | None) -> list[str] | None:
+        return normalize_explicit_company_permissions(value) if value is not None else None
 
 
 class CompanyOrganizationUpdate(BaseModel):

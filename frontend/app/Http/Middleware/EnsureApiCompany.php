@@ -5,10 +5,22 @@ namespace App\Http\Middleware;
 use App\Services\CareerTalentApiClient;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureApiCompany
 {
+    private const ROUTE_PERMISSIONS = [
+        'company.entry' => 'dashboard.view',
+        'company.dashboard' => 'dashboard.view',
+        'company.locale' => 'dashboard.view',
+        'company.organization.switch' => 'dashboard.view',
+        'company.profile*' => 'organization.update',
+        'company.team' => 'members.view',
+        'company.team.invite' => 'members.invite',
+        'company.team.update' => 'members.manage',
+    ];
+
     public function __construct(private readonly CareerTalentApiClient $api) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -32,11 +44,27 @@ class EnsureApiCompany
             ]);
         }
 
-        $activeId = (string) $request->session()->get('company.organization_id', '');
-        $active = collect($memberships)->firstWhere('organization_id', $activeId) ?? $memberships[0];
+        $organizationSlug = (string) $request->route('organizationSlug', '');
+        if ($organizationSlug !== '') {
+            $active = collect($memberships)->firstWhere('organization_slug', $organizationSlug);
+            abort_if(! is_array($active), 404);
+        } else {
+            $activeId = (string) $request->session()->get('company.organization_id', '');
+            $active = collect($memberships)->firstWhere('organization_id', $activeId) ?? $memberships[0];
+        }
+
+        $permissions = is_array($active['permissions'] ?? null) ? $active['permissions'] : [];
+        foreach (self::ROUTE_PERMISSIONS as $route => $permission) {
+            if ($request->routeIs($route)) {
+                abort_unless(in_array($permission, $permissions, true), 403);
+                break;
+            }
+        }
+
         $request->session()->put('company.organization_id', $active['organization_id']);
         $request->session()->put('company.memberships', $memberships);
         $request->attributes->set('company.membership', $active);
+        URL::defaults(['organizationSlug' => $active['organization_slug']]);
 
         return $next($request);
     }

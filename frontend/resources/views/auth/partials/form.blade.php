@@ -1,7 +1,7 @@
 @php($isAdmin = $portal === 'admin')
 @php($isCompany = $portal === 'company')
 @php($isRegister = ! $isAdmin && ! $isCompany && $mode === 'register')
-@php($action = $isAdmin ? route('admin.login.submit') : ($isCompany ? (isset($organizationProfile) ? route('company.organization.login.submit', $organizationProfile['slug']) : route('company.login.submit')) : ($isRegister ? route('register.submit') : route('login.submit'))))
+@php($action = $isAdmin ? route('admin.login.submit') : ($isCompany ? route('company.login.submit') : ($isRegister ? route('register.submit') : route('login.submit'))))
 <section class="auth-form" aria-labelledby="auth-title">
     <div class="form-kicker">
         <span class="portal-dot" aria-hidden="true"></span>

@@ -1,28 +1,31 @@
-"""Gerçek kayıtları yöneticilere sunan salt-okunur yönetim API'si."""
+"""Gerçek kayıtları yöneticilere sunan yetkili yönetim API'si."""
 
 from collections.abc import Iterable
 from typing import Annotated, Literal
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.company_permissions import effective_company_permissions
 from app.core.database import get_db
 from app.core.security import (
     ADMIN_PERMISSION_KEYS,
+    LEGACY_ADMIN_PERMISSION_ALIASES,
     effective_admin_permissions,
     ensure_admin_permission,
     hash_password,
     is_super_admin,
+    normalize_admin_permissions,
     require_admin,
     require_admin_permission,
     require_super_admin,
     verify_password,
 )
 from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence, JobOpportunity
-from app.models.engagement import CareerInterview, CvDocument, JobApplication
+from app.models.engagement import CareerInterview, CareerInterviewAnswer, CvDocument, JobApplication
 from app.models.recruiting import Organization, OrganizationMembership
 from app.models.user import User
 from app.schemas.admin import (
@@ -30,7 +33,15 @@ from app.schemas.admin import (
     AdminAccountResponse,
     AdminAccountsResponse,
     AdminAccountUpdate,
+    AdminApplicationCreate,
+    AdminApplicationResponse,
+    AdminApplicationsResponse,
+    AdminApplicationUpdate,
     AdminDashboardResponse,
+    AdminInterviewCreate,
+    AdminInterviewResponse,
+    AdminInterviewsResponse,
+    AdminInterviewUpdate,
     AdminModuleResponse,
     AdminOrganizationCreate,
     AdminOrganizationResponse,
@@ -38,20 +49,28 @@ from app.schemas.admin import (
     AdminOrganizationUpdate,
     AdminProfileResponse,
     AdminProfileUpdate,
+    AdminStudentCreate,
+    AdminStudentOption,
+    AdminStudentResponse,
+    AdminStudentsResponse,
+    AdminStudentUpdate,
     AdminTableRow,
 )
 from app.schemas.company import CompanyInviteCreate, CompanyInviteResponse
 from app.services.company import (
-    RESERVED_ORGANIZATION_SLUGS,
     CompanyInvitationConflict,
     available_organization_slug,
     create_company_invitation,
+    is_reserved_organization_slug,
 )
+from app.services.engagement import start_interview
+from app.services.ai_factory import AIOutputError, AIProviderError, AIUnavailableError
 
 router = APIRouter()
 DB = Annotated[Session, Depends(get_db)]
 ModuleKey = Literal["students", "readiness", "skill-passport", "job-radar", "applications", "interviews"]
-STUDENT_FILTER = (User.is_active.is_(True), User.is_admin.is_(False))
+STUDENT_FILTER = (User.is_active.is_(True), User.is_admin.is_(False), User.role != "company")
+CANDIDATE_FILTER = (User.is_admin.is_(False), User.role != "company")
 MAX_ROWS = 50
 MODULE_PERMISSIONS = {
     "students": "students.view",
@@ -96,10 +115,11 @@ def _organization_or_404(db: Session, organization_id: str) -> Organization:
 
 
 def _permissions(values: list[str]) -> list[str]:
-    unknown = sorted(set(values) - set(ADMIN_PERMISSION_KEYS))
+    known = set(ADMIN_PERMISSION_KEYS) | set(LEGACY_ADMIN_PERMISSION_ALIASES)
+    unknown = sorted(set(values) - known)
     if unknown:
         raise HTTPException(status_code=422, detail=f"Unknown admin permissions: {', '.join(unknown)}")
-    return [key for key in ADMIN_PERMISSION_KEYS if key == "dashboard.view" or key in values]
+    return normalize_admin_permissions(values)
 
 
 def _admin_account(user: User) -> AdminAccountResponse:
@@ -112,6 +132,75 @@ def _admin_account(user: User) -> AdminAccountResponse:
         admin_permissions=effective_admin_permissions(user),
         must_change_password=user.must_change_password,
         created_at=user.created_at.isoformat() if user.created_at else None,
+    )
+
+
+def _candidate_or_404(db: Session, user_id: int, *, active: bool = False) -> User:
+    filters = [User.id == user_id, *CANDIDATE_FILTER]
+    if active:
+        filters.append(User.is_active.is_(True))
+    user = db.scalar(select(User).where(*filters))
+    if user is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return user
+
+
+def _student_response(user: User) -> AdminStudentResponse:
+    return AdminStudentResponse(
+        id=user.id,
+        full_name=user.full_name,
+        email=user.email,
+        is_active=user.is_active,
+        preferred_locale=user.preferred_locale,
+        must_change_password=user.must_change_password,
+        created_at=user.created_at.isoformat() if user.created_at else None,
+    )
+
+
+def _student_options(db: Session) -> list[AdminStudentOption]:
+    rows = db.scalars(
+        select(User)
+        .where(*CANDIDATE_FILTER, User.is_active.is_(True))
+        .order_by(User.full_name.asc(), User.id.asc())
+        .limit(MAX_ROWS)
+    ).all()
+    return [AdminStudentOption(id=row.id, full_name=row.full_name, email=row.email) for row in rows]
+
+
+def _application_response(db: Session, application: JobApplication) -> AdminApplicationResponse:
+    student = _candidate_or_404(db, application.user_id)
+    return AdminApplicationResponse(
+        id=application.id,
+        user_id=student.id,
+        student_name=student.full_name,
+        student_email=student.email,
+        company=application.company,
+        role=application.role,
+        stage=application.stage,
+        next_action=application.next_action,
+        note=application.note,
+        applied_at=application.applied_at.isoformat() if application.applied_at else None,
+    )
+
+
+def _interview_response(db: Session, interview: CareerInterview) -> AdminInterviewResponse:
+    student = _candidate_or_404(db, interview.user_id)
+    answer_count = db.scalar(
+        select(func.count())
+        .select_from(CareerInterviewAnswer)
+        .where(CareerInterviewAnswer.interview_id == interview.id)
+    ) or 0
+    return AdminInterviewResponse(
+        id=interview.id,
+        user_id=student.id,
+        student_name=student.full_name,
+        student_email=student.email,
+        target_role=interview.target_role,
+        status=interview.status,
+        language=interview.language,
+        question_count=len(interview.questions),
+        answer_count=answer_count,
+        created_at=interview.created_at.isoformat() if interview.created_at else None,
     )
 
 
@@ -193,10 +282,28 @@ def update_account(user_id: int, payload: AdminAccountUpdate, db: DB, _super_adm
     return _admin_account(user)
 
 
+@router.delete("/accounts/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(
+    user_id: int,
+    db: DB,
+    _super_admin: User = Depends(require_super_admin),
+) -> Response:
+    user = db.scalar(select(User).where(User.id == user_id, User.is_admin.is_(True)))
+    if user is None:
+        raise HTTPException(status_code=404, detail="Admin account not found")
+    if is_super_admin(user):
+        raise HTTPException(status_code=422, detail="Super admin account cannot be deleted")
+    if user.is_active:
+        user.is_active = False
+        user.token_version += 1
+        db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get("/organizations", response_model=AdminOrganizationsResponse)
 def organizations(
     db: DB,
-    _current_user: User = Depends(require_admin_permission("organizations.manage")),
+    _current_user: User = Depends(require_admin_permission("organizations.view")),
 ) -> AdminOrganizationsResponse:
     rows = db.scalars(
         select(Organization).order_by(Organization.created_at.desc(), Organization.name.asc())
@@ -215,10 +322,10 @@ def organizations(
 def create_organization(
     payload: AdminOrganizationCreate,
     db: DB,
-    _current_user: User = Depends(require_admin_permission("organizations.manage")),
+    _current_user: User = Depends(require_admin_permission("organizations.write")),
 ) -> AdminOrganizationResponse:
     organization_slug = payload.slug or available_organization_slug(db, payload.name)
-    if organization_slug in RESERVED_ORGANIZATION_SLUGS:
+    if is_reserved_organization_slug(organization_slug):
         raise HTTPException(status_code=422, detail="Organization slug is reserved")
     if db.scalar(select(Organization.id).where(Organization.slug == organization_slug)):
         raise HTTPException(status_code=409, detail="Organization slug already exists")
@@ -254,12 +361,12 @@ def update_organization(
     organization_id: str,
     payload: AdminOrganizationUpdate,
     db: DB,
-    _current_user: User = Depends(require_admin_permission("organizations.manage")),
+    _current_user: User = Depends(require_admin_permission("organizations.write")),
 ) -> AdminOrganizationResponse:
     organization = _organization_or_404(db, organization_id)
     changes = payload.model_dump(exclude_unset=True)
     if "slug" in changes and changes["slug"] != organization.slug:
-        if changes["slug"] in RESERVED_ORGANIZATION_SLUGS:
+        if is_reserved_organization_slug(changes["slug"]):
             raise HTTPException(status_code=422, detail="Organization slug is reserved")
         if db.scalar(
             select(Organization.id).where(
@@ -292,6 +399,19 @@ def update_organization(
     return _organization_response(db, organization)
 
 
+@router.delete("/organizations/{organization_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_organization(
+    organization_id: str,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("organizations.delete")),
+) -> Response:
+    organization = _organization_or_404(db, organization_id)
+    if organization.status != "closed":
+        organization.status = "closed"
+        db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.post(
     "/organizations/{organization_id}/owner-invitations",
     response_model=CompanyInviteResponse,
@@ -301,7 +421,7 @@ def invite_organization_owner(
     organization_id: str,
     payload: CompanyInviteCreate,
     db: DB,
-    current_user: User = Depends(require_admin_permission("organizations.manage")),
+    current_user: User = Depends(require_admin_permission("organizations.write")),
 ) -> CompanyInviteResponse:
     if payload.role != "owner":
         raise HTTPException(status_code=422, detail="Initial organization invitation must be owner")
@@ -316,10 +436,243 @@ def invite_organization_owner(
         token=token,
         email=invitation.email,
         role="owner",
+        permissions=effective_company_permissions(invitation),
         organization_id=organization.id,
         organization_name=organization.name,
         expires_at=invitation.expires_at,
     )
+
+
+@router.get("/students", response_model=AdminStudentsResponse)
+def students(
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("students.view")),
+) -> AdminStudentsResponse:
+    rows = db.scalars(
+        select(User)
+        .where(*CANDIDATE_FILTER)
+        .order_by(User.created_at.desc(), User.id.desc())
+        .limit(MAX_ROWS)
+    ).all()
+    total = db.scalar(select(func.count()).select_from(User).where(*CANDIDATE_FILTER)) or 0
+    return AdminStudentsResponse(total=total, students=[_student_response(row) for row in rows])
+
+
+@router.post("/students", response_model=AdminStudentResponse, status_code=status.HTTP_201_CREATED)
+def create_student(
+    payload: AdminStudentCreate,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("students.write")),
+) -> AdminStudentResponse:
+    email = str(payload.email).strip().lower()
+    if db.scalar(select(User.id).where(func.lower(User.email) == email)):
+        raise HTTPException(status_code=409, detail="Email already registered")
+    student = User(
+        full_name=payload.full_name,
+        email=email,
+        hashed_password=hash_password(payload.temporary_password),
+        is_active=payload.is_active,
+        is_admin=False,
+        role="student",
+        admin_permissions=[],
+        must_change_password=False,
+        preferred_locale=payload.preferred_locale,
+    )
+    db.add(student)
+    db.commit()
+    db.refresh(student)
+    return _student_response(student)
+
+
+@router.patch("/students/{user_id}", response_model=AdminStudentResponse)
+def update_student(
+    user_id: int,
+    payload: AdminStudentUpdate,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("students.write")),
+) -> AdminStudentResponse:
+    student = _candidate_or_404(db, user_id)
+    changes = payload.model_dump(exclude_unset=True)
+    if "email" in changes:
+        email = str(changes["email"]).strip().lower()
+        if db.scalar(select(User.id).where(func.lower(User.email) == email, User.id != user_id)):
+            raise HTTPException(status_code=409, detail="Email already registered")
+        changes["email"] = email
+    temporary_password = changes.pop("temporary_password", None)
+    if temporary_password:
+        student.hashed_password = hash_password(temporary_password)
+        student.must_change_password = False
+        student.token_version += 1
+    if "is_active" in changes and changes["is_active"] is False and student.is_active:
+        student.token_version += 1
+    for key, value in changes.items():
+        setattr(student, key, value)
+    db.commit()
+    db.refresh(student)
+    return _student_response(student)
+
+
+@router.delete("/students/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_student(
+    user_id: int,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("students.delete")),
+) -> Response:
+    student = _candidate_or_404(db, user_id)
+    if student.is_active:
+        student.is_active = False
+        student.token_version += 1
+        db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/applications", response_model=AdminApplicationsResponse)
+def applications(
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("applications.view")),
+) -> AdminApplicationsResponse:
+    rows = db.scalars(
+        select(JobApplication)
+        .join(User, User.id == JobApplication.user_id)
+        .where(*CANDIDATE_FILTER)
+        .order_by(JobApplication.applied_at.desc(), JobApplication.id.desc())
+        .limit(MAX_ROWS)
+    ).all()
+    total = db.scalar(
+        select(func.count())
+        .select_from(JobApplication)
+        .join(User, User.id == JobApplication.user_id)
+        .where(*CANDIDATE_FILTER)
+    ) or 0
+    return AdminApplicationsResponse(
+        total=total,
+        applications=[_application_response(db, row) for row in rows],
+        student_options=_student_options(db),
+    )
+
+
+@router.post("/applications", response_model=AdminApplicationResponse, status_code=status.HTTP_201_CREATED)
+def create_application(
+    payload: AdminApplicationCreate,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("applications.write")),
+) -> AdminApplicationResponse:
+    student = _candidate_or_404(db, payload.user_id, active=True)
+    application = JobApplication(
+        id=str(uuid4()),
+        user_id=student.id,
+        company=payload.company,
+        role=payload.role,
+        stage=payload.stage,
+        next_action=payload.next_action,
+        note=payload.note,
+    )
+    db.add(application)
+    db.commit()
+    db.refresh(application)
+    return _application_response(db, application)
+
+
+@router.patch("/applications/{application_id}", response_model=AdminApplicationResponse)
+def update_application(
+    application_id: str,
+    payload: AdminApplicationUpdate,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("applications.write")),
+) -> AdminApplicationResponse:
+    application = db.get(JobApplication, application_id)
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(application, key, value)
+    db.commit()
+    db.refresh(application)
+    return _application_response(db, application)
+
+
+@router.delete("/applications/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_application(
+    application_id: str,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("applications.delete")),
+) -> Response:
+    application = db.get(JobApplication, application_id)
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    db.delete(application)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/interviews", response_model=AdminInterviewsResponse)
+def interviews(
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("interviews.view")),
+) -> AdminInterviewsResponse:
+    rows = db.scalars(
+        select(CareerInterview)
+        .join(User, User.id == CareerInterview.user_id)
+        .where(*CANDIDATE_FILTER)
+        .order_by(CareerInterview.created_at.desc(), CareerInterview.id.desc())
+        .limit(MAX_ROWS)
+    ).all()
+    total = db.scalar(
+        select(func.count())
+        .select_from(CareerInterview)
+        .join(User, User.id == CareerInterview.user_id)
+        .where(*CANDIDATE_FILTER)
+    ) or 0
+    return AdminInterviewsResponse(
+        total=total,
+        interviews=[_interview_response(db, row) for row in rows],
+        student_options=_student_options(db),
+    )
+
+
+@router.post("/interviews", response_model=AdminInterviewResponse, status_code=status.HTTP_201_CREATED)
+def create_interview(
+    payload: AdminInterviewCreate,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("interviews.write")),
+) -> AdminInterviewResponse:
+    student = _candidate_or_404(db, payload.user_id, active=True)
+    try:
+        interview = start_interview(db, student.id, language=payload.language)
+    except (AIUnavailableError, AIOutputError, AIProviderError) as exception:
+        raise HTTPException(status_code=503, detail=str(exception)) from exception
+    return _interview_response(db, interview)
+
+
+@router.patch("/interviews/{interview_id}", response_model=AdminInterviewResponse)
+def update_interview(
+    interview_id: str,
+    payload: AdminInterviewUpdate,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("interviews.write")),
+) -> AdminInterviewResponse:
+    interview = db.get(CareerInterview, interview_id)
+    if interview is None:
+        raise HTTPException(status_code=404, detail="Interview not found")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(interview, key, value)
+    db.commit()
+    db.refresh(interview)
+    return _interview_response(db, interview)
+
+
+@router.delete("/interviews/{interview_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_interview(
+    interview_id: str,
+    db: DB,
+    _current_user: User = Depends(require_admin_permission("interviews.delete")),
+) -> Response:
+    interview = db.get(CareerInterview, interview_id)
+    if interview is None:
+        raise HTTPException(status_code=404, detail="Interview not found")
+    db.execute(delete(CareerInterviewAnswer).where(CareerInterviewAnswer.interview_id == interview_id))
+    db.delete(interview)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/dashboard", response_model=AdminDashboardResponse)

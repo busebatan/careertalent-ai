@@ -5,7 +5,12 @@ from datetime import datetime
 from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.company_permissions import normalize_company_permissions
 from app.core.database import Base
+
+
+def _default_company_permissions(context) -> list[str]:
+    return normalize_company_permissions(context.get_current_parameters().get("role", "viewer"), None)
 
 
 class Organization(Base):
@@ -72,6 +77,7 @@ class OrganizationMembership(Base):
         ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
     )
     role: Mapped[str] = mapped_column(String(24), index=True, nullable=False)
+    permissions: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=_default_company_permissions)
     status: Mapped[str] = mapped_column(String(20), index=True, nullable=False, default="invited")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -96,6 +102,7 @@ class OrganizationInvitation(Base):
     )
     email: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     role: Mapped[str] = mapped_column(String(24), nullable=False)
+    permissions: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=_default_company_permissions)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     invited_by_user_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True

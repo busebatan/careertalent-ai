@@ -2,21 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\EnsureApiAuthenticated;
+use App\Http\Middleware\EnsureApiCompany;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class OrganizationVanityLoginTest extends TestCase
 {
-    private function profile(array $overrides = []): array
+    protected function setUp(): void
     {
-        return array_merge([
-            'name' => 'Büşe Kurum',
-            'slug' => 'buse-kurum',
-            'website' => 'https://buse.example.com',
-            'description' => 'Doğru yeteneği doğru ekiple buluşturur.',
-            'logo_url' => 'https://cdn.example.com/buse-logo.svg',
-        ], $overrides);
+        parent::setUp();
+        $this->withMiddleware([
+            EnsureApiAuthenticated::class,
+            EnsureApiCompany::class,
+        ]);
     }
 
     private function user(): array
@@ -48,27 +48,27 @@ class OrganizationVanityLoginTest extends TestCase
         ];
     }
 
-    public function test_vanity_url_renders_the_organization_branded_login(): void
+    public function test_company_login_is_canonical_and_company_entry_is_session_aware(): void
     {
-        Http::fake([
-            '*/api/v1/company/organizations/buse-kurum' => Http::response($this->profile()),
-        ]);
-
-        $this->get('/buse-kurum')
+        $this->get('/company/login')
             ->assertOk()
-            ->assertSee('Büşe Kurum')
-            ->assertSee('Doğru yeteneği doğru ekiple buluşturur.')
-            ->assertSee('https://cdn.example.com/buse-logo.svg', false)
-            ->assertSee('action="'.route('company.organization.login.submit', 'buse-kurum').'"', false);
+            ->assertSee('action="'.route('company.login.submit').'"', false);
+        $this->get('/company')->assertRedirect('/company/login');
 
-        Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
-            && str_ends_with($request->url(), '/api/v1/company/organizations/buse-kurum'));
+        Http::fake([
+            '*/api/v1/auth/me' => Http::response($this->user()),
+            '*/api/v1/company/context' => Http::response(['memberships' => [
+                $this->membership('org-buse', 'buse-kurum'),
+            ]]),
+        ]);
+        $this->withSession(['company_auth.access_token' => 'company-token'])
+            ->get('/company')
+            ->assertRedirect('/buse-kurum');
     }
 
-    public function test_vanity_login_selects_the_membership_matching_the_url(): void
+    public function test_guest_slug_redirects_to_company_login_and_login_returns_to_that_organization(): void
     {
         Http::fake([
-            '*/api/v1/company/organizations/buse-kurum' => Http::response($this->profile()),
             '*/api/v1/auth/login' => Http::response(['access_token' => 'company-token', 'token_type' => 'bearer']),
             '*/api/v1/auth/me' => Http::response($this->user()),
             '*/api/v1/company/context' => Http::response(['memberships' => [
@@ -77,43 +77,69 @@ class OrganizationVanityLoginTest extends TestCase
             ]]),
         ]);
 
-        $this->post('/buse-kurum', [
+        $this->get('/buse-kurum')
+            ->assertRedirect('/company/login')
+            ->assertSessionHas('url.intended', url('/buse-kurum'));
+
+        $this->post('/company/login', [
             'email' => 'owner@buse.example.com',
             'password' => 'password',
-        ])->assertRedirect('/company')
+        ])->assertRedirect('/buse-kurum')
             ->assertSessionHas('company_auth.access_token', 'company-token')
-            ->assertSessionHas('company.organization_id', 'org-buse');
+            ->assertSessionHas('company.organization_id', 'org-buse')
+            ->assertSessionMissing('url.intended');
     }
 
-    public function test_vanity_login_rejects_an_account_outside_the_url_organization(): void
+    public function test_authenticated_slug_is_the_company_dashboard_for_that_membership(): void
     {
         Http::fake([
-            '*/api/v1/company/organizations/buse-kurum' => Http::response($this->profile()),
-            '*/api/v1/auth/login' => Http::response(['access_token' => 'company-token', 'token_type' => 'bearer']),
+            '*/api/v1/auth/me' => Http::response($this->user()),
+            '*/api/v1/company/context' => Http::response(['memberships' => [
+                $this->membership('org-buse', 'buse-kurum'),
+            ]]),
+            '*/api/v1/company/dashboard' => Http::response([
+                'organization' => $this->membership('org-buse', 'buse-kurum'),
+                'members_total' => 3,
+                'members_active' => 2,
+                'invitations_pending' => 1,
+            ]),
+        ]);
+
+        $this->withSession(['company_auth.access_token' => 'company-token'])
+            ->get('/buse-kurum')
+            ->assertOk()
+            ->assertSee('data-workspace-shell="company"', false)
+            ->assertSessionHas('company.organization_id', 'org-buse');
+
+        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/api/v1/company/dashboard')
+            && $request->hasHeader('X-Organization-ID', 'org-buse'));
+    }
+
+    public function test_company_user_cannot_open_another_organization_slug(): void
+    {
+        Http::fake([
             '*/api/v1/auth/me' => Http::response($this->user()),
             '*/api/v1/company/context' => Http::response(['memberships' => [
                 $this->membership('org-other', 'other-company'),
             ]]),
         ]);
 
-        $this->from('/buse-kurum')->post('/buse-kurum', [
-            'email' => 'owner@buse.example.com',
-            'password' => 'password',
-        ])->assertRedirect('/buse-kurum')
-            ->assertSessionHasErrors('email')
-            ->assertSessionMissing('company_auth.access_token')
-            ->assertSessionMissing('company.organization_id');
+        $this->withSession(['company_auth.access_token' => 'company-token'])
+            ->get('/buse-kurum')
+            ->assertNotFound();
+
+        Http::assertNotSent(fn (Request $request): bool => str_ends_with($request->url(), '/api/v1/company/dashboard'));
     }
 
-    public function test_unknown_vanity_url_is_not_a_generic_login_and_existing_routes_still_win(): void
+    public function test_slug_no_longer_accepts_login_posts_and_static_routes_still_win(): void
     {
-        Http::fake([
-            '*/api/v1/company/organizations/bilinmeyen' => Http::response([], 404),
-        ]);
+        $this->post('/buse-kurum', [
+            'email' => 'owner@buse.example.com',
+            'password' => 'password',
+        ])->assertStatus(405);
 
-        $this->get('/bilinmeyen')->assertNotFound();
-        $this->get('/company/login')->assertOk()->assertSee('COMPANY');
         $this->get('/faq')->assertOk();
         $this->get('/up')->assertOk();
+        $this->get('/company/login')->assertOk();
     }
 }

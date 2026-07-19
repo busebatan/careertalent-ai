@@ -77,6 +77,24 @@ class AdminCareerDataCenterTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_view_only_career_data_admin_does_not_receive_write_or_delete_forms(): void
+    {
+        Http::fake($this->catalogFakes());
+
+        $response = $this->withSession([
+            'auth.access_token' => 'admin-token',
+            'auth.user' => [
+                'id' => 9, 'full_name' => 'Veri İzleyici', 'email' => 'viewer@example.com',
+                'is_admin' => true, 'role' => 'admin', 'admin_permissions' => ['career_data.view'],
+            ],
+        ])->get('/admin/kariyer-veri-merkezi?tab=roles');
+
+        $response->assertOk()->assertSee('Veri Analisti')
+            ->assertDontSee('action="'.route('admin.career-data.store', 'roles').'"', false)
+            ->assertDontSee('action="'.route('admin.career-data.update', ['resource' => 'roles', 'record' => 7]).'"', false)
+            ->assertDontSee('action="'.route('admin.career-data.destroy', ['resource' => 'roles', 'record' => 7]).'"', false);
+    }
+
     /**
      * @return array<string, \Illuminate\Http\Client\Response>
      */

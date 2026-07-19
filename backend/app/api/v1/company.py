@@ -7,6 +7,11 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.company_permissions import (
+    COMPANY_PERMISSION_KEYS,
+    effective_company_permissions,
+    normalize_company_permissions,
+)
 from app.core.database import get_db
 from app.core.security import get_current_user, hash_password, verify_password
 from app.models.recruiting import Organization, OrganizationInvitation, OrganizationMembership
@@ -31,15 +36,6 @@ from app.services.company import CompanyInvitationConflict, create_company_invit
 router = APIRouter()
 DB = Annotated[Session, Depends(get_db)]
 
-ROLE_PERMISSIONS = {
-    "owner": ["dashboard.view", "organization.update", "members.view", "members.invite", "members.manage"],
-    "admin": ["dashboard.view", "organization.update", "members.view", "members.invite", "members.manage"],
-    "recruiter": ["dashboard.view", "members.view"],
-    "hiring_manager": ["dashboard.view", "members.view"],
-    "viewer": ["dashboard.view", "members.view"],
-}
-
-
 def require_company_user(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != "company" or current_user.is_admin:
         raise HTTPException(status_code=403, detail="Company account required")
@@ -57,7 +53,7 @@ def _summary(organization: Organization, membership: OrganizationMembership) -> 
         billing_email=organization.billing_email,
         website=organization.website,
         role=membership.role,
-        permissions=ROLE_PERMISSIONS[membership.role],
+        permissions=effective_company_permissions(membership),
     )
 
 
@@ -82,9 +78,20 @@ def _context(
 
 
 def _require_permission(context, permission: str):
-    if permission not in ROLE_PERMISSIONS[context[2].role]:
+    if permission not in effective_company_permissions(context[2]):
         raise HTTPException(status_code=403, detail="Company permission required")
     return context
+
+
+def _ensure_permission_grant(context, permissions: list[str]) -> None:
+    if context[2].role == "owner":
+        return
+    excess = sorted(set(permissions) - set(effective_company_permissions(context[2])))
+    if excess:
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot grant company permissions you do not have",
+        )
 
 
 def _expired(value: datetime) -> bool:
@@ -129,7 +136,7 @@ def context(db: DB, current_user: User = Depends(require_company_user)) -> Compa
 
 @router.get("/dashboard", response_model=CompanyDashboardResponse)
 def dashboard(db: DB, context=Depends(_context)) -> CompanyDashboardResponse:
-    _, organization, membership = context
+    _, organization, membership = _require_permission(context, "dashboard.view")
     members_total = db.scalar(select(func.count()).select_from(OrganizationMembership).where(OrganizationMembership.organization_id == organization.id)) or 0
     members_active = db.scalar(select(func.count()).select_from(OrganizationMembership).where(OrganizationMembership.organization_id == organization.id, OrganizationMembership.status == "active")) or 0
     invitations_pending = db.scalar(select(func.count()).select_from(OrganizationInvitation).where(OrganizationInvitation.organization_id == organization.id, OrganizationInvitation.accepted_at.is_(None), OrganizationInvitation.expires_at > datetime.now(UTC))) or 0
@@ -143,8 +150,9 @@ def members(db: DB, context=Depends(_context)) -> CompanyMembersResponse:
     rows = db.execute(select(OrganizationMembership, User).join(User, User.id == OrganizationMembership.user_id).where(OrganizationMembership.organization_id == organization.id).order_by(User.full_name)).all()
     invitations = db.scalars(select(OrganizationInvitation).where(OrganizationInvitation.organization_id == organization.id, OrganizationInvitation.accepted_at.is_(None), OrganizationInvitation.expires_at > datetime.now(UTC)).order_by(OrganizationInvitation.created_at.desc())).all()
     return CompanyMembersResponse(
-        members=[CompanyMemberResponse(membership_id=m.id, user_id=u.id, full_name=u.full_name, email=u.email, role=m.role, status=m.status, created_at=m.created_at) for m, u in rows],
-        pending_invitations=[CompanyPendingInviteResponse(id=i.id, email=i.email, role=i.role, expires_at=i.expires_at) for i in invitations],
+        permission_keys=list(COMPANY_PERMISSION_KEYS),
+        members=[CompanyMemberResponse(membership_id=m.id, user_id=u.id, full_name=u.full_name, email=u.email, role=m.role, permissions=effective_company_permissions(m), status=m.status, created_at=m.created_at) for m, u in rows],
+        pending_invitations=[CompanyPendingInviteResponse(id=i.id, email=i.email, role=i.role, permissions=effective_company_permissions(i), expires_at=i.expires_at) for i in invitations],
     )
 
 
@@ -153,13 +161,15 @@ def invite_member(payload: CompanyInviteCreate, db: DB, context=Depends(_context
     current_user, organization, _ = _require_permission(context, "members.invite")
     if payload.role == "owner" and context[2].role != "owner":
         raise HTTPException(status_code=403, detail="Only an owner can invite another owner")
+    permissions = normalize_company_permissions(payload.role, payload.permissions)
+    _ensure_permission_grant(context, permissions)
     try:
         invitation, token = create_company_invitation(
-            db, organization, str(payload.email), payload.role, current_user
+            db, organization, str(payload.email), payload.role, current_user, permissions
         )
     except CompanyInvitationConflict as exception:
         raise HTTPException(status_code=409, detail=str(exception)) from exception
-    return CompanyInviteResponse(token=token, email=invitation.email, role=invitation.role, organization_id=organization.id, organization_name=organization.name, expires_at=invitation.expires_at)
+    return CompanyInviteResponse(token=token, email=invitation.email, role=invitation.role, permissions=effective_company_permissions(invitation), organization_id=organization.id, organization_name=organization.name, expires_at=invitation.expires_at)
 
 
 @router.patch("/members/{membership_id}", response_model=CompanyMemberResponse)
@@ -175,7 +185,7 @@ def update_member(membership_id: str, payload: CompanyMemberUpdate, db: DB, cont
         raise HTTPException(status_code=404, detail="Company member not found")
     if membership.user_id == current_user.id:
         raise HTTPException(status_code=422, detail="You cannot change your own membership")
-    changes = payload.model_dump(exclude_unset=True)
+    changes = payload.model_dump(exclude_unset=True, exclude_none=True)
     if (
         (membership.role == "owner" or changes.get("role") == "owner")
         and context[2].role != "owner"
@@ -192,11 +202,19 @@ def update_member(membership_id: str, payload: CompanyMemberUpdate, db: DB, cont
         )) or 0
         if active_owners <= 1:
             raise HTTPException(status_code=422, detail="Organization must keep an active owner")
+    target_role = changes.get("role", membership.role)
+    if "permissions" in changes or target_role == "owner":
+        permissions = normalize_company_permissions(
+            target_role,
+            changes.get("permissions", membership.permissions),
+        )
+        _ensure_permission_grant(context, permissions)
+        changes["permissions"] = permissions
     for key, value in changes.items():
         setattr(membership, key, value)
     db.commit(); db.refresh(membership)
     user = db.get(User, membership.user_id)
-    return CompanyMemberResponse(membership_id=membership.id, user_id=user.id, full_name=user.full_name, email=user.email, role=membership.role, status=membership.status, created_at=membership.created_at)
+    return CompanyMemberResponse(membership_id=membership.id, user_id=user.id, full_name=user.full_name, email=user.email, role=membership.role, permissions=effective_company_permissions(membership), status=membership.status, created_at=membership.created_at)
 
 
 @router.patch("/organization", response_model=CompanyMembershipSummary)
@@ -217,7 +235,7 @@ def invitation_details(token: str, db: DB) -> CompanyInviteResponse:
     organization = db.get(Organization, invitation.organization_id)
     if organization is None or organization.status not in {"onboarding", "active"}:
         raise HTTPException(status_code=404, detail="Company invitation not found")
-    return CompanyInviteResponse(token=token, email=invitation.email, role=invitation.role, organization_id=organization.id, organization_name=organization.name, expires_at=invitation.expires_at)
+    return CompanyInviteResponse(token=token, email=invitation.email, role=invitation.role, permissions=effective_company_permissions(invitation), organization_id=organization.id, organization_name=organization.name, expires_at=invitation.expires_at)
 
 
 @router.post("/invitations/{token}/accept", status_code=status.HTTP_201_CREATED)
@@ -243,7 +261,7 @@ def accept_invitation(token: str, payload: CompanyInviteAccept, db: DB):
         existing = db.scalar(select(OrganizationMembership).where(OrganizationMembership.organization_id == invitation.organization_id, OrganizationMembership.user_id == user.id))
         if existing is not None:
             raise HTTPException(status_code=409, detail="User is already a member of this organization")
-        db.add(OrganizationMembership(id=str(uuid4()), organization_id=invitation.organization_id, user_id=user.id, role=invitation.role, status="active"))
+        db.add(OrganizationMembership(id=str(uuid4()), organization_id=invitation.organization_id, user_id=user.id, role=invitation.role, permissions=effective_company_permissions(invitation), status="active"))
         invitation.accepted_at = now
         db.commit()
     except IntegrityError as exception:

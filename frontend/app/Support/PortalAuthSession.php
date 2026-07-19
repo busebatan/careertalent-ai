@@ -12,7 +12,7 @@ final class PortalAuthSession
 
     public static function keyFor(Request $request): string
     {
-        return $request->is('company', 'company/*') ? self::COMPANY : self::DEFAULT;
+        return $request->routeIs('company.*') ? self::COMPANY : self::DEFAULT;
     }
 
     public static function token(Request $request): ?string

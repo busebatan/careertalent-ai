@@ -6,10 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Services\CareerTalentApiClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CompanyController extends Controller
 {
+    private const PERMISSION_KEYS = [
+        'dashboard.view',
+        'organization.update',
+        'members.view',
+        'members.invite',
+        'members.manage',
+    ];
+
     public function dashboard(Request $request, CareerTalentApiClient $api): View
     {
         $result = $api->companyDashboard($this->organizationId($request));
@@ -44,7 +53,11 @@ class CompanyController extends Controller
         $result = $api->companyMembers($this->organizationId($request));
 
         return $this->view('company.team', $request, [
-            'team' => $result['ok'] ? $result['body'] : ['members' => [], 'pending_invitations' => []],
+            'team' => $result['ok'] ? $result['body'] : [
+                'permission_keys' => self::PERMISSION_KEYS,
+                'members' => [],
+                'pending_invitations' => [],
+            ],
             'companyError' => $result['ok'] ? null : $result['error'],
         ]);
     }
@@ -54,6 +67,8 @@ class CompanyController extends Controller
         $payload = $request->validate([
             'email' => ['required', 'email'],
             'role' => ['required', 'in:owner,admin,recruiter,hiring_manager,viewer'],
+            'permissions' => ['required', 'array', 'min:1'],
+            'permissions.*' => ['string', Rule::in(self::PERMISSION_KEYS)],
         ]);
         $result = $api->inviteCompanyMember($this->organizationId($request), $payload);
 
@@ -62,24 +77,31 @@ class CompanyController extends Controller
             : back()->withInput()->withErrors(['company' => $result['error']]);
     }
 
-    public function updateMember(Request $request, CareerTalentApiClient $api, string $membership): RedirectResponse
+    public function updateMember(Request $request, CareerTalentApiClient $api): RedirectResponse
     {
+        $membership = (string) $request->route('membership');
         $payload = $request->validate([
             'role' => ['required', 'in:owner,admin,recruiter,hiring_manager,viewer'],
             'status' => ['required', 'in:active,suspended'],
+            'permissions' => ['required', 'array', 'min:1'],
+            'permissions.*' => ['string', Rule::in(self::PERMISSION_KEYS)],
         ]);
         $result = $api->updateCompanyMember($this->organizationId($request), $membership, $payload);
 
         return $result['ok'] ? back()->with('status', __('company.team.updated')) : back()->withErrors(['company' => $result['error']]);
     }
 
-    public function switchOrganization(Request $request, string $organization): RedirectResponse
+    public function switchOrganization(Request $request): RedirectResponse
     {
+        $organization = (string) $request->route('organization');
         $memberships = $request->session()->get('company.memberships', []);
-        abort_unless(collect($memberships)->contains('organization_id', $organization), 403);
+        $membership = collect($memberships)->firstWhere('organization_id', $organization);
+        abort_unless(is_array($membership), 403);
         $request->session()->put('company.organization_id', $organization);
 
-        return redirect()->route('company.dashboard');
+        return redirect()->route('company.dashboard', [
+            'organizationSlug' => $membership['organization_slug'],
+        ]);
     }
 
     private function organizationId(Request $request): string
@@ -94,7 +116,7 @@ class CompanyController extends Controller
             'apiHealth' => ['ok' => true],
             'companyMembership' => $request->attributes->get('company.membership'),
             'companyMemberships' => $request->session()->get('company.memberships', []),
-            'companyNav' => $this->companyNav(),
+            'companyNav' => $this->companyNav($request->attributes->get('company.membership', [])),
             'companyUser' => $request->attributes->get('auth.user', []),
         ]);
     }
@@ -102,22 +124,27 @@ class CompanyController extends Controller
     /**
      * @return list<array{label: string, items: list<array{route: string, label: string, icon: string}>}>
      */
-    private function companyNav(): array
+    private function companyNav(array $membership): array
     {
-        return [
+        $permissions = is_array($membership['permissions'] ?? null) ? $membership['permissions'] : [];
+        $item = fn (string $route, string $label, string $icon, string $permission): ?array => in_array($permission, $permissions, true)
+            ? compact('route', 'label', 'icon', 'permission') : null;
+        $groups = [
             [
                 'label' => __('company.nav.general'),
-                'items' => [
-                    ['route' => 'company.dashboard', 'label' => __('company.nav.dashboard'), 'icon' => 'dashboard'],
-                ],
+                'items' => array_filter([
+                    $item('company.dashboard', __('company.nav.dashboard'), 'dashboard', 'dashboard.view'),
+                ]),
             ],
             [
                 'label' => __('company.nav.organization'),
-                'items' => [
-                    ['route' => 'company.team', 'label' => __('company.nav.team'), 'icon' => 'admins'],
-                    ['route' => 'company.profile', 'label' => __('company.nav.profile'), 'icon' => 'profile'],
-                ],
+                'items' => array_filter([
+                    $item('company.team', __('company.nav.team'), 'admins', 'members.view'),
+                    $item('company.profile', __('company.nav.profile'), 'profile', 'organization.update'),
+                ]),
             ],
         ];
+
+        return array_values(array_filter($groups, fn (array $group): bool => $group['items'] !== []));
     }
 }

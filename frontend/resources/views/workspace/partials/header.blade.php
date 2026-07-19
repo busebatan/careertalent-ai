@@ -123,7 +123,7 @@
                     role="listbox"
                     class="absolute right-0 z-50 mt-2 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
                     @foreach (['tr' => 'Türkçe', 'en' => 'English'] as $locale => $label)
-                        <a href="{{ route($workspaceLocaleRoute, $locale) }}"
+                        <a href="{{ route($workspaceLocaleRoute, ['locale' => $locale]) }}"
                             class="flex items-center justify-between px-4 py-2 text-sm {{ $currentLocale === $locale ? 'workspace-lang-active' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/50' }}"
                             role="option" @if ($currentLocale === $locale) aria-selected="true" @endif>
                             {{ $label }}

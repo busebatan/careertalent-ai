@@ -8,6 +8,7 @@ from uuid import uuid4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.company_permissions import normalize_company_permissions
 from app.models.recruiting import Organization, OrganizationInvitation, OrganizationMembership
 from app.models.user import User
 
@@ -19,6 +20,7 @@ RESERVED_ORGANIZATION_SLUGS = frozenset(
         "blog",
         "bootcamp",
         "company",
+        "cikis",
         "faq",
         "galeri",
         "giris",
@@ -33,6 +35,7 @@ RESERVED_ORGANIZATION_SLUGS = frozenset(
         "panel",
         "fiyatlandirma",
         "storage",
+        "up",
         "vendor",
     }
 )
@@ -56,11 +59,17 @@ def organization_slug(value: str) -> str:
     return (slug or "kurum")[:100].rstrip("-")
 
 
+def is_reserved_organization_slug(slug: str) -> bool:
+    return slug in RESERVED_ORGANIZATION_SLUGS or slug.startswith("livewire-")
+
+
 def available_organization_slug(db: Session, name: str) -> str:
     base = organization_slug(name)
+    if is_reserved_organization_slug(base):
+        base = f"kurum-{base}"[:100].rstrip("-")
     candidate = base
     suffix = 2
-    while candidate in RESERVED_ORGANIZATION_SLUGS or db.scalar(
+    while is_reserved_organization_slug(candidate) or db.scalar(
         select(Organization.id).where(Organization.slug == candidate)
     ):
         ending = f"-{suffix}"
@@ -75,6 +84,7 @@ def create_company_invitation(
     email: str,
     role: str,
     invited_by: User,
+    permissions: list[str] | None = None,
 ) -> tuple[OrganizationInvitation, str]:
     normalized_email = email.strip().lower()
     now = datetime.now(UTC)
@@ -113,6 +123,7 @@ def create_company_invitation(
         organization_id=organization.id,
         email=normalized_email,
         role=role,
+        permissions=normalize_company_permissions(role, permissions),
         token_hash=invitation_hash(token),
         invited_by_user_id=invited_by.id,
         expires_at=now + timedelta(days=7),

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import hash_password
 from app.main import app
-from app.models.recruiting import Organization, OrganizationMembership
+from app.models.recruiting import Organization, OrganizationInvitation, OrganizationMembership
 from app.models.user import User
 
 
@@ -51,6 +51,13 @@ def test_owner_invitation_creates_separate_company_account_and_is_single_use(cli
         json={"email": "owner@acme.example.com", "role": "owner"},
     )
     assert invited.status_code == 201
+    assert invited.json()["permissions"] == [
+        "dashboard.view",
+        "organization.update",
+        "members.view",
+        "members.invite",
+        "members.manage",
+    ]
     first_token = invited.json()["token"]
 
     replacement = client.post(
@@ -77,6 +84,7 @@ def test_owner_invitation_creates_separate_company_account_and_is_single_use(cli
     context = client.get("/api/v1/company/context", headers=company_headers)
     assert context.status_code == 200
     assert context.json()["memberships"][0]["role"] == "owner"
+    assert context.json()["memberships"][0]["permissions"] == invited.json()["permissions"]
     for endpoint in ("/api/v1/panel/dashboard", "/api/v1/cv/documents", "/api/v1/career/profile"):
         assert client.get(endpoint, headers=company_headers).status_code == 403
 
@@ -161,6 +169,141 @@ def test_company_admin_cannot_promote_member_to_owner(client):
 
     assert response.status_code == 403
     assert locked_statements
+
+
+def test_company_permissions_are_persisted_enforced_and_cannot_be_escalated(client):
+    _register(client, "root@example.com")
+    _super_admin("root@example.com")
+    organization = _create_org(client, _headers(client, "root@example.com"))
+    _register(client, "manager@example.com", "Manager")
+    _register(client, "target@example.com", "Target")
+
+    with next(app.dependency_overrides[get_db]()) as db:
+        manager = db.scalar(select(User).where(User.email == "manager@example.com"))
+        target = db.scalar(select(User).where(User.email == "target@example.com"))
+        manager.role = "company"
+        target.role = "company"
+        db.add_all([
+            OrganizationMembership(
+                id="stored-manager",
+                organization_id=organization["id"],
+                user_id=manager.id,
+                role="admin",
+                status="active",
+                permissions=["dashboard.view", "members.view", "members.manage"],
+            ),
+            OrganizationMembership(
+                id="stored-target",
+                organization_id=organization["id"],
+                user_id=target.id,
+                role="admin",
+                status="active",
+                permissions=["dashboard.view"],
+            ),
+        ])
+        db.commit()
+
+    manager_headers = {
+        **_headers(client, "manager@example.com"),
+        "X-Organization-ID": organization["id"],
+    }
+    target_headers = {
+        **_headers(client, "target@example.com"),
+        "X-Organization-ID": organization["id"],
+    }
+    assert client.get("/api/v1/company/members", headers=target_headers).status_code == 403
+
+    updated = client.patch(
+        "/api/v1/company/members/stored-target",
+        headers=manager_headers,
+        json={"permissions": ["members.view"]},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["permissions"] == ["dashboard.view", "members.view"]
+    assert client.get("/api/v1/company/members", headers=target_headers).status_code == 200
+
+    forbidden_grant = client.patch(
+        "/api/v1/company/members/stored-target",
+        headers=manager_headers,
+        json={"permissions": ["organization.update"]},
+    )
+    assert forbidden_grant.status_code == 403
+    with next(app.dependency_overrides[get_db]()) as db:
+        unchanged = db.get(OrganizationMembership, "stored-target")
+        assert unchanged.permissions == ["dashboard.view", "members.view"]
+
+
+def test_non_owner_cannot_invite_with_permissions_they_do_not_have(client):
+    _register(client, "root@example.com")
+    _super_admin("root@example.com")
+    organization = _create_org(client, _headers(client, "root@example.com"))
+    _register(client, "inviter@example.com", "Limited Inviter")
+    with next(app.dependency_overrides[get_db]()) as db:
+        inviter = db.scalar(select(User).where(User.email == "inviter@example.com"))
+        inviter.role = "company"
+        db.add(
+            OrganizationMembership(
+                id="limited-inviter",
+                organization_id=organization["id"],
+                user_id=inviter.id,
+                role="admin",
+                status="active",
+                permissions=["dashboard.view", "members.invite"],
+            )
+        )
+        db.commit()
+
+    response = client.post(
+        "/api/v1/company/invitations",
+        headers={
+            **_headers(client, "inviter@example.com"),
+            "X-Organization-ID": organization["id"],
+        },
+        json={
+            "email": "escalated@acme.example.com",
+            "role": "admin",
+            "permissions": ["organization.update"],
+        },
+    )
+
+    assert response.status_code == 403
+    with next(app.dependency_overrides[get_db]()) as db:
+        pending = db.scalar(
+            select(OrganizationInvitation).where(
+                OrganizationInvitation.email == "escalated@acme.example.com"
+            )
+        )
+        assert pending is None
+
+
+def test_company_invitation_rejects_unknown_permission(client):
+    _register(client, "root@example.com")
+    _super_admin("root@example.com")
+    organization = _create_org(client, _headers(client, "root@example.com"))
+    owner_invitation = client.post(
+        f"/api/v1/admin/organizations/{organization['id']}/owner-invitations",
+        headers=_headers(client, "root@example.com"),
+        json={"email": "owner@acme.example.com", "role": "owner"},
+    ).json()
+    client.post(
+        f"/api/v1/company/invitations/{owner_invitation['token']}/accept",
+        json={"full_name": "Owner", "password": PASSWORD},
+    )
+
+    response = client.post(
+        "/api/v1/company/invitations",
+        headers={
+            **_headers(client, "owner@acme.example.com"),
+            "X-Organization-ID": organization["id"],
+        },
+        json={
+            "email": "invalid@acme.example.com",
+            "role": "recruiter",
+            "permissions": ["applications.destroy"],
+        },
+    )
+
+    assert response.status_code == 422
 
 
 def test_candidate_email_cannot_receive_company_invitation(client):

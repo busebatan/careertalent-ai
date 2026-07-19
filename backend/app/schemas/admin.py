@@ -111,6 +111,123 @@ class AdminAccountsResponse(BaseModel):
     accounts: list[AdminAccountResponse]
 
 
+class AdminStudentCreate(BaseModel):
+    full_name: str = Field(min_length=2, max_length=100)
+    email: EmailStr
+    temporary_password: str = Field(min_length=8, max_length=128)
+    preferred_locale: Literal["tr", "en"] = "tr"
+    is_active: bool = True
+
+    @field_validator("full_name")
+    @classmethod
+    def normalize_student_name(cls, value: str) -> str:
+        return _normalized_name(value)
+
+
+class AdminStudentUpdate(BaseModel):
+    full_name: str | None = Field(default=None, min_length=2, max_length=100)
+    email: EmailStr | None = None
+    temporary_password: str | None = Field(default=None, min_length=8, max_length=128)
+    preferred_locale: Literal["tr", "en"] | None = None
+    is_active: bool | None = None
+
+    @field_validator("full_name")
+    @classmethod
+    def normalize_updated_student_name(cls, value: str | None) -> str | None:
+        return _normalized_name(value) if value is not None else None
+
+
+class AdminStudentResponse(BaseModel):
+    id: int
+    full_name: str
+    email: EmailStr
+    is_active: bool
+    preferred_locale: Literal["tr", "en"]
+    must_change_password: bool
+    created_at: str | None = None
+
+
+class AdminStudentsResponse(BaseModel):
+    total: int = Field(ge=0)
+    students: list[AdminStudentResponse]
+
+
+class AdminStudentOption(BaseModel):
+    id: int
+    full_name: str
+    email: EmailStr
+
+
+ApplicationStage = Literal["applied", "interview", "offer", "rejected"]
+
+
+class AdminApplicationCreate(BaseModel):
+    user_id: int = Field(gt=0)
+    company: str = Field(min_length=2, max_length=160)
+    role: str = Field(min_length=2, max_length=200)
+    stage: ApplicationStage = "applied"
+    next_action: str | None = Field(default=None, max_length=300)
+    note: str | None = Field(default=None, max_length=4000)
+
+
+class AdminApplicationUpdate(BaseModel):
+    company: str | None = Field(default=None, min_length=2, max_length=160)
+    role: str | None = Field(default=None, min_length=2, max_length=200)
+    stage: ApplicationStage | None = None
+    next_action: str | None = Field(default=None, max_length=300)
+    note: str | None = Field(default=None, max_length=4000)
+
+
+class AdminApplicationResponse(BaseModel):
+    id: str
+    user_id: int
+    student_name: str
+    student_email: EmailStr
+    company: str
+    role: str
+    stage: ApplicationStage
+    next_action: str | None
+    note: str | None
+    applied_at: str | None
+
+
+class AdminApplicationsResponse(BaseModel):
+    total: int = Field(ge=0)
+    applications: list[AdminApplicationResponse]
+    student_options: list[AdminStudentOption] = Field(default_factory=list)
+
+
+InterviewStatus = Literal["active", "completed", "cancelled"]
+
+
+class AdminInterviewCreate(BaseModel):
+    user_id: int = Field(gt=0)
+    language: Literal["tr", "en"] = "tr"
+
+
+class AdminInterviewUpdate(BaseModel):
+    status: InterviewStatus | None = None
+
+
+class AdminInterviewResponse(BaseModel):
+    id: str
+    user_id: int
+    student_name: str
+    student_email: EmailStr
+    target_role: str
+    status: InterviewStatus
+    language: Literal["tr", "en"]
+    question_count: int = Field(ge=0)
+    answer_count: int = Field(ge=0)
+    created_at: str | None
+
+
+class AdminInterviewsResponse(BaseModel):
+    total: int = Field(ge=0)
+    interviews: list[AdminInterviewResponse]
+    student_options: list[AdminStudentOption] = Field(default_factory=list)
+
+
 class AdminOrganizationCreate(BaseModel):
     name: str = Field(min_length=2, max_length=160)
     slug: str | None = Field(default=None, min_length=2, max_length=100)

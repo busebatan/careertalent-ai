@@ -108,6 +108,11 @@ class CareerTalentApiClient
         return $this->patchJson('/api/v1/admin/accounts/'.$userId, $payload, 15);
     }
 
+    public function deleteAdminAccount(int $userId): array
+    {
+        return $this->deleteJson('/api/v1/admin/accounts/'.$userId, 15);
+    }
+
     public function adminOrganizations(): array
     {
         return $this->getJson('/api/v1/admin/organizations', 10);
@@ -125,12 +130,83 @@ class CareerTalentApiClient
         return $this->patchJson('/api/v1/admin/organizations/'.rawurlencode($organizationId), $payload, 15);
     }
 
+    public function deleteAdminOrganization(string $organizationId): array
+    {
+        return $this->deleteJson('/api/v1/admin/organizations/'.rawurlencode($organizationId), 15);
+    }
+
     public function inviteAdminOrganizationOwner(string $organizationId, string $email): array
     {
         return $this->postJson('/api/v1/admin/organizations/'.rawurlencode($organizationId).'/owner-invitations', [
             'email' => $email,
             'role' => 'owner',
         ], 15);
+    }
+
+    public function adminStudents(): array
+    {
+        return $this->getJson('/api/v1/admin/students', 10);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createAdminStudent(array $payload): array
+    {
+        return $this->postJson('/api/v1/admin/students', $payload, 15);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateAdminStudent(int $userId, array $payload): array
+    {
+        return $this->patchJson('/api/v1/admin/students/'.$userId, $payload, 15);
+    }
+
+    public function deleteAdminStudent(int $userId): array
+    {
+        return $this->deleteJson('/api/v1/admin/students/'.$userId, 15);
+    }
+
+    public function adminApplications(): array
+    {
+        return $this->getJson('/api/v1/admin/applications', 10);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createAdminApplication(array $payload): array
+    {
+        return $this->postJson('/api/v1/admin/applications', $payload, 15);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateAdminApplication(string $applicationId, array $payload): array
+    {
+        return $this->patchJson('/api/v1/admin/applications/'.rawurlencode($applicationId), $payload, 15);
+    }
+
+    public function deleteAdminApplication(string $applicationId): array
+    {
+        return $this->deleteJson('/api/v1/admin/applications/'.rawurlencode($applicationId), 15);
+    }
+
+    public function adminInterviews(): array
+    {
+        return $this->getJson('/api/v1/admin/interviews', 10);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createAdminInterview(array $payload): array
+    {
+        return $this->postJson('/api/v1/admin/interviews', $payload, 120);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateAdminInterview(string $interviewId, array $payload): array
+    {
+        return $this->patchJson('/api/v1/admin/interviews/'.rawurlencode($interviewId), $payload, 15);
+    }
+
+    public function deleteAdminInterview(string $interviewId): array
+    {
+        return $this->deleteJson('/api/v1/admin/interviews/'.rawurlencode($interviewId), 15);
     }
 
     public function companyContext(?string $accessToken = null): array

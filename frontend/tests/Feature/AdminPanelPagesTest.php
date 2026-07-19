@@ -122,12 +122,9 @@ class AdminPanelPagesTest extends TestCase
     public static function realModuleProvider(): array
     {
         return [
-            'students' => ['/admin/ogrenciler', 'students', 'Öğrenciler'],
             'readiness' => ['/admin/readiness', 'readiness', 'Readiness Analizi'],
             'skill passport' => ['/admin/yetenek-pasaportu', 'skill-passport', 'Yetenek Pasaportu'],
             'job radar' => ['/admin/is-radari', 'job-radar', 'İş Radarı'],
-            'applications' => ['/admin/basvurular', 'applications', 'Başvurular'],
-            'interviews' => ['/admin/mulakatlar', 'interviews', 'Mülakatlar'],
         ];
     }
 
@@ -216,7 +213,10 @@ class AdminPanelPagesTest extends TestCase
             'http://localhost:8000/api/v1/admin/profile' => Http::response($profile),
             'http://localhost:8000/api/v1/admin/accounts' => Http::response([
                 'permission_keys' => ['dashboard.view', 'students.view'],
-                'accounts' => [[...$profile, 'created_at' => '2026-07-16T00:00:00Z']],
+                'accounts' => [
+                    [...$profile, 'created_at' => '2026-07-16T00:00:00Z'],
+                    [...$profile, 'id' => 31, 'role' => 'admin', 'email' => 'ops@example.com', 'created_at' => '2026-07-16T00:00:00Z'],
+                ],
             ]),
             'http://localhost:8000/health' => Http::response(['status' => 'ok']),
         ]);
@@ -232,6 +232,7 @@ class AdminPanelPagesTest extends TestCase
             ->assertOk()
             ->assertSee('Yeni admin oluştur')
             ->assertSee('action="'.route('admin.accounts.store').'"', false)
+            ->assertSee('action="'.route('admin.accounts.destroy', 31).'"', false)
             ->assertSee('name="permissions[]"', false)
             ->assertSee('Öğrencileri görüntüle');
     }
@@ -269,6 +270,9 @@ class AdminPanelPagesTest extends TestCase
             'permissions' => ['dashboard.view', 'applications.view'],
         ])->assertRedirect('/admin/hesaplar');
 
+        $this->withSession($this->superAdminSession())->delete('/admin/hesaplar/31')
+            ->assertRedirect('/admin/hesaplar');
+
         Http::assertSent(fn (Request $request): bool => $request->method() === 'PATCH'
             && $request->url() === 'http://localhost:8000/api/v1/admin/profile'
             && $request['new_password'] === 'YeniParola123!');
@@ -278,6 +282,8 @@ class AdminPanelPagesTest extends TestCase
         Http::assertSent(fn (Request $request): bool => $request->method() === 'PATCH'
             && $request->url() === 'http://localhost:8000/api/v1/admin/accounts/31'
             && $request['is_active'] === false);
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'DELETE'
+            && $request->url() === 'http://localhost:8000/api/v1/admin/accounts/31');
     }
 
     public function test_dashboard_shows_error_instead_of_demo_fallback_when_api_is_unavailable(): void
