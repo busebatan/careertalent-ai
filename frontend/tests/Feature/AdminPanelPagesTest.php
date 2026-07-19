@@ -133,10 +133,19 @@ class AdminPanelPagesTest extends TestCase
 
     public function test_admin_locale_switch_route(): void
     {
-        $this->withSession(['auth.access_token' => 'admin-token', 'panel_locale' => 'tr'])
+        Http::fake([
+            'http://localhost:8000/api/v1/auth/me/locale' => Http::response(['preferred_locale' => 'en']),
+        ]);
+
+        $this->withSession([...$this->superAdminSession(), 'panel_locale' => 'tr'])
             ->get('/admin/locale/en')
             ->assertRedirect()
             ->assertSessionHas('panel_locale', 'en');
+
+        Http::assertSent(fn (Request $request): bool =>
+            $request->url() === 'http://localhost:8000/api/v1/auth/me/locale'
+            && $request['preferred_locale'] === 'en'
+        );
     }
 
     public function test_admin_dashboard_renders_english_shell(): void

@@ -1,14 +1,24 @@
 import json
 import ast
+from pathlib import Path
+
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import warnings
 
-# Kütüphanelerin iç bilgilendirme ve token_pattern uyarılarını tamamen gizler
-warnings.filterwarnings("ignore", category=UserWarning) 
+warnings.filterwarnings("ignore", category=UserWarning)
 
-def load_career_roles(json_path='data/roles/bootcamp_roles.json'):
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+DATA_ROOT = next(
+    (candidate for candidate in (BACKEND_ROOT / "data", BACKEND_ROOT.parent / "data") if candidate.is_dir()),
+    BACKEND_ROOT / "data",
+)
+ROLES_PATH = DATA_ROOT / "roles" / "bootcamp_roles.json"
+DATASET_PATH = DATA_ROOT / "roles" / "first_dataset_cleaned.csv"
+
+
+def load_career_roles(json_path: str | Path = ROLES_PATH):
     """Buse'nin hazırladığı hedef meslek ve yetenek şablonunu okur."""
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
@@ -17,7 +27,7 @@ def load_career_roles(json_path='data/roles/bootcamp_roles.json'):
         print(f"JSON dosyası okunurken hata: {e}")
         return []
 
-def calculate_role_matching(user_skills_list, json_path='data/roles/bootcamp_roles.json'):
+def calculate_role_matching(user_skills_list, json_path: str | Path = ROLES_PATH):
     """
     1. ADIM: Kullanıcının yeteneklerini Buse'nin JSON dosyasındaki 
     standart meslek kriterleriyle kıyaslar. Radar ve SWOT analizini besler.
@@ -25,7 +35,7 @@ def calculate_role_matching(user_skills_list, json_path='data/roles/bootcamp_rol
     roles = load_career_roles(json_path)
     user_skills_lower = [s.lower() for s in user_skills_list]
     results = []
-    
+
     for role in roles:
         role_title = role['title']
         required_skills = role['required_skills']
@@ -70,14 +80,14 @@ def calculate_role_matching(user_skills_list, json_path='data/roles/bootcamp_rol
     return sorted(results, key=lambda x: x['match_percentage'], reverse=True)
 
 
-def find_best_matches_from_big_data(user_skills_list, csv_path='data/roles/first_dataset_cleaned.csv'):
+def find_best_matches_from_big_data(user_skills_list, csv_path: str | Path = DATASET_PATH):
     """
     2. ADIM: Senin temizlediğin 9404 satırlık büyük veri setini kullanan fonksiyon.
     Yüzdelik skorlar virgülden sonra iki basamağa yuvarlanarak temiz çıktı üretir.
     """
     try:
         df = pd.read_csv(csv_path)
-        
+
         def safe_convert_to_str(x):
             if pd.isna(x):
                 return ''
@@ -92,11 +102,11 @@ def find_best_matches_from_big_data(user_skills_list, csv_path='data/roles/first
 
         df['skills_str'] = df['skills'].apply(safe_convert_to_str)
         user_skills_str = ' '.join(user_skills_list)
-        
+
         # İngilizce stop-word'leri (and, or, the vs.) çıkararak Kaggle verisindeki alakasız eşleşmeleri önlüyoruz
         vectorizer = CountVectorizer(stop_words='english', lowercase=True)
         all_skills_vectors = vectorizer.fit_transform(df['skills_str'].tolist() + [user_skills_str])
-        
+
         dataset_vectors = all_skills_vectors[:-1]
         user_vector = all_skills_vectors[-1]
         
@@ -121,11 +131,11 @@ def find_best_matches_from_big_data(user_skills_list, csv_path='data/roles/first
 
 if __name__ == "__main__":
     test_yetenekler = ['Python', 'SQL', 'Excel', 'Pandas', 'İletişim']
-    json_yolu = 'data/roles/bootcamp_roles.json'
-    csv_yolu = 'data/roles/first_dataset_cleaned.csv'
-    
+    json_yolu = ROLES_PATH
+    csv_yolu = DATASET_PATH
+
     print("1. Standart Rol Eşleşmeleri (JSON'dan):")
     print(calculate_role_matching(test_yetenekler, json_path=json_yolu))
-    
+
     print("\n2. Büyük Veri Havuzundan En Uygun Pozisyonlar (Senin Temizlediğin CSV'den):")
     print(find_best_matches_from_big_data(test_yetenekler, csv_path=csv_yolu))

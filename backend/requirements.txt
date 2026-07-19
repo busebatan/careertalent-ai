@@ -29,6 +29,7 @@ google-generativeai>=0.8.0
 
 # ML / benzerlik
 numpy>=2.1.0
+pandas>=2.2.0
 scikit-learn>=1.5.0
 
 # Arka plan işler

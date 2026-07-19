@@ -2,6 +2,8 @@
 
 namespace Tests;
 
+use App\Http\Middleware\EnsureApiAdmin;
+use App\Http\Middleware\EnsureApiAuthenticated;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Config;
 
@@ -12,5 +14,9 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
         Config::set('services.careertalent.api_url', 'http://localhost:8000');
         $this->withoutVite();
+        $this->withoutMiddleware([
+            EnsureApiAuthenticated::class,
+            EnsureApiAdmin::class,
+        ]);
     }
 }

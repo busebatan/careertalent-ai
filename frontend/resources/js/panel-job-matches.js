@@ -13,22 +13,16 @@ function normalizeJob(job) {
 export function panelJobMatches(seedJobs, config) {
     return {
         jobs: seedJobs.map(normalizeJob), jobUrl: '', jobText: '', loading: false, error: '', config,
-        
-        // EKLENEN KISIM: Sayfa yüklendiğinde yarım kalan işleri takip et
         init() {
             this.jobs.forEach(job => {
-                // Eğer ilan analizi henüz bitmemişse (sayfa yenilendiğinde) polling başlat
                 if (job.status === 'queued' || job.status === 'running') {
                     this.poll(job, false).catch(err => { this.error = err.message; });
                 }
-                // Eğer CV uygulama işlemi henüz bitmemişse polling başlat
                 if (job.apply_status === 'queued' || job.apply_status === 'running') {
                     this.poll(job, true).catch(err => { this.error = err.message; });
                 }
             });
         },
-        // EKLENEN KISIM BİTTİ
-
         get sortedJobs() { return [...this.jobs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); },
         scoreClass(score) { return score >= 70 ? 'text-emerald-600 dark:text-emerald-400' : score >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'; },
         formatDate(iso) { try { return new Intl.DateTimeFormat(this.config.locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)); } catch { return iso; } },
@@ -50,7 +44,6 @@ export function panelJobMatches(seedJobs, config) {
             } catch (error) { this.error = error.message; } finally { this.loading = false; }
         },
         async poll(job, applying) {
-            // Polling süresini 150 deneme * 2 saniye = 300 saniye (5 dakika) yaptık
             for (let attempt = 0; attempt < 150; attempt += 1) {
                 await new Promise((resolve) => setTimeout(resolve, 2000));
                 const fresh = normalizeJob(await this.request(this.endpoint(this.config.statusUrl, job)));
