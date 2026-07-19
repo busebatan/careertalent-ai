@@ -57,9 +57,11 @@ def test_chat_uses_ai_and_persists_user_and_assistant_messages(client, monkeypat
 def test_interview_questions_and_scoring_are_ai_backed(client, monkeypatch):
     auth = register_and_headers(client)
     prompts = []
+    languages = []
 
-    def fake_invoke(_prompt, schema):
+    def fake_invoke(_prompt, schema, language="tr"):
         prompts.append(json.loads(_prompt))
+        languages.append(language)
         if schema is InterviewQuestionsAI:
             return InterviewQuestionsAI(questions=[
                 InterviewQuestionAI(id="q1", question="SQL optimizasyon örneğin nedir?", competency="SQL", guidance="STAR kullan"),
@@ -80,6 +82,7 @@ def test_interview_questions_and_scoring_are_ai_backed(client, monkeypatch):
     assert prompts[0]["system_constraint"].startswith("[SISTEM KISITI]")
     assert "Türkçe" in " ".join(prompts[0]["rules"])
     assert "Mentör" in " ".join(prompts[1]["rules"])
+    assert languages == ["tr", "tr"]
 
 
 def test_interview_uses_saved_panel_language_without_request_body(client, monkeypatch):
@@ -91,9 +94,11 @@ def test_interview_uses_saved_panel_language_without_request_body(client, monkey
     db.commit()
     db.close()
     prompts = []
+    languages = []
 
-    def fake_invoke(prompt, _schema):
+    def fake_invoke(prompt, _schema, language="tr"):
         prompts.append(json.loads(prompt))
+        languages.append(language)
         return InterviewQuestionsAI(questions=[
             InterviewQuestionAI(id="q1", question="Describe a production incident.", competency="Operations", guidance="Use STAR"),
             InterviewQuestionAI(id="q2", question="Explain a design tradeoff.", competency="Architecture", guidance="Be specific"),
@@ -107,6 +112,7 @@ def test_interview_uses_saved_panel_language_without_request_body(client, monkey
     assert response.status_code == 201
     assert prompts[0]["system_constraint"].startswith("[SYSTEM CONSTRAINT]")
     assert "English" in " ".join(prompts[0]["rules"])
+    assert languages == ["en"]
 
 
 def test_personal_tasks_persist_and_are_user_scoped(client):
