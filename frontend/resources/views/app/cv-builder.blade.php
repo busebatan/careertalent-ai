@@ -176,19 +176,60 @@
         </button>
     </div>
 
-    @if (! empty($skillRadar))
-        <div class="mb-8">
-            @include('app.partials.skill-radar-chart', [
-                'skillRadar' => $skillRadar,
-                'cvFileName' => $cvFileName ?? null,
-                'cvFileDynamic' => false,
-                'fromApi' => $hasCvAnalysis ?? false,
-                'showClearInline' => true,
-                'collapsible' => true,
-                'radarAlignment' => 'frame-centered',
-            ])
+    <section id="cv-analiz-yukle"
+        class="panel-card mb-8 overflow-hidden p-6 lg:p-8"
+        data-cv-analysis-upload
+        x-data="profileCvUpload(@js(app()->getLocale()), @js(route('panel.cv.analyze')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), '', '', @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])))">
+        <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-stretch">
+            <div class="min-w-0">
+                <p x-show="loading" x-cloak
+                    class="mb-4 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-800 dark:text-sky-200"
+                    role="status">
+                    {{ __('panel.profile.cv_analyzing') }}
+                </p>
+                <p x-show="error" x-cloak
+                    class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200"
+                    x-text="error" role="alert"></p>
+
+                <label class="panel-upload-zone min-h-36"
+                    :class="[
+                        loading ? 'pointer-events-none opacity-60' : '',
+                        dragOver ? 'panel-upload-zone-active' : '',
+                    ]"
+                    @dragover.prevent="onDragOver($event)"
+                    @dragleave.prevent="onDragLeave($event)"
+                    @drop.prevent="onDrop($event)">
+                    <i data-lucide="file-text" class="mb-2 h-8 w-8 text-emerald-500" aria-hidden="true"></i>
+                    <span class="mb-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ __('panel.profile.upload_drag') }}</span>
+                    <span class="text-xs text-slate-500">{{ __('panel.profile.upload_hint') }}</span>
+                    <input type="file" accept="application/pdf,.pdf" class="hidden"
+                        :disabled="loading" @change="onFileSelect($event)">
+                </label>
+            </div>
+
+            <div x-show="loading || @js(! empty($skillRadar))" x-cloak
+                class="flex min-h-36 items-stretch lg:w-44">
+                <div x-show="loading" x-cloak
+                    class="panel-card flex w-full flex-col items-center justify-center border-sky-500/20 bg-sky-500/5 px-5 py-4 text-center dark:bg-sky-500/10"
+                    data-cv-analysis-pending role="status">
+                    <i data-lucide="loader-circle" class="mb-2 h-6 w-6 animate-spin text-sky-500" aria-hidden="true"></i>
+                    <p class="text-sm font-medium text-sky-700 dark:text-sky-300">{{ __('panel.profile.cv_analyzing') }}</p>
+                </div>
+
+                @if (! empty($skillRadar))
+                    <div x-show="!loading"
+                        class="panel-card flex w-full flex-col items-center justify-center border-emerald-500/20 bg-emerald-500/5 px-5 py-4 text-center dark:bg-emerald-500/10"
+                        data-cv-analysis-score>
+                        <p class="panel-muted text-xs uppercase tracking-wide">{{ __('panel.skill_radar.overall') }}</p>
+                        <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">%{{ $skillRadar['overall_match'] }}</p>
+                        <a href="{{ route('panel.career-ladder') }}" class="mt-1 inline-block text-xs text-emerald-600 hover:underline dark:text-emerald-400">
+                            {{ __('panel.skill_radar.view_ladder') }} →
+                        </a>
+                    </div>
+                @endif
+            </div>
         </div>
-    @endif
+    </section>
 
     <p x-show="analyzeError" x-cloak class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200" x-text="analyzeError"></p>
 

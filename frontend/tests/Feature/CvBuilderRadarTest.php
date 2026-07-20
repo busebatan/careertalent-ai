@@ -7,13 +7,19 @@ use Tests\TestCase;
 
 class CvBuilderRadarTest extends TestCase
 {
-    public function test_cv_builder_hides_demo_radar_without_analysis(): void
+    public function test_cv_builder_shows_upload_area_without_radar_or_score_when_analysis_is_missing(): void
     {
         $response = $this->get(route('panel.cv-builder'));
-        $response->assertOk()->assertDontSee('id="yetenek-radari"', false);
+        $response->assertOk()
+            ->assertSee('data-cv-analysis-upload', false)
+            ->assertSee('profileCvUpload(', false)
+            ->assertSee('panel-upload-zone', false)
+            ->assertDontSee('id="yetenek-radari"', false)
+            ->assertDontSee('data-skill-radar-layout', false)
+            ->assertDontSee('data-cv-analysis-score', false);
     }
 
-    public function test_cv_builder_shows_api_radar_after_cv_analysis(): void
+    public function test_cv_builder_shows_only_upload_and_score_link_after_cv_analysis(): void
     {
         Http::fake([
             'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
@@ -27,22 +33,15 @@ class CvBuilderRadarTest extends TestCase
 
         $response = $this->get(route('panel.cv-builder', ['locale' => 'en']));
         $response->assertOk()
-            ->assertSee('id="yetenek-radari"', false)
-            ->assertSee('data-skill-radar-alignment="frame-centered"', false)
-            ->assertSee('data-skill-radar-frame="summary"', false)
-            ->assertSee('data-skill-radar-frame="body"', false)
-            ->assertSee('md:max-w-[54rem]', false)
-            ->assertSee('md:grid-cols-[minmax(0,35rem)_minmax(15rem,18rem)]', false)
-            ->assertSee('md:mx-auto', false)
-            ->assertDontSee('md:mr-auto', false)
-            ->assertDontSee('md:ml-auto', false)
-            ->assertSee('Business Analyst', false)
+            ->assertSee('data-cv-analysis-upload', false)
+            ->assertSee('data-cv-analysis-score', false)
+            ->assertSee('lg:grid-cols-[minmax(0,1fr)_auto]', false)
             ->assertSee('%80', false)
-            ->assertSee('group-open:rotate-180', false)
-            ->assertSee('onRadarToggle', false)
-            ->assertSee('Kariyer verilerini temizle', false)
-            ->assertSee('value="analysis"', false)
-            ->assertSee('value="plan"', false)
-            ->assertSee('value="all"', false);
+            ->assertSee(route('panel.career-ladder'), false)
+            ->assertDontSee('id="yetenek-radari"', false)
+            ->assertDontSee('@toggle="onRadarToggle($event)"', false)
+            ->assertDontSee('data-skill-radar-layout', false)
+            ->assertDontSee('Business Analyst', false)
+            ->assertDontSee('Excel', false);
     }
 }
