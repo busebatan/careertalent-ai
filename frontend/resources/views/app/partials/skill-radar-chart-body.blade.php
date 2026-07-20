@@ -1,5 +1,5 @@
-<div data-skill-radar-layout="split" class="grid min-w-0 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(15rem,18rem)] md:items-center">
-    <div class="relative mx-auto min-w-0 w-full max-w-[26rem] overflow-hidden">
+<div data-skill-radar-layout="split" class="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(15rem,18rem)] md:items-center">
+    <div class="relative mx-auto min-w-0 w-full max-w-[32rem] overflow-hidden md:ml-auto md:mr-0">
         <svg viewBox="0 0 320 320" class="h-auto w-full overflow-hidden" role="img" aria-label="{{ __('panel.skill_radar.title') }}">
             @foreach ([25, 50, 75, 100] as $ring)
                 @php

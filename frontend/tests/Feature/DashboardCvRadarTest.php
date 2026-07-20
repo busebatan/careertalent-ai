@@ -46,6 +46,8 @@ class DashboardCvRadarTest extends TestCase
             ->assertSee('id="yetenek-radari"', false)
             ->assertSee('data-skill-radar-layout="split"', false)
             ->assertSee('md:grid-cols-[minmax(0,1fr)_minmax(15rem,18rem)]', false)
+            ->assertSee('max-w-[32rem]', false)
+            ->assertSee('md:ml-auto', false)
             ->assertSee('data-dashboard-cv-empty', false)
             ->assertDontSee('data-dashboard-cv-actions', false)
             ->assertSee('İş Analisti', false)
