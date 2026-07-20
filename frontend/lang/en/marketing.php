@@ -250,7 +250,7 @@ return [
         'panel_submit' => 'Log in to panel',
         'admin_submit' => 'Log in as administrator',
         'company_submit' => 'Log in to company',
-        'admin_login_link' => 'Administrator login',
+        'company_login_link' => 'Company login',
         'show_password' => 'Show',
         'hide_password' => 'Hide',
         'back_to_site' => 'Back to site',

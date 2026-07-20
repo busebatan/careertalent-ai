@@ -17,8 +17,9 @@ class AuthPagesTest extends TestCase
             ->assertSee('YETENEK RADARI')
             ->assertSee('HEDEF MESLEK')
             ->assertSee('GÖREVLER')
-            ->assertSee('Yönetici girişi')
-            ->assertSee('href="'.route('admin.login').'"', false)
+            ->assertSee('Kurum girişi')
+            ->assertSee('href="'.route('company.login').'"', false)
+            ->assertDontSee('href="'.route('admin.login').'"', false)
             ->assertSee('autocomplete="email"', false)
             ->assertSee('autocomplete="current-password"', false)
             ->assertSee('aria-controls="password"', false)
@@ -62,9 +63,21 @@ class AuthPagesTest extends TestCase
             ->assertDontSee('marketing-footer', false);
     }
 
+    public function test_company_login_is_the_public_management_entry(): void
+    {
+        $response = $this->get('/company/login');
+
+        $response->assertOk()
+            ->assertSee('data-auth-portal="company"', false)
+            ->assertSee('Kurum erişimi')
+            ->assertSee('Kurum paneline giriş')
+            ->assertSee('action="'.route('company.login.submit').'"', false)
+            ->assertDontSee('href="'.route('admin.login').'"', false);
+    }
+
     public function test_panel_and_admin_forms_keep_csrf_and_accessibility_contracts(): void
     {
-        foreach (['/panel/login', '/panel/register', '/admin/login'] as $uri) {
+        foreach (['/panel/login', '/panel/register', '/company/login', '/admin/login'] as $uri) {
             $response = $this->get($uri);
 
             $response->assertOk()

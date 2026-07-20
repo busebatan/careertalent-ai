@@ -250,7 +250,7 @@ return [
         'panel_submit' => 'Panele giriş yap',
         'admin_submit' => 'Yönetici olarak giriş yap',
         'company_submit' => 'Kurum paneline giriş yap',
-        'admin_login_link' => 'Yönetici girişi',
+        'company_login_link' => 'Kurum girişi',
         'show_password' => 'Göster',
         'hide_password' => 'Gizle',
         'back_to_site' => 'Siteye dön',
