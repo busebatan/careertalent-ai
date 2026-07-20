@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, JSON, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -103,3 +103,22 @@ class CvDocument(Base):
     builder_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     is_current: Mapped[bool] = mapped_column(Boolean, index=True, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
+
+
+class CandidateCvVersion(Base):
+    __tablename__ = "candidate_cv_versions"
+    __table_args__ = (
+        Index("ix_candidate_cv_versions_user_is_main", "user_id", "is_main"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    version_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    language: Mapped[str] = mapped_column(String(8), nullable=False)
+    is_main: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+

@@ -13,6 +13,7 @@ function normalizeJob(job) {
 export function panelJobMatches(seedJobs, config) {
     return {
         jobs: seedJobs.map(normalizeJob), jobUrl: '', jobText: '', loading: false, error: '', config,
+        showApplyModal: false, cvVersions: [], selectedCvVersionId: '', activeJobForApply: null, loadingVersions: false,
         init() {
             this.jobs.forEach(job => {
                 if (job.status === 'queued' || job.status === 'running') {
@@ -59,12 +60,41 @@ export function panelJobMatches(seedJobs, config) {
         async markApplied(job) { try { await this.request(this.endpoint(this.config.appliedUrl, job), { method: 'POST', body: '{}' }); job.application_created = true; } catch (error) { this.error = error.message; } },
         async applyJob(job) {
             if (!job.selected.length || job.apply_status === 'queued' || job.apply_status === 'running') return;
+            this.activeJobForApply = job;
+            this.selectedCvVersionId = '';
+            this.loadingVersions = true;
+            this.showApplyModal = true;
+            try {
+                this.cvVersions = await this.request('/panel/cv-merkezi/surumler');
+                const mainVer = this.cvVersions.find(v => v.is_main);
+                if (mainVer) {
+                    this.selectedCvVersionId = mainVer.id;
+                } else if (this.cvVersions.length > 0) {
+                    this.selectedCvVersionId = this.cvVersions[0].id;
+                }
+            } catch (err) {
+                // handle error
+            } finally {
+                this.loadingVersions = false;
+            }
+        },
+        async confirmApply() {
+            const job = this.activeJobForApply;
+            if (!job) return;
+            this.showApplyModal = false;
             this.error = '';
             try {
-                Object.assign(job, normalizeJob(await this.request(this.endpoint(this.config.applyUrl, job), { method: 'POST', body: JSON.stringify({ suggestion_ids: job.selected }) })));
+                Object.assign(job, normalizeJob(await this.request(this.endpoint(this.config.applyUrl, job), {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        suggestion_ids: job.selected,
+                        cv_version_id: this.selectedCvVersionId || null
+                    })
+                })));
                 await this.poll(job, true);
             } catch (error) { this.error = error.message; }
         },
         async removeJob(job) { try { await this.request(this.endpoint(this.config.deleteUrl, job), { method: 'DELETE' }); this.jobs = this.jobs.filter((item) => item.id !== job.id); } catch (error) { this.error = error.message; } },
     };
 }
+

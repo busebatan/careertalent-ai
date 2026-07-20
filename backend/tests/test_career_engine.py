@@ -273,6 +273,7 @@ def test_target_closes_previous_and_evidence_review_is_confidence_gated(client, 
     monkeypatch.setattr(career_tasks.plan_target_task, "delay", lambda _target_id: None)
     queued_reviews = []
     monkeypatch.setattr(career_tasks.review_evidence_task, "delay", lambda evidence_id: queued_reviews.append(evidence_id))
+    monkeypatch.setattr("app.api.v1.career.ensure_career_localizations", lambda *args, **kwargs: None)
     auth = headers(client)
     first = client.post("/api/v1/career/targets", json={"title": "Data Analyst"}, headers=auth)
     second = client.post("/api/v1/career/targets", json={"title": "BI Analyst"}, headers=auth)

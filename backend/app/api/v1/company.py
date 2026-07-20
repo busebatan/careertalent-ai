@@ -15,7 +15,7 @@ from app.core.company_permissions import (
 from app.core.database import get_db
 from app.core.security import get_current_user, hash_password, verify_password
 from app.models.recruiting import Organization, OrganizationInvitation, OrganizationMembership
-from app.models.company_recruiting import RecruitingApplication, RecruitingPosition
+from app.models.company_recruiting import RecruitingApplication, RecruitingPosition, RecruitingApplicationSnapshot
 from app.models.user import User
 from app.schemas.company import (
     CompanyContextResponse,
@@ -400,3 +400,29 @@ def accept_invitation(token: str, payload: CompanyInviteAccept, db: DB):
         db.rollback()
         raise HTTPException(status_code=409, detail="Company invitation conflicts with an existing account") from exception
     return {"accepted": True}
+
+
+@router.get("/applications/{application_id}/snapshot")
+def get_application_snapshot(
+    application_id: str,
+    db: DB,
+    context=Depends(_context),
+):
+    _, organization, _ = _require_permission(context, "applications.view")
+    application = db.scalar(
+        select(RecruitingApplication).where(
+            RecruitingApplication.id == application_id,
+            RecruitingApplication.organization_id == organization.id,
+        )
+    )
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    snapshot = db.scalar(
+        select(RecruitingApplicationSnapshot).where(
+            RecruitingApplicationSnapshot.application_id == application_id
+        )
+    )
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="Application snapshot not found")
+    return snapshot.payload
+

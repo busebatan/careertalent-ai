@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint, Integer, JSON, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -216,3 +216,23 @@ class AssessmentUsageLedger(Base):
     idempotency_key: Mapped[str] = mapped_column(String(120), nullable=False)
     reason_code: Mapped[str] = mapped_column(String(80), nullable=False)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)
+
+
+class RecruitingApplicationSnapshot(Base):
+    __tablename__ = "recruiting_application_snapshots"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["application_id"],
+            ["recruiting_applications.id"],
+            name="fk_recruiting_application_snapshots_application",
+            ondelete="CASCADE",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    application_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    consent_scope: Mapped[str] = mapped_column(String(80), nullable=False, default="all")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+

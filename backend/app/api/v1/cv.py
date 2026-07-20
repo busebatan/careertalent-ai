@@ -18,9 +18,9 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.models.engagement import CvDocument
+from app.models.engagement import CvDocument, CandidateCvVersion
 from app.schemas.career import CVQueueResponse
-from app.schemas.cv import AnalyzeTextRequest
+from app.schemas.cv import AnalyzeTextRequest, CandidateCvVersionCreate, CandidateCvVersionUpdate, CandidateCvVersionResponse
 from app.services.career_engine import career_evidence_file_paths, create_analysis, remove_career_evidence_files, reset_career_state
 from app.services.cv_content import has_meaningful_cv_content
 from app.services.cv_parser import extract_text_from_pdf
@@ -213,3 +213,76 @@ def delete_cv_document(document_id: str, db: DB, user: CurrentUser):
     _remove_cv_files(user.id, [row])
     remove_career_evidence_files(user.id, evidence_files)
     return Response(status_code=204)
+
+
+@router.get("/versions", response_model=list[CandidateCvVersionResponse])
+def list_cv_versions(db: DB, user: CurrentUser):
+    rows = db.scalars(
+        select(CandidateCvVersion)
+        .where(CandidateCvVersion.user_id == user.id)
+        .order_by(CandidateCvVersion.created_at.desc())
+    ).all()
+    return rows
+
+
+@router.post("/versions", response_model=CandidateCvVersionResponse, status_code=201)
+def create_cv_version(body: CandidateCvVersionCreate, db: DB, user: CurrentUser):
+    if body.is_main:
+        db.execute(
+            update(CandidateCvVersion)
+            .where(CandidateCvVersion.user_id == user.id)
+            .values(is_main=False)
+        )
+    new_version = CandidateCvVersion(
+        id=str(uuid4()),
+        user_id=user.id,
+        version_name=body.version_name,
+        language=body.language,
+        is_main=body.is_main,
+        payload=body.payload,
+    )
+    db.add(new_version)
+    db.commit()
+    db.refresh(new_version)
+    return new_version
+
+
+@router.put("/versions/{version_id}", response_model=CandidateCvVersionResponse)
+def update_cv_version(
+    version_id: str,
+    body: CandidateCvVersionUpdate,
+    db: DB,
+    user: CurrentUser,
+):
+    version = db.scalar(
+        select(CandidateCvVersion)
+        .where(CandidateCvVersion.id == version_id, CandidateCvVersion.user_id == user.id)
+    )
+    if version is None:
+        raise HTTPException(status_code=404, detail="CV sürümü bulunamadı")
+    changes = body.model_dump(exclude_unset=True)
+    if changes.get("is_main"):
+        db.execute(
+            update(CandidateCvVersion)
+            .where(CandidateCvVersion.user_id == user.id)
+            .values(is_main=False)
+        )
+    for key, value in changes.items():
+        setattr(version, key, value)
+    db.commit()
+    db.refresh(version)
+    return version
+
+
+@router.delete("/versions/{version_id}", status_code=204)
+def delete_cv_version(version_id: str, db: DB, user: CurrentUser):
+    version = db.scalar(
+        select(CandidateCvVersion)
+        .where(CandidateCvVersion.id == version_id, CandidateCvVersion.user_id == user.id)
+    )
+    if version is None:
+        raise HTTPException(status_code=404, detail="CV sürümü bulunamadı")
+    db.delete(version)
+    db.commit()
+    return Response(status_code=204)
+

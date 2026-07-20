@@ -109,6 +109,11 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::get('/cv-merkezi/analiz/{analysisId}', [CvUploadController::class, 'status'])->name('cv.analysis-status');
     Route::post('/cv-merkezi/temizle', [CvUploadController::class, 'clear'])->name('cv.clear');
     Route::post('/cv-merkezi/pdf-arsivle', [CvUploadController::class, 'archiveGeneratedPdf'])->name('cv.archive-generated');
+    Route::get('/cv-merkezi/surumler', [CvBuilderController::class, 'listVersions'])->name('cv.versions.list');
+    Route::post('/cv-merkezi/surumler', [CvBuilderController::class, 'createVersion'])->name('cv.versions.create');
+    Route::put('/cv-merkezi/surumler/{id}', [CvBuilderController::class, 'updateVersion'])->name('cv.versions.update');
+    Route::delete('/cv-merkezi/surumler/{id}', [CvBuilderController::class, 'deleteVersion'])->name('cv.versions.delete');
+
     Route::get('/kariyer-rotam', [RoadmapController::class, 'show'])->name('roadmap');
     Route::post('/kariyer-rotam/hedef', [CareerLadderController::class, 'select'])->name('career-ladder.select');
     Route::get('/kariyer-rotam/plan-durumu/{targetId}', [RoadmapController::class, 'planStatus'])->name('roadmap.plan-status');
