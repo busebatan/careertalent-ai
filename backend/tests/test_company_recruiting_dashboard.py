@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
+from sqlalchemy.dialects import postgresql
 
 from app.core.database import get_db
 from app.core.security import hash_password
@@ -14,9 +15,39 @@ from app.models.company_recruiting import (
 )
 from app.models.recruiting import Organization, OrganizationMembership
 from app.models.user import User
+from app.services.company_recruiting import applications as recruiting_applications
 
 
 PASSWORD = "GucluParola123!"
+
+
+class _EmptyRows:
+    def all(self):
+        return []
+
+
+class _PostgresQueryGuard:
+    def __init__(self):
+        self.statements: list[str] = []
+
+    def execute(self, statement):
+        sql = str(statement.compile(dialect=postgresql.dialect()))
+        self.statements.append(sql)
+        assert "SELECT DISTINCT" not in sql.upper()
+        return _EmptyRows()
+
+
+def test_application_queue_queries_are_postgresql_json_safe():
+    organization = Organization(id="org-postgres-json-safe")
+
+    for queue in (None, "assessment_pending", "scorecard_missing"):
+        db = _PostgresQueryGuard()
+        response = recruiting_applications(db, organization, queue, None, None)
+
+        assert response.items == []
+        assert len(db.statements) == 1
+        if queue is not None:
+            assert "EXISTS" in db.statements[0].upper()
 
 
 def _register(client, email: str, name: str) -> User:

@@ -3,7 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, exists, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.company_recruiting import (
@@ -302,14 +302,22 @@ def applications(
     elif queue == "technical_review":
         statement = statement.where(RecruitingApplication.current_stage == "technical_review")
     elif queue == "assessment_pending":
-        statement = statement.join(RecruitingAssessment, RecruitingAssessment.application_id == RecruitingApplication.id).where(
-            RecruitingAssessment.required.is_(True),
-            RecruitingAssessment.status.in_(["assigned", "in_progress"]),
+        statement = statement.where(
+            exists().where(
+                RecruitingAssessment.application_id == RecruitingApplication.id,
+                RecruitingAssessment.organization_id == organization.id,
+                RecruitingAssessment.required.is_(True),
+                RecruitingAssessment.status.in_(["assigned", "in_progress"]),
+            )
         )
     elif queue == "scorecard_missing":
-        statement = statement.join(RecruitingScorecard, RecruitingScorecard.application_id == RecruitingApplication.id).where(
-            RecruitingScorecard.scorecard_type == "technical",
-            RecruitingScorecard.status.in_(["pending", "in_progress"]),
+        statement = statement.where(
+            exists().where(
+                RecruitingScorecard.application_id == RecruitingApplication.id,
+                RecruitingScorecard.organization_id == organization.id,
+                RecruitingScorecard.scorecard_type == "technical",
+                RecruitingScorecard.status.in_(["pending", "in_progress"]),
+            )
         )
     elif queue == "retention_due":
         now = datetime.now(UTC)
@@ -317,7 +325,7 @@ def applications(
             RecruitingApplication.retention_expires_at >= now,
             RecruitingApplication.retention_expires_at <= now + timedelta(days=30),
         )
-    rows = db.execute(statement.distinct().order_by(RecruitingApplication.applied_at.desc())).all()
+    rows = db.execute(statement.order_by(RecruitingApplication.applied_at.desc())).all()
     return CompanyApplicationsResponse(items=[CompanyApplicationResponse(
         id=application.id,
         position_id=application.position_id,

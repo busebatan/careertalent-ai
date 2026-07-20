@@ -87,3 +87,55 @@ export function companyAssessments(config) {
         },
     };
 }
+
+export function companyPositions(config) {
+    const positions = Array.isArray(config.positions) ? config.positions : [];
+
+    return {
+        positions,
+        query: '',
+        statusFilter: 'all',
+        workplaceFilter: 'all',
+        statusOptions: Array.isArray(config.statusOptions) ? config.statusOptions : [],
+        workplaceOptions: Array.isArray(config.workplaceOptions) ? config.workplaceOptions : [],
+        labels: config.labels || {},
+        showUrlTemplate: config.showUrlTemplate || '',
+
+        filteredPositions() {
+            const needle = this.query.trim().toLowerCase();
+
+            return this.positions.filter((position) => {
+                if (this.statusFilter !== 'all' && position.status !== this.statusFilter) {
+                    return false;
+                }
+                if (this.workplaceFilter !== 'all' && position.workplace_type !== this.workplaceFilter) {
+                    return false;
+                }
+
+                return matchesQuery(needle, [
+                    position.title,
+                    position.department,
+                    position.location,
+                    position.recruiter_name,
+                    position.technical_manager_name,
+                ]);
+            });
+        },
+
+        isVisible(position) {
+            return this.filteredPositions().some((item) => item.id === position.id);
+        },
+
+        visibleCount() {
+            return this.filteredPositions().length;
+        },
+
+        showUrl(positionId) {
+            return this.showUrlTemplate.replace('__ID__', String(positionId));
+        },
+
+        goToPosition(position) {
+            window.location.href = this.showUrl(position.id);
+        },
+    };
+}

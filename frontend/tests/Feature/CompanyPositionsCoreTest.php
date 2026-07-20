@@ -93,26 +93,34 @@ class CompanyPositionsCoreTest extends TestCase
 
     public function test_positions_are_the_company_core_with_requested_status_tabs_and_metrics(): void
     {
-        Http::fake([
-            '*/api/v1/auth/me' => Http::response($this->companyUser()),
-            '*/api/v1/company/context' => Http::response(['memberships' => [$this->membership()]]),
-            '*/api/v1/company/positions*' => Http::response(['items' => [$this->position()]]),
-        ]);
+        Http::fake(function (Request $request) {
+            if (str_ends_with($request->url(), '/api/v1/auth/me')) {
+                return Http::response($this->companyUser());
+            }
+            if (str_ends_with($request->url(), '/api/v1/company/context')) {
+                return Http::response(['memberships' => [$this->membership()]]);
+            }
+            if (str_contains($request->url(), '/api/v1/company/positions')) {
+                return Http::response([
+                    'items' => [$this->position()],
+                    'status_counts' => ['draft' => 2, 'published' => 6, 'paused' => 1, 'closed' => 0, 'archived' => 0],
+                ]);
+            }
+
+            return Http::response([], 404);
+        });
 
         $this->withSession(['company_auth.access_token' => 'company-token'])
-            ->get('/acme/pozisyonlar?status=published')
+            ->get('/acme/pozisyonlar')
             ->assertOk()
+            ->assertSee('companyPositions', false)
+            ->assertSee('Tüm durumlar')
             ->assertSee('Taslak')
             ->assertSee('Yayında')
             ->assertSee('Başvurusu durduruldu')
-            ->assertSee('Kapalı')
-            ->assertSee('Arşiv')
-            ->assertSee('12')
-            ->assertSee('7')
-            ->assertSee('3')
-            ->assertSee('Ece İK')
-            ->assertSee('Mert Teknik')
-            ->assertSee('/acme/pozisyonlar/position-1', false);
+            ->assertSee('company-status-badge--success', false)
+            ->assertSee('goToPosition', false)
+            ->assertSee('showUrlTemplate', false);
     }
 
     public function test_position_create_form_forwards_full_hiring_contract(): void

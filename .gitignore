@@ -43,3 +43,6 @@ frontend/database/database.sqlite
 /public/storage
 /storage/*.key
 /storage/pail
+
+/.playwright-cli
+/.playwright-mcp

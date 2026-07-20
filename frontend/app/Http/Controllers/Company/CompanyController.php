@@ -48,24 +48,21 @@ class CompanyController extends Controller
 
     public function positions(Request $request, CareerTalentApiClient $api): View
     {
-        $status = in_array($request->query('status'), ['draft', 'published', 'paused', 'closed', 'archived'], true)
-            ? $request->query('status')
-            : null;
-        $query = trim((string) $request->query('q', ''));
-        $page = max(1, (int) $request->query('page', 1));
-        $filters = array_filter(['status' => $status, 'q' => $query, 'page' => $page, 'page_size' => 25], fn ($value) => $value !== null && $value !== '');
-        $result = $api->companyPositions($this->organizationId($request), $filters);
-        $body = $result['ok'] ? $result['body'] : [];
+        $organizationId = $this->organizationId($request);
+        $active = $api->companyPositions($organizationId, ['page' => 1, 'page_size' => 100]);
+        $archived = $api->companyPositions($organizationId, ['status' => 'archived', 'page' => 1, 'page_size' => 100]);
+
+        $activeBody = $active['ok'] ? $active['body'] : [];
+        $archivedBody = $archived['ok'] ? $archived['body'] : [];
+        $positions = collect(array_merge($activeBody['items'] ?? [], $archivedBody['items'] ?? []))
+            ->unique('id')
+            ->values()
+            ->all();
 
         return $this->view('company.positions', $request, [
-            'positions' => $body['items'] ?? [],
-            'companyError' => $result['ok'] ? null : $result['error'],
-            'positionStatus' => $status,
-            'positionQuery' => $query,
-            'positionStatusCounts' => $body['status_counts'] ?? [],
-            'positionTotal' => (int) ($body['total'] ?? 0),
-            'positionPage' => (int) ($body['page'] ?? $page),
-            'positionPageSize' => (int) ($body['page_size'] ?? 25),
+            'positions' => $positions,
+            'companyError' => $active['ok'] && $archived['ok'] ? null : ($active['error'] ?? $archived['error']),
+            'positionStatusCounts' => $activeBody['status_counts'] ?? [],
         ]);
     }
 
