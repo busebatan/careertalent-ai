@@ -67,7 +67,7 @@ return [
         'stage_new' => 'Yeni', 'stage_assessment_pending' => 'Değerlendirme bekliyor', 'stage_assessment_in_progress' => 'Değerlendirme sürüyor',
         'stage_technical_review' => 'Teknik inceleme', 'stage_shortlisted' => 'Kısa liste', 'stage_interview' => 'Görüşme',
         'stage_offer' => 'Teklif', 'stage_hired' => 'İşe alındı', 'stage_rejected' => 'Reddedildi', 'stage_withdrawn' => 'Geri çekildi',
-        'review' => 'İnceleme', 'review_summary' => 'Aşama / not / karar', 'decision_placeholder' => 'Nihai karar', 'note_placeholder' => 'İK notu', 'save' => 'Kaydet',
+        'review' => 'İnsan incelemesi', 'review_summary' => 'Aşama / not / karar', 'decision_placeholder' => 'İnsan kararı', 'note_placeholder' => 'İK notu', 'save' => 'Kaydet',
         'completion_status' => 'Tamamlanma durumu', 'missing_documents' => 'Eksik belgeler', 'last_action_at' => 'Son işlem tarihi',
         'completion_not_requested' => 'Analiz istenmedi', 'completion_queued' => 'Analiz sırada',
         'completion_processing' => 'Analiz ediliyor', 'completion_completed' => 'Analiz tamamlandı',
