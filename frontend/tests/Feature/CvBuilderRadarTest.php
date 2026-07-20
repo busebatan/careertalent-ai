@@ -14,6 +14,7 @@ class CvBuilderRadarTest extends TestCase
             ->assertSee('data-cv-analysis-upload', false)
             ->assertSee('profileCvUpload(', false)
             ->assertSee('panel-upload-zone', false)
+            ->assertSeeInOrder(['id="harvard-preview"', 'Özgeçmiş Sürümlerim (CV Merkezi)'], false)
             ->assertDontSee('id="yetenek-radari"', false)
             ->assertDontSee('data-skill-radar-layout', false)
             ->assertDontSee('data-cv-analysis-score', false);
