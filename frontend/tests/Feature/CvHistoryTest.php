@@ -18,6 +18,9 @@ class CvHistoryTest extends TestCase
     {
         Http::fake([
             'http://localhost:8000/api/v1/career/profile' => Http::response(['full_name' => 'User', 'email' => 'user@example.com', 'social_links' => []]),
+            'http://localhost:8000/api/v1/career/analysis/current' => Http::response([
+                'status' => 'ready', 'source' => 'archive_uploaded', 'file_name' => 'old.pdf',
+            ]),
             'http://localhost:8000/api/v1/cv/documents' => Http::response([
                 ['id' => 'current-1', 'kind' => 'uploaded', 'display_name' => 'current.pdf', 'is_current' => true, 'created_at' => '2026-07-13T20:00:00+00:00'],
                 ['id' => 'generated-1', 'kind' => 'generated', 'display_name' => 'Trendyol CV.pdf', 'is_current' => false, 'created_at' => '2026-07-13T21:30:00+00:00'],
@@ -31,6 +34,7 @@ class CvHistoryTest extends TestCase
         $response->assertOk()
             ->assertSee('current.pdf')->assertSee('Trendyol CV.pdf')->assertSee('old.pdf')
             ->assertSee('data-cv-history-analysis-ready', false)
+            ->assertSee('data-initial-history-analysis-ready="true"', false)
             ->assertSee('Kariyer rotasına git')
             ->assertSee('href="'.route('panel.roadmap').'"', false)
             ->assertSeeInOrder(['data-cv-history-analysis-ready', '<ul class="mt-5'], false)

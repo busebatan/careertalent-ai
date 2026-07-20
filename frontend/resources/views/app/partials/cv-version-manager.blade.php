@@ -4,7 +4,7 @@
         <div>
             <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <i data-lucide="layers" class="h-5 w-5 text-emerald-600 dark:text-emerald-400"></i>
-                {{ app()->getLocale() === 'en' ? 'My Resume Versions (CV Center)' : 'Özgeçmiş Sürümlerim (CV Merkezi)' }}
+                {{ app()->getLocale() === 'en' ? 'My Resume Versions' : 'Özgeçmiş Sürümlerim' }}
             </h2>
             <p class="text-sm text-slate-500 dark:text-slate-400">
                 {{ app()->getLocale() === 'en' ? 'Manage different versions of your CV for different roles or languages.' : 'Farklı roller veya diller için özgeçmiş sürümlerinizi oluşturun ve yönetin.' }}

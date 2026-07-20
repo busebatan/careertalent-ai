@@ -201,6 +201,12 @@ describe('profileCvUpload archived CV analysis', () => {
         window.location.href = '';
     });
 
+    it('keeps the roadmap CTA ready after a server-rendered archived analysis reload', () => {
+        const state = profileCvUpload('tr', '/upload', '/status/__ANALYSIS_ID__', '', '/history/__DOCUMENT_ID__/analyze', '', true);
+
+        assert.equal(state.historyAnalysisReady, true);
+    });
+
     it('starts a fresh analysis, polls it and exposes the roadmap CTA with exact CV metadata', async () => {
         const requests = [];
         globalThis.fetch = async (url, options = {}) => {
