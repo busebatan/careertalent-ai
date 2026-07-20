@@ -48,7 +48,7 @@
             :class="sidebarOpen ? 'company-sidebar-open' : ''"
             aria-label="{{ __('company.brand') }}">
             <div class="flex h-full min-h-0 flex-col p-6">
-                <a href="{{ route('company.dashboard') }}" class="company-brand mb-8 block shrink-0 whitespace-nowrap text-[17px] font-bold leading-7 tracking-[-0.03em]">{{ __('company.brand') }}</a>
+                <a href="{{ route('company.positions') }}" class="company-brand mb-8 block shrink-0 whitespace-nowrap text-[17px] font-bold leading-7 tracking-[-0.03em]">{{ __('company.brand') }}</a>
                 <nav class="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain text-sm">
                     @include('workspace.partials.sidebar-nav', ['workspaceNav' => $companyNav])
                 </nav>
@@ -78,10 +78,6 @@
                                 <span class="truncate">{{ $companyMembership['organization_name'] }}</span>
                             </div>
                         @endif
-                        <a href="{{ route('home') }}" class="panel-nav-link">
-                            <i data-lucide="house" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
-                            <span>{{ __('company.nav.marketing_site') }}</span>
-                        </a>
                     </div>
                     @if (in_array('organization.update', $companyMembership['permissions'], true))
                         <a data-company-profile href="{{ route('company.profile') }}"
@@ -123,8 +119,11 @@
                 @if (session('status'))
                     <div class="company-feedback-success mb-5 rounded-xl border p-4 text-sm">{{ session('status') }}</div>
                 @endif
-                @if ($errors->any())
-                    <div class="mb-5 rounded-xl bg-red-500/10 p-4 text-sm text-red-600">{{ $errors->first() }}</div>
+                @php
+                    $panelErrorMessage = $errors->first() ?: ($companyError ?? null);
+                @endphp
+                @if (filled($panelErrorMessage))
+                    <div class="panel-card mb-6 border-red-500/30 p-5 text-sm text-red-500">{{ $panelErrorMessage }}</div>
                 @endif
                 @yield('content')
             </main>

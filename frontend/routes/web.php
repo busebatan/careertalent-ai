@@ -16,6 +16,7 @@ use App\Http\Controllers\Company\CompanyController;
 use App\Http\Controllers\Marketing\AuthController;
 use App\Http\Controllers\Marketing\HomeController;
 use App\Http\Controllers\Marketing\LocaleController as MarketingLocaleController;
+use App\Http\Controllers\Marketing\PublicJobController;
 use Illuminate\Support\Facades\Route;
 
 // ── Tanıtım sitesi (herkese açık) ──────────────────────────
@@ -51,12 +52,27 @@ Route::middleware('marketing.locale')->group(function () {
     Route::post('/company/davet/{token}', [AuthController::class, 'acceptCompanyInvitation'])->name('company.invitation.accept');
     Route::post('/cikis', [AuthController::class, 'logout'])->name('logout');
     Route::get('/locale/{locale}', [MarketingLocaleController::class, 'switch'])->name('marketing.locale');
+
+    Route::get('/a/{shortCode}', [PublicJobController::class, 'shortLink'])
+        ->where('shortCode', '[A-Za-z0-9-]{3,32}')
+        ->name('public.jobs.short');
+    Route::get('/apply/{organizationSlug}/{positionPath}', [PublicJobController::class, 'show'])
+        ->where(['organizationSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'positionPath' => '[A-Za-z0-9-]+'])
+        ->name('public.jobs.show');
+    Route::middleware(['auth.api', 'auth.api.candidate'])->group(function () {
+        Route::get('/apply/{organizationSlug}/{positionPath}/baslat', [PublicJobController::class, 'start'])
+            ->where(['organizationSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'positionPath' => '[A-Za-z0-9-]+'])
+            ->name('public.jobs.start');
+        Route::post('/apply/{organizationSlug}/{positionPath}', [PublicJobController::class, 'submit'])
+            ->where(['organizationSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'positionPath' => '[A-Za-z0-9-]+'])
+            ->name('public.jobs.submit');
+    });
 });
 
 Route::get('/company', function () {
     $membership = request()->attributes->get('company.membership');
 
-    return redirect()->route('company.dashboard', [
+    return redirect()->route('company.positions', [
         'organizationSlug' => $membership['organization_slug'],
     ]);
 })->name('company.entry')->middleware(['auth.api', 'auth.api.company', 'panel.locale']);
@@ -177,10 +193,22 @@ Route::prefix('{organizationSlug}')
         Route::get('/', [CompanyController::class, 'dashboard'])->name('dashboard');
         Route::get('/locale/{locale}', [PanelLocaleController::class, 'switch'])->name('locale');
         Route::get('/pozisyonlar', [CompanyController::class, 'positions'])->name('positions');
+        Route::get('/pozisyonlar/yeni', [CompanyController::class, 'newPosition'])->name('positions.new');
         Route::post('/pozisyonlar', [CompanyController::class, 'createPosition'])->name('positions.create');
+        Route::get('/pozisyonlar/{position}', [CompanyController::class, 'position'])->name('positions.show');
         Route::patch('/pozisyonlar/{position}', [CompanyController::class, 'updatePosition'])->name('positions.update');
         Route::delete('/pozisyonlar/{position}', [CompanyController::class, 'deletePosition'])->name('positions.delete');
+        Route::post('/pozisyonlar/{position}/kopyala', [CompanyController::class, 'copyPosition'])->name('positions.copy');
+        Route::post('/pozisyonlar/{position}/ai-analiz', [CompanyController::class, 'analyzePosition'])->name('positions.analyze');
+        Route::get('/pozisyonlar/{position}/ai-analiz/{analysis}', [CompanyController::class, 'positionAnalysisStatus'])->name('positions.analysis-status');
+        Route::patch('/pozisyonlar/{position}/olcut/{criteria}', [CompanyController::class, 'updatePositionCriteria'])->name('positions.criteria.update');
+        Route::post('/pozisyonlar/{position}/olcut/{criteria}/onayla', [CompanyController::class, 'approvePositionCriteria'])->name('positions.criteria.approve');
+        Route::post('/pozisyonlar/{position}/takip-baglantilari', [CompanyController::class, 'createShareLink'])->name('positions.share-links.create');
+        Route::patch('/pozisyonlar/{position}/takip-baglantilari/{link}', [CompanyController::class, 'updateShareLink'])->name('positions.share-links.update');
         Route::get('/pozisyonlar/{position}/adaylar', [CompanyController::class, 'positionApplications'])->name('positions.applications');
+        Route::patch('/pozisyonlar/{position}/adaylar/{application}', [CompanyController::class, 'updatePositionApplication'])->name('positions.applications.update');
+        Route::get('/ats-sozlugu', [CompanyController::class, 'ats'])->name('ats');
+        Route::patch('/ats-sozlugu', [CompanyController::class, 'updateAts'])->name('ats.update');
         Route::get('/adaylar', [CompanyController::class, 'applications'])->name('applications');
         Route::get('/degerlendirmeler', [CompanyController::class, 'assessments'])->name('assessments');
         Route::get('/profil', [CompanyController::class, 'profile'])->name('profile');

@@ -63,7 +63,7 @@ class OrganizationVanityLoginTest extends TestCase
         ]);
         $this->withSession(['company_auth.access_token' => 'company-token'])
             ->get('/company')
-            ->assertRedirect('/buse-kurum');
+            ->assertRedirect('/buse-kurum/pozisyonlar');
     }
 
     public function test_guest_slug_redirects_to_company_login_and_login_returns_to_that_organization(): void

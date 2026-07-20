@@ -1,5 +1,5 @@
 <script>
-function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFileName = '', analyzeBuilderUrl = '', clearUrl = '', statusUrl = '', verifiedAchievements = [], archivePdfUrl = '', restoredFromHistory = false) {
+function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFileName = '', analyzeBuilderUrl = '', clearUrl = '', statusUrl = '', archivePdfUrl = '', restoredFromHistory = false) {
     return {
         mode: 'edit',
         locales: initial,
@@ -16,7 +16,7 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         restoredFromHistory,
         saveStatus: 'idle',
         analyzeError: null,
-        showRadar: Boolean(serverHasCv),
+        radarExpanded: localStorage.getItem('panel-cv-radar-expanded') !== '0',
         cvFileName: serverFileName || '',
         analyzeBuilderUrl,
         clearUrl,
@@ -25,7 +25,6 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         resetWorking: false,
         resetError: '',
         statusUrl,
-        verifiedAchievements: Array.isArray(verifiedAchievements) ? verifiedAchievements : [],
         cvFileLabel: @js(__('panel.skill_radar.cv_file', ['name' => ':name'])),
         optionalSectionPick: '',
         _skipLocalesSync: false,
@@ -34,7 +33,6 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
             const saved = window.PanelCvStore?.get();
 
             if (serverHasCv) {
-                this.showRadar = true;
                 this.cvFileName = serverFileName || this.cvFileName;
             }
 
@@ -128,6 +126,11 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
 
         cvFileDisplay() {
             return this.cvFileLabel.replace(':name', this.cvFileName || 'cv');
+        },
+
+        onRadarToggle(event) {
+            this.radarExpanded = event.target.open;
+            localStorage.setItem('panel-cv-radar-expanded', this.radarExpanded ? '1' : '0');
         },
 
         uid() { return 'id-' + Math.random().toString(36).slice(2, 9); },

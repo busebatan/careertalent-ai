@@ -88,14 +88,14 @@ def test_position_crud_is_tenant_scoped_and_dashboard_uses_real_counts(client):
             "workplace_type": "hybrid",
             "description": "API ekibine katılacak backend geliştirici.",
             "application_deadline": tomorrow,
-            "status": "open",
+            "status": "published",
         },
     )
     assert created.status_code == 201
     position_id = created.json()["id"]
 
-    own = client.get("/api/v1/company/positions?status=open", headers=first_headers)
-    other = client.get("/api/v1/company/positions?status=open", headers=second_headers)
+    own = client.get("/api/v1/company/positions?status=published", headers=first_headers)
+    other = client.get("/api/v1/company/positions?status=published", headers=second_headers)
     assert own.status_code == 200
     assert [item["title"] for item in own.json()["items"]] == ["Backend Developer"]
     assert other.status_code == 200
@@ -137,7 +137,7 @@ def test_dashboard_queues_summary_and_usage_are_derived_from_tenant_events(clien
     position = client.post(
         "/api/v1/company/positions",
         headers=headers,
-        json={"title": "QA Engineer", "status": "open"},
+        json={"title": "QA Engineer", "status": "published"},
     ).json()
 
     with next(app.dependency_overrides[get_db]()) as db:

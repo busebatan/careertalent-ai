@@ -6,5 +6,5 @@ celery_app = Celery("careertalent", broker=settings.REDIS_URL, backend=settings.
 celery_app.conf.update(
     task_always_eager=settings.CELERY_TASK_ALWAYS_EAGER,
     task_eager_propagates=True,
-    include=["app.tasks.career"],
+    include=["app.tasks.career", "app.tasks.company_recruiting"],
 )

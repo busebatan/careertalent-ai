@@ -604,6 +604,77 @@ html:not(.dark) { color-scheme: light; }
         border-top: 1px solid var(--company-accent-border-soft);
     }
 
+    .company-shell .company-status-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 9999px;
+        padding: 0.25rem 0.625rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .company-shell .company-status-badge--neutral {
+        background: rgb(241 245 249);
+        color: rgb(51 65 85);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--neutral {
+        background: rgb(30 41 59);
+        color: rgb(203 213 225);
+    }
+
+    .company-shell .company-status-badge--info {
+        background: var(--company-accent-soft);
+        color: var(--company-accent-ink);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--info {
+        background: var(--company-accent-soft-strong);
+        color: var(--company-accent-ink-dark);
+    }
+
+    .company-shell .company-status-badge--warning {
+        background: rgb(254 243 199);
+        color: rgb(146 64 14);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--warning {
+        background: rgb(120 53 15 / 0.35);
+        color: rgb(253 230 138);
+    }
+
+    .company-shell .company-status-badge--success {
+        background: rgb(209 250 229);
+        color: rgb(4 120 87);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--success {
+        background: rgb(6 78 59 / 0.45);
+        color: rgb(110 231 183);
+    }
+
+    .company-shell .company-status-badge--positive {
+        background: rgb(16 185 129 / 0.16);
+        color: rgb(5 150 105);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--positive {
+        background: rgb(16 185 129 / 0.24);
+        color: rgb(52 211 153);
+    }
+
+    .company-shell .company-status-badge--danger {
+        background: rgb(254 226 226);
+        color: rgb(185 28 28);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--danger {
+        background: rgb(127 29 29 / 0.35);
+        color: rgb(252 165 165);
+    }
+
     .workspace-header {
         border-bottom: 1px solid var(--workspace-accent-border-soft);
     }

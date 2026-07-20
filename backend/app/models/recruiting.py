@@ -67,6 +67,7 @@ class OrganizationMembership(Base):
         UniqueConstraint(
             "organization_id", "user_id", name="uq_organization_memberships_organization_user"
         ),
+        UniqueConstraint("id", "organization_id", name="uq_organization_memberships_id_organization"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)

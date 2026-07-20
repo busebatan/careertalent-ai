@@ -30,6 +30,8 @@ class CvBuilderRadarTest extends TestCase
             ->assertSee('id="yetenek-radari"', false)
             ->assertSee('Business Analyst', false)
             ->assertSee('%80', false)
+            ->assertSee('group-open:rotate-180', false)
+            ->assertSee('onRadarToggle', false)
             ->assertSee('Kariyer verilerini temizle', false)
             ->assertSee('value="analysis"', false)
             ->assertSee('value="plan"', false)

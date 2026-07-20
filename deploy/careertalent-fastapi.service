@@ -9,6 +9,7 @@ Group=www-data
 WorkingDirectory=/var/www/vhosts/ygtlabs.ai/careertalent.ygtlabs.ai/backend
 Environment=DEBUG=false
 Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/etc/careertalent-celery.env
 ExecStart=/var/www/vhosts/ygtlabs.ai/careertalent.ygtlabs.ai/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 Restart=on-failure
 RestartSec=5

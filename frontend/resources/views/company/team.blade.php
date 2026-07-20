@@ -21,9 +21,6 @@
         <p class="panel-muted mt-2">{{ __('company.team.subtitle') }}</p>
     </header>
 
-    @if ($companyError)
-        <p class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">{{ $companyError }}</p>
-    @endif
     @if (session('company_invite_url'))
         <div class="company-feedback-success mb-6 rounded-xl border p-4">
             <p class="text-sm font-semibold">{{ __('company.team.invite_link') }}</p>
@@ -50,15 +47,12 @@
                 </label>
                 <fieldset class="md:col-span-2">
                     <legend class="mb-3 text-sm font-semibold">{{ __('company.team.permissions') }}</legend>
-                    <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        @foreach ($assignablePermissions as $permission)
-                            <label class="flex items-start gap-2 rounded-xl border border-slate-200 p-3 text-sm dark:border-slate-800">
-                                <input class="mt-0.5" type="checkbox" name="permissions[]" value="{{ $permission }}" @checked($permission === 'dashboard.view' || in_array($permission, old('permissions', []), true)) @disabled($permission === 'dashboard.view')>
-                                @if ($permission === 'dashboard.view')<input type="hidden" name="permissions[]" value="dashboard.view">@endif
-                                <span>{{ $permissionLabels[$permission] ?? $permission }}</span>
-                            </label>
-                        @endforeach
-                    </div>
+                    @include('company.partials.permission-selector', [
+                        'permissionSelectorId' => 'company-invite-permissions',
+                        'permissionKeys' => $assignablePermissions,
+                        'selectedPermissions' => array_values(array_unique(array_merge(['dashboard.view'], old('permissions', [])))),
+                        'permissionLabels' => $permissionLabels,
+                    ])
                 </fieldset>
                 <div class="md:col-span-2"><button class="company-btn-primary" type="submit">{{ __('company.team.invite') }}</button></div>
             </form>
@@ -69,21 +63,26 @@
         @forelse ($team['members'] as $member)
             @php($memberPermissions = is_array($member['permissions'] ?? null) ? $member['permissions'] : [])
             <article class="panel-card p-5" data-company-member="{{ $member['membership_id'] }}">
-                <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <h2 class="font-semibold">{{ $member['full_name'] }}</h2>
-                        <p class="panel-muted text-sm">{{ $member['email'] }}</p>
+                <details class="group">
+                    <summary class="flex cursor-pointer list-none flex-wrap items-start justify-between gap-4 [&::-webkit-details-marker]:hidden">
+                        <div class="min-w-0 flex-1">
+                            <h2 class="font-semibold">{{ $member['full_name'] }}</h2>
+                            <p class="panel-muted text-sm">{{ $member['email'] }}</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 text-xs">
+                            <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">{{ __('company.roles.'.$member['role']) }}</span>
+                            <span class="rounded-full px-2.5 py-1 {{ $member['status'] === 'active' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-red-500/10 text-red-700 dark:text-red-300' }}">{{ __('company.status.'.$member['status']) }}</span>
+                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600 group-open:hidden dark:bg-slate-800 dark:text-slate-300">{{ trans_choice('company.team.permission_count', count($memberPermissions), ['count' => count($memberPermissions)]) }}</span>
+                            <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                            <span class="sr-only">{{ __('company.team.show_permissions') }}</span>
+                        </div>
+                    </summary>
+                    <div class="mt-4 flex flex-wrap gap-2 border-t border-slate-200 pt-4 text-xs dark:border-slate-800">
+                        @foreach ($memberPermissions as $permission)
+                            <span class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-700 dark:text-emerald-300">{{ $permissionLabels[$permission] ?? $permission }}</span>
+                        @endforeach
                     </div>
-                    <div class="flex flex-wrap gap-2 text-xs">
-                        <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">{{ __('company.roles.'.$member['role']) }}</span>
-                        <span class="rounded-full px-2.5 py-1 {{ $member['status'] === 'active' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-red-500/10 text-red-700 dark:text-red-300' }}">{{ __('company.status.'.$member['status']) }}</span>
-                    </div>
-                </div>
-                <div class="mt-4 flex flex-wrap gap-2 border-t border-slate-200 pt-4 text-xs dark:border-slate-800">
-                    @foreach ($memberPermissions as $permission)
-                        <span class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-700 dark:text-emerald-300">{{ $permissionLabels[$permission] ?? $permission }}</span>
-                    @endforeach
-                </div>
+                </details>
                 @if ($canManage && $member['user_id'] !== ($companyUser['id'] ?? null) && ($isOwner || $member['role'] !== 'owner'))
                     <details class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
                         <summary class="cursor-pointer text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ __('company.team.edit') }}</summary>
@@ -106,15 +105,12 @@
                             </label>
                             <fieldset class="md:col-span-2">
                                 <legend class="mb-3 text-sm font-semibold">{{ __('company.team.permissions') }}</legend>
-                                <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                                    @foreach ($assignablePermissions as $permission)
-                                        <label class="flex items-start gap-2 rounded-xl border border-slate-200 p-3 text-sm dark:border-slate-800">
-                                            <input class="mt-0.5" type="checkbox" name="permissions[]" value="{{ $permission }}" @checked(in_array($permission, $memberPermissions, true)) @disabled($permission === 'dashboard.view')>
-                                            @if ($permission === 'dashboard.view')<input type="hidden" name="permissions[]" value="dashboard.view">@endif
-                                            <span>{{ $permissionLabels[$permission] ?? $permission }}</span>
-                                        </label>
-                                    @endforeach
-                                </div>
+                                @include('company.partials.permission-selector', [
+                                    'permissionSelectorId' => 'company-member-'.$member['membership_id'].'-permissions',
+                                    'permissionKeys' => $assignablePermissions,
+                                    'selectedPermissions' => $memberPermissions,
+                                    'permissionLabels' => $permissionLabels,
+                                ])
                             </fieldset>
                             <div class="md:col-span-2"><button class="company-btn-secondary" type="submit">{{ __('company.team.save') }}</button></div>
                         </form>
@@ -130,16 +126,24 @@
         <h2 class="mt-8 text-lg font-semibold">{{ __('company.team.pending') }}</h2>
         <div class="mt-3 space-y-3">
             @foreach ($team['pending_invitations'] as $invite)
+                @php($invitePermissions = is_array($invite['permissions'] ?? null) ? $invite['permissions'] : [])
                 <article class="panel-card p-4 text-sm">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <span class="font-medium">{{ $invite['email'] }}</span>
-                        <span>{{ __('company.roles.'.$invite['role']) }}</span>
-                    </div>
-                    <div class="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3 text-xs dark:border-slate-800">
-                        @foreach (($invite['permissions'] ?? []) as $permission)
-                            <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">{{ $permissionLabels[$permission] ?? $permission }}</span>
-                        @endforeach
-                    </div>
+                    <details class="group">
+                        <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+                            <span class="font-medium">{{ $invite['email'] }}</span>
+                            <div class="flex flex-wrap items-center gap-2 text-xs">
+                                <span>{{ __('company.roles.'.$invite['role']) }}</span>
+                                <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600 group-open:hidden dark:bg-slate-800 dark:text-slate-300">{{ trans_choice('company.team.permission_count', count($invitePermissions), ['count' => count($invitePermissions)]) }}</span>
+                                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                                <span class="sr-only">{{ __('company.team.show_permissions') }}</span>
+                            </div>
+                        </summary>
+                        <div class="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3 text-xs dark:border-slate-800">
+                            @foreach ($invitePermissions as $permission)
+                                <span class="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">{{ $permissionLabels[$permission] ?? $permission }}</span>
+                            @endforeach
+                        </div>
+                    </details>
                 </article>
             @endforeach
         </div>

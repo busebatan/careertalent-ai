@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\App;
 
-use App\Services\PanelTargetRoleStore;
 use App\Services\CareerTalentApiClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Lang;
@@ -16,23 +15,6 @@ class CvBuilderController extends PanelController
         $profile = ($profileResult['ok'] ?? false) && is_array($profileResult['body'] ?? null) ? $profileResult['body'] : [];
         $analysis = ($analysisResult['ok'] ?? false) && is_array($analysisResult['body'] ?? null) ? $analysisResult['body'] : [];
         $hasCvAnalysis = ($analysis['status'] ?? null) === 'ready';
-        $acceptedEvidence = [];
-        $target = PanelTargetRoleStore::get();
-        if (is_array($target) && ! empty($target['id'])) {
-            $tasks = app(CareerTalentApiClient::class)->careerTargetTasks((string) $target['id']);
-            $taskItems = is_array($tasks['body'] ?? null) && array_is_list($tasks['body'])
-                ? $tasks['body']
-                : ($tasks['body']['tasks'] ?? []);
-            foreach ($taskItems as $task) {
-                if (($task['status'] ?? null) === 'completed') {
-                    $acceptedEvidence[] = [
-                        'title' => (string) ($task['title'] ?? ''),
-                        'skill_impacts' => is_array($task['skill_impacts'] ?? null) ? $task['skill_impacts'] : [],
-                        'training_suggestions' => is_array($task['training_suggestions'] ?? null) ? $task['training_suggestions'] : [],
-                    ];
-                }
-            }
-        }
 
         $cvDraft = $this->blankCvDraft($profile);
         $restoredFromHistory = false;
@@ -52,7 +34,6 @@ class CvBuilderController extends PanelController
             'skillRadar' => $this->skillRadar($analysis),
             'hasCvAnalysis' => $hasCvAnalysis,
             'cvFileName' => '',
-            'acceptedEvidence' => $acceptedEvidence,
         ]);
     }
 

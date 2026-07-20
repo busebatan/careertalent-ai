@@ -8,6 +8,8 @@ COMPANY_PERMISSION_KEYS = (
     "positions.view",
     "positions.write",
     "positions.delete",
+    "ats_config.view",
+    "ats_config.write",
     "applications.view",
     "applications.write",
     "assessments.view",
@@ -25,15 +27,16 @@ LEGACY_COMPANY_ROLE_PERMISSIONS = {
     "admin": COMPANY_PERMISSION_KEYS,
     "recruiter": (
         "dashboard.view", "positions.view", "positions.write", "positions.delete",
+        "ats_config.view", "ats_config.write",
         "applications.view", "applications.write", "assessments.view", "assessments.write",
         "scorecards.view", "members.view",
     ),
     "hiring_manager": (
-        "dashboard.view", "positions.view", "applications.view", "applications.write",
+        "dashboard.view", "positions.view", "ats_config.view", "applications.view", "applications.write",
         "assessments.view", "scorecards.view", "scorecards.submit", "members.view",
     ),
     "viewer": (
-        "dashboard.view", "positions.view", "applications.view", "assessments.view",
+        "dashboard.view", "positions.view", "ats_config.view", "applications.view", "assessments.view",
         "scorecards.view", "members.view",
     ),
 }

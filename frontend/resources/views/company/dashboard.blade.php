@@ -45,9 +45,7 @@
         </form>
     </div>
 
-    @if ($companyError)
-        <div class="panel-card border-red-500/30 p-5 text-red-500">{{ $companyError }}</div>
-    @else
+    @if (! $companyError)
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="{{ __('company.dashboard.title') }}">
             @foreach ($metricCards as $card)
                 @php

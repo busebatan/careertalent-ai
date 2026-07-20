@@ -1,0 +1,5 @@
+@php($activities = $positionDetail['activities'] ?? [])
+<section class="panel-card p-6">
+    <div><h2 class="text-lg font-semibold">{{ __('company_positions.tabs.activity') }}</h2><p class="panel-muted mt-1 text-sm">{{ __('company_positions.sections.audit') }}</p></div>
+    @if($activities === [])<p class="panel-muted mt-6 text-center">—</p>@else<ol class="mt-6 space-y-5">@foreach($activities as $activity)<li class="grid gap-2 border-l-2 border-emerald-500/30 pl-5 sm:grid-cols-[1fr_auto]"><div><p class="font-medium">{{ str_replace(['.', '_'], ' ', $activity['event_type'] ?? '—') }}</p>@if(!empty($activity['details']))<p class="panel-muted mt-1 text-sm">{{ is_array($activity['details']) ? json_encode($activity['details'], JSON_UNESCAPED_UNICODE) : $activity['details'] }}</p>@endif</div><p class="panel-muted text-xs sm:text-right">{{ $activity['actor_name'] ?? 'Sistem' }}<br>{{ !empty($activity['occurred_at']) ? \Carbon\Carbon::parse($activity['occurred_at'])->format('d.m.Y H:i') : '' }}</p></li>@endforeach</ol>@endif
+</section>

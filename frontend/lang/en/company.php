@@ -2,7 +2,7 @@
 
 return [
     'brand' => 'CareerTalent Company',
-    'nav' => ['general' => 'General', 'recruiting' => 'Recruiting', 'organization' => 'Organization Management', 'dashboard' => 'Company Overview', 'positions' => 'Positions', 'applications' => 'Candidates', 'assessments' => 'Assessments', 'team' => 'Team & Permissions', 'profile' => 'Company Profile', 'open_menu' => 'Open menu', 'marketing_site' => 'Main site'],
+    'nav' => ['general' => 'General', 'recruiting' => 'Recruiting', 'organization' => 'Organization Management', 'home' => 'Home', 'dashboard' => 'Company Overview', 'positions' => 'Positions', 'applications' => 'Candidates', 'assessments' => 'Assessments', 'team' => 'Team & Permissions', 'profile' => 'Company Profile', 'open_menu' => 'Open menu', 'marketing_site' => 'Main site'],
     'header' => ['secure_context' => 'Organization context verified'],
     'organization' => ['active' => 'Active organization'],
     'roles' => ['owner' => 'Owner', 'admin' => 'Company Admin', 'recruiter' => 'Recruiter', 'hiring_manager' => 'Hiring Manager', 'viewer' => 'Viewer'],
@@ -10,6 +10,7 @@ return [
     'permissions' => [
         'dashboard.view' => 'View company overview',
         'positions.view' => 'View positions', 'positions.write' => 'Create and edit positions', 'positions.delete' => 'Archive positions',
+        'ats_config.view' => 'View ATS dictionary', 'ats_config.write' => 'Edit ATS dictionary',
         'applications.view' => 'View candidates', 'applications.write' => 'Manage candidate stages',
         'assessments.view' => 'View assessments', 'assessments.write' => 'Manage assessments',
         'scorecards.view' => 'View scorecards', 'scorecards.submit' => 'Submit technical scores',
@@ -33,7 +34,10 @@ return [
         'foundation_title' => 'Secure company foundation is ready', 'foundation_text' => 'Complete company information and team roles before opening hiring modules.', 'manage_team' => 'Manage team',
     ],
     'positions' => [
-        'title' => 'Positions', 'subtitle' => 'Create, open, and track hiring positions.', 'create' => 'Create a new position', 'edit' => 'Edit position',
+        'title' => 'Positions', 'subtitle' => 'Create, open, and track hiring positions.',
+        'create' => 'Create a new position', 'create_hint' => 'Enter position details; save as draft and publish when ready.',
+        'create_section_basic' => 'Basic details', 'create_section_details' => 'Role details',
+        'edit' => 'Edit position',
         'title_label' => 'Position title', 'department' => 'Department', 'employment_type' => 'Employment type', 'workplace_type' => 'Workplace type',
         'description' => 'Description', 'deadline' => 'Application deadline', 'status' => 'Status', 'save' => 'Save position', 'update' => 'Save changes',
         'archive' => 'Archive', 'applications' => 'View candidates', 'empty' => 'No positions yet. Create your first position to get started.',
@@ -47,6 +51,9 @@ return [
         'candidate' => 'Candidate', 'position' => 'Position', 'stage' => 'Stage', 'applied_at' => 'Applied', 'retention' => 'Retention ends',
         'queue_new' => 'New applications', 'queue_assessment_pending' => 'Awaiting assessment', 'queue_technical_review' => 'Technical review',
         'queue_scorecard_missing' => 'Missing technical score', 'queue_retention_due' => 'Retention due',
+        'queue_all' => 'All', 'search' => 'Search', 'search_placeholder' => 'Candidate name, email, or position',
+        'filter_stage' => 'Stage', 'filter_stage_all' => 'All stages', 'filter_position' => 'Position', 'filter_position_all' => 'All positions',
+        'results' => ':count results', 'no_results' => 'No candidates match the current filters.',
         'stage_new' => 'New', 'stage_assessment_pending' => 'Awaiting assessment', 'stage_assessment_in_progress' => 'Assessment in progress',
         'stage_technical_review' => 'Technical review', 'stage_shortlisted' => 'Shortlisted', 'stage_interview' => 'Interview',
         'stage_offer' => 'Offer', 'stage_hired' => 'Hired', 'stage_rejected' => 'Rejected', 'stage_withdrawn' => 'Withdrawn',
@@ -54,15 +61,21 @@ return [
     'assessments' => [
         'title' => 'Assessments', 'subtitle' => 'Track candidate assessments and actual monthly usage.', 'usage' => 'Used this month',
         'quota_pending' => 'Total quota is not configured', 'empty' => 'No assessments yet.', 'candidate' => 'Candidate', 'position' => 'Position',
+        'search' => 'Search', 'search_placeholder' => 'Candidate, position, or assessment name',
+        'filter_status' => 'Status', 'filter_status_all' => 'All statuses', 'filter_position' => 'Position', 'filter_position_all' => 'All positions',
+        'results' => ':count results', 'no_results' => 'No assessments match the current filters.',
         'assessment' => 'Assessment', 'status' => 'Status', 'assigned_at' => 'Assigned', 'completed_at' => 'Completed',
         'status_assigned' => 'Assigned', 'status_in_progress' => 'In progress', 'status_completed' => 'Completed', 'status_expired' => 'Expired', 'status_cancelled' => 'Cancelled',
     ],
+    'scorecards' => ['title' => 'Scorecards'],
     'profile' => ['title' => 'Company Profile', 'subtitle' => 'Organization information used across candidate and team surfaces.', 'name' => 'Organization name', 'billing_email' => 'Billing email', 'website' => 'Website', 'save' => 'Save details', 'updated' => 'Company profile updated.'],
     'team' => [
         'title' => 'Team & Permissions', 'subtitle' => 'Each member sees and uses only the company permissions assigned to them.',
         'invite_title' => 'Invite a new team member', 'email' => 'Email', 'role' => 'Role', 'status_label' => 'Status', 'permissions' => 'Permissions',
         'invite' => 'Create invitation', 'invited' => 'Team invitation created.', 'invite_link' => 'One-time invitation link',
         'edit' => 'Edit member and permissions', 'save' => 'Save', 'updated' => 'Team membership updated.',
+        'show_permissions' => 'Show permissions',
+        'permission_count' => ':count permission|:count permissions',
         'pending' => 'Pending invitations', 'empty' => 'No team members yet.',
     ],
 ];

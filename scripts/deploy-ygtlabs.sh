@@ -5,6 +5,17 @@ set -euo pipefail
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="/var/www/vhosts/ygtlabs.ai/careertalent.ygtlabs.ai"
 DOMAIN="careertalent.ygtlabs.ai"
+CELERY_ENV_FILE="/etc/careertalent-celery.env"
+
+if [[ ! -r "$CELERY_ENV_FILE" ]]; then
+  echo "Missing Celery environment file: $CELERY_ENV_FILE" >&2
+  exit 1
+fi
+if ! grep -Eq '^CELERY_TASK_ALWAYS_EAGER=(true|1|yes|on)$' "$CELERY_ENV_FILE" \
+  && ! grep -Eq '^REDIS_URL=.+$' "$CELERY_ENV_FILE"; then
+  echo "REDIS_URL is required when Celery eager mode is disabled" >&2
+  exit 1
+fi
 
 echo "→ rsync $SRC → $DEST"
 rsync -a --delete \
@@ -72,11 +83,15 @@ sudo -u yigit php artisan view:clear
 sudo -u yigit php artisan view:cache
 
 echo "→ backend services restart"
+install -m 0644 "$DEST/deploy/careertalent-fastapi.service" /etc/systemd/system/careertalent-fastapi.service
+install -m 0644 "$DEST/deploy/careertalent-celery.service" /etc/systemd/system/careertalent-celery.service
+systemctl daemon-reload
 systemctl restart careertalent-fastapi.service
 systemctl is-active --quiet careertalent-fastapi.service
-if grep -Eq '^CELERY_TASK_ALWAYS_EAGER=(true|1|yes|on)$' "$DEST/backend/.env"; then
+if grep -Eq '^CELERY_TASK_ALWAYS_EAGER=(true|1|yes|on)$' "$CELERY_ENV_FILE"; then
   systemctl stop careertalent-celery.service 2>/dev/null || true
 else
+  systemctl enable --now careertalent-celery.service
   systemctl restart careertalent-celery.service
   systemctl is-active --quiet careertalent-celery.service
 fi

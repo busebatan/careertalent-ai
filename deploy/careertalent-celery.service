@@ -1,0 +1,20 @@
+[Unit]
+Description=CareerTalent AI Celery worker
+After=network.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=yigit
+Group=www-data
+WorkingDirectory=/var/www/vhosts/ygtlabs.ai/careertalent.ygtlabs.ai/backend
+Environment=DEBUG=false
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/etc/careertalent-celery.env
+ExecStart=/var/www/vhosts/ygtlabs.ai/careertalent.ygtlabs.ai/backend/.venv/bin/celery -A app.celery_app:celery_app worker --loglevel=INFO --concurrency=2
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

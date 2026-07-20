@@ -159,7 +159,7 @@ def dashboard(
     start = now - timedelta(days=days)
     active_positions = db.scalar(select(func.count()).select_from(RecruitingPosition).where(
         RecruitingPosition.organization_id == organization.id,
-        RecruitingPosition.status == "open",
+        RecruitingPosition.status == "published",
         or_(RecruitingPosition.application_deadline.is_(None), RecruitingPosition.application_deadline >= now),
     )) or 0
     new_applications = db.scalar(select(func.count()).select_from(RecruitingApplication).where(
@@ -219,7 +219,7 @@ def dashboard(
         ))
     deadline_rows = db.execute(select(RecruitingPosition).where(
         RecruitingPosition.organization_id == organization.id,
-        RecruitingPosition.status == "open",
+        RecruitingPosition.status == "published",
         RecruitingPosition.application_deadline >= now,
         RecruitingPosition.application_deadline <= now + timedelta(days=2),
     ).order_by(RecruitingPosition.application_deadline)).scalars().all()

@@ -21,6 +21,9 @@ import { careerInterview } from './panel-career-interview';
 import { careerApplications } from './panel-applications';
 import { adminStudents } from './admin-students';
 import { adminOrganizations } from './admin-organizations';
+import { companyApplications, companyAssessments } from './company-recruiting-tables';
+import { bootJobShareQr } from './job-share-qr';
+import { bootCompanyPositionAnalysis } from './company-position-analysis';
 
 window.PanelCvStore = PanelCvStore;
 window.panelCvRadar = panelCvRadar;
@@ -38,6 +41,8 @@ window.careerInterview = careerInterview;
 window.careerApplications = careerApplications;
 window.adminStudents = adminStudents;
 window.adminOrganizations = adminOrganizations;
+window.companyApplications = companyApplications;
+window.companyAssessments = companyAssessments;
 window.panelJobMatches = panelJobMatches;
 window.exportHarvardCvPdf = exportHarvardCvPdf;
 window.renderHarvardCvPdf = renderHarvardCvPdf;
@@ -53,7 +58,13 @@ window.CvOptionalSections = {
 };
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bootPanelShell, { once: true });
+    document.addEventListener('DOMContentLoaded', () => {
+        bootPanelShell();
+        bootJobShareQr();
+        bootCompanyPositionAnalysis();
+    }, { once: true });
 } else {
     bootPanelShell();
+    bootJobShareQr();
+    bootCompanyPositionAnalysis();
 }
