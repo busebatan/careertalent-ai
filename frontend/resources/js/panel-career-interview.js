@@ -6,22 +6,23 @@ function headers() {
 export function careerInterview(initial, startUrl, scoreUrlTemplate, labels) {
     return {
         interview: initial, idx: 0, answer: '', result: null, busy: false, error: '', startUrl, scoreUrlTemplate, labels,
+        selectedLanguage: null,
         
         // EKLENDİ: Dil seçimi penceresinin (modal) açık/kapalı durumu
         showLangModal: false, 
         
         get question() { return this.interview?.questions?.[this.idx] || null; },
         
-        // EKLENDİ: start fonksiyonu artık varsayılan olarak 'tr' olan bir language parametresi alıyor
-        async start(language = 'tr') { 
+        // start() — dil önceliği: 1) doğrudan argüman, 2) selectedLanguage state, 3) 'tr' güvenli fallback
+        async start(language) {
+            const selectedPracticeLanguage = language ?? this.selectedLanguage ?? 'tr';
             this.showLangModal = false; // Mülakat başlarken modalı kapat
             this.busy = true; this.error = '';
-            try { 
-                // EKLENDİ: Backend'in beklediği language parametresini JSON body içine ekledik
-                const r = await fetch(this.startUrl, { method: 'POST', headers: headers(), body: JSON.stringify({ language }) }); 
-                const p = await r.json().catch(() => ({})); 
-                if (!r.ok) throw new Error(p.message || labels.failed); 
-                this.interview = p; this.idx = 0; this.answer = ''; this.result = null; 
+            try {
+                const r = await fetch(this.startUrl, { method: 'POST', headers: headers(), body: JSON.stringify({ language: selectedPracticeLanguage }) });
+                const p = await r.json().catch(() => ({}));
+                if (!r.ok) throw new Error(p.message || labels.failed);
+                this.interview = p; this.idx = 0; this.answer = ''; this.result = null;
             }
             catch (e) { this.error = e?.message || labels.failed; } finally { this.busy = false; }
         },
