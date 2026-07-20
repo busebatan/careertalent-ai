@@ -103,9 +103,13 @@ class StudentFeaturesController extends PanelController
         return $this->apiJson($api->updateCareerApplication($applicationId, $validated));
     }
 
-    public function startInterview(CareerTalentApiClient $api): JsonResponse
+    public function startInterview(Request $request, CareerTalentApiClient $api): JsonResponse
     {
-        return $this->apiJson($api->startInterview());
+        $validated = $request->validate([
+            'language' => ['nullable', 'string', 'in:tr,en'],
+        ]);
+
+        return $this->apiJson($api->startInterview($validated['language'] ?? 'tr'));
     }
 
     public function scoreInterview(Request $request, string $interviewId, CareerTalentApiClient $api): JsonResponse

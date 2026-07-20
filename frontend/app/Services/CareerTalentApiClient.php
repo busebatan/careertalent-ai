@@ -376,9 +376,9 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/career/interviews/current', 15);
     }
 
-    public function startInterview(): array
+    public function startInterview(string $language = 'tr'): array
     {
-        return $this->postJson('/api/v1/career/interviews', [], 90);
+        return $this->postJson('/api/v1/career/interviews', ['language' => $language], 90);
     }
 
     public function scoreInterviewAnswer(string $interviewId, array $payload): array
