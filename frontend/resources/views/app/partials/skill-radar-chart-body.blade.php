@@ -1,6 +1,6 @@
-<div class="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-center">
-    <div class="relative mx-auto w-full max-w-md">
-        <svg viewBox="0 0 320 320" overflow="visible" class="h-auto w-full overflow-visible" role="img" aria-label="{{ __('panel.skill_radar.title') }}">
+<div data-skill-radar-layout="split" class="grid min-w-0 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(15rem,18rem)] md:items-center">
+    <div class="relative mx-auto min-w-0 w-full max-w-[26rem] overflow-hidden">
+        <svg viewBox="0 0 320 320" class="h-auto w-full overflow-hidden" role="img" aria-label="{{ __('panel.skill_radar.title') }}">
             @foreach ([25, 50, 75, 100] as $ring)
                 @php
                     $ringPoints = [];
@@ -38,7 +38,7 @@
                     [$lx, $ly] = $labelPoint($i, $n);
                     $anchor = $lx < $cx - 10 ? 'end' : ($lx > $cx + 10 ? 'start' : 'middle');
                     $labelLines = $wrapSkillLabel((string) $skill['label']);
-                    $labelWidth = 78;
+                    $labelWidth = 96;
                     $lineHeight = 11;
                     $labelHeight = count($labelLines) * $lineHeight + 2;
                     $labelX = match ($anchor) {
@@ -46,7 +46,7 @@
                         'start' => min(320 - $labelWidth - 4, $lx),
                         default => $lx - ($labelWidth / 2),
                     };
-                    $labelY = $ly - ($labelHeight / 2);
+                    $labelY = min(320 - $labelHeight - 3, max(3, $ly - ($labelHeight / 2)));
                     $labelAlign = match ($anchor) {
                         'end' => 'text-right',
                         'start' => 'text-left',
@@ -56,7 +56,7 @@
                 <circle cx="{{ $px }}" cy="{{ $py }}" r="3.5" class="fill-emerald-500 dark:fill-emerald-400"/>
                 <foreignObject x="{{ $labelX }}" y="{{ $labelY }}" width="{{ $labelWidth }}" height="{{ $labelHeight }}">
                     <div xmlns="http://www.w3.org/1999/xhtml"
-                        class="{{ $labelAlign }} break-words text-[9px] font-medium leading-[11px] text-slate-600 dark:text-slate-300">
+                        class="{{ $labelAlign }} break-words [overflow-wrap:anywhere] text-[9px] font-medium leading-[11px] text-slate-600 dark:text-slate-300">
                         @foreach ($labelLines as $line)
                             <div>{{ $line }}</div>
                         @endforeach
@@ -77,7 +77,7 @@
         </div>
     </div>
 
-    <ul class="mx-auto w-full max-w-[17rem] space-y-2 lg:mx-0">
+    <ul class="min-w-0 w-full space-y-2">
         @foreach ($skills as $skill)
             @php
                 $gap = max(0, $skill['target'] - $skill['score']);
@@ -87,7 +87,7 @@
             @endphp
             <li class="panel-entry !space-y-1.5 !p-2.5">
                 <div class="flex items-start justify-between gap-2 text-xs">
-                    <span class="min-w-0 flex-1 font-medium leading-snug text-slate-800 dark:text-slate-100">{{ $skill['label'] }}</span>
+                    <span class="min-w-0 flex-1 break-words [overflow-wrap:anywhere] font-medium leading-snug text-slate-800 dark:text-slate-100">{{ $skill['label'] }}</span>
                     <span class="shrink-0 tabular-nums text-slate-600 dark:text-slate-300">
                         <span class="font-semibold text-emerald-600 dark:text-emerald-400">%{{ $skill['score'] }}</span>
                         <span class="panel-muted text-[10px]">/ %{{ $skill['target'] }}</span>

@@ -44,6 +44,8 @@ class DashboardCvRadarTest extends TestCase
         $response = $this->get(route('panel.dashboard'));
         $response->assertOk()
             ->assertSee('id="yetenek-radari"', false)
+            ->assertSee('data-skill-radar-layout="split"', false)
+            ->assertSee('md:grid-cols-[minmax(0,1fr)_minmax(15rem,18rem)]', false)
             ->assertSee('data-dashboard-cv-empty', false)
             ->assertDontSee('data-dashboard-cv-actions', false)
             ->assertSee('İş Analisti', false)

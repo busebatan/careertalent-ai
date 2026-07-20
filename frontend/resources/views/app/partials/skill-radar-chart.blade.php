@@ -25,7 +25,7 @@
         ];
     };
 
-    $wrapSkillLabel = static function (string $label, int $maxChars = 11): array {
+    $wrapSkillLabel = static function (string $label, int $maxChars = 16): array {
         if (mb_strlen($label) <= $maxChars) {
             return [$label];
         }
