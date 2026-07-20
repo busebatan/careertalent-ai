@@ -279,6 +279,7 @@ export function profileCvUpload(locale, analyzeUrl, statusUrl = '', redirectUrl 
         historyAnalyzeUrl,
         loading: false,
         historyLoadingId: null,
+        historyAnalysisReady: false,
         dragOver: false,
         error: null,
 
@@ -402,6 +403,7 @@ export function profileCvUpload(locale, analyzeUrl, statusUrl = '', redirectUrl 
         async analyzeHistory(documentId) {
             if (!this.historyAnalyzeUrl || this.historyLoadingId) return;
             this.error = null;
+            this.historyAnalysisReady = false;
             this.historyLoadingId = documentId;
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             try {
@@ -419,9 +421,14 @@ export function profileCvUpload(locale, analyzeUrl, statusUrl = '', redirectUrl 
                     overall_match: completed.radar?.reduce((sum, item) => sum + Number(item.score || 0), 0) / Math.max(completed.radar?.length || 1, 1),
                     target_role: completed.current_role || '', skills: completed.radar || [], analyzed_at: completed.created_at,
                 });
-                reloadAfterCvAnalysis(this.redirectUrl);
+                if (this.redirectUrl) {
+                    reloadAfterCvAnalysis(this.redirectUrl);
+                    return;
+                }
+                this.historyAnalysisReady = true;
             } catch (err) {
                 this.error = err?.message || 'CV analizi başlatılamadı';
+            } finally {
                 this.historyLoadingId = null;
             }
         },

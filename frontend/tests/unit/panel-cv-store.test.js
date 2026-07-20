@@ -201,7 +201,7 @@ describe('profileCvUpload archived CV analysis', () => {
         window.location.href = '';
     });
 
-    it('starts a fresh analysis, polls it and reloads the page with exact CV metadata', async () => {
+    it('starts a fresh analysis, polls it and exposes the roadmap CTA with exact CV metadata', async () => {
         const requests = [];
         globalThis.fetch = async (url, options = {}) => {
             requests.push({ url, options });
@@ -225,7 +225,9 @@ describe('profileCvUpload archived CV analysis', () => {
         assert.equal(requests[1].url, '/status/analysis-123');
         assert.equal(PanelCvStore.get().fileName, 'İlan CV.pdf');
         assert.equal(PanelCvStore.get().skillRadar.skills[0].label, 'SQL');
-        assert.equal(window.location.href, '__reloaded__');
+        assert.equal(state.historyAnalysisReady, true);
+        assert.equal(state.historyLoadingId, null);
+        assert.equal(window.location.href, '');
     });
 
     it('keeps the user on history and shows the API error when activation fails', async () => {
@@ -236,6 +238,7 @@ describe('profileCvUpload archived CV analysis', () => {
 
         assert.equal(state.error, 'CV okunamadı');
         assert.equal(state.historyLoadingId, null);
+        assert.equal(state.historyAnalysisReady, false);
         assert.equal(window.location.href, '');
         assert.equal(PanelCvStore.get(), null);
     });

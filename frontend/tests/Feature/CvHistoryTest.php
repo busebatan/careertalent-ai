@@ -26,15 +26,24 @@ class CvHistoryTest extends TestCase
             'http://localhost:8000/*' => Http::response([]),
         ]);
 
-        $this->get('/panel/hesap#cv-yukle')->assertOk()
+        $response = $this->get('/panel/hesap#cv-yukle');
+
+        $response->assertOk()
             ->assertSee('current.pdf')->assertSee('Trendyol CV.pdf')->assertSee('old.pdf')
+            ->assertSee('data-cv-history-analysis-ready', false)
             ->assertSee('Kariyer rotasına git')
             ->assertSee('href="'.route('panel.roadmap').'"', false)
+            ->assertSeeInOrder(['data-cv-history-analysis-ready', '<ul class="mt-5'], false)
             ->assertDontSee('@drop.prevent="onDrop($event)"', false)
             ->assertDontSee('panel-upload-zone', false)
             ->assertDontSee('Tekrar indir')
             ->assertSee('Aç ve düzenle')->assertSee('Aktif analiz yap')
             ->assertSee('13.07.2026 21:30');
+
+        $dom = new \DOMDocument();
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $this->assertCount(1, $xpath->query('//*[@id="cv-yukle"]//a[@href="'.route('panel.roadmap').'"]'));
     }
 
     public function test_cv_tab_selection_updates_hash_and_is_restored_after_reload(): void

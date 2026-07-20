@@ -196,6 +196,15 @@
             <p x-show="historyLoadingId" x-cloak class="mt-4 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-800 dark:text-sky-200">
                 {{ __('panel.profile.cv_analyze_active_working') }}
             </p>
+            <div x-show="historyAnalysisReady" x-cloak data-cv-history-analysis-ready
+                class="mt-4 flex flex-col gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                role="status">
+                <p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">{{ __('panel.profile.cv_analysis_ready') }}</p>
+                <a href="{{ route('panel.roadmap') }}"
+                    class="inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500">
+                    {{ __('panel.profile.cv_go_roadmap') }}
+                </a>
+            </div>
             <p x-show="error" x-cloak class="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200" x-text="error"></p>
 
             @if (! empty($cvHistory))
@@ -218,7 +227,6 @@
                                     <span x-show="historyLoadingId === @js($document['id'])" x-cloak>{{ __('panel.profile.cv_analyze_active_working') }}</span>
                                 </button>
                                 @if (($document['kind'] ?? '') === 'generated')<a href="{{ route('panel.cv-builder', ['cvDocument' => $document['id']]) }}" class="text-sky-600 hover:underline dark:text-sky-400">{{ __('panel.profile.cv_restore') }}</a>@endif
-                                <a href="{{ route('panel.roadmap') }}" class="text-emerald-600 hover:underline dark:text-emerald-400">{{ __('panel.profile.cv_go_roadmap') }}</a>
                                 <form method="post" action="{{ route('panel.cv-history.destroy', $document['id']) }}" onsubmit='return confirm(@json(__('panel.profile.cv_delete_confirm')))'>@csrf @method('DELETE')<button type="submit" class="text-red-600 hover:underline dark:text-red-400">{{ __('panel.profile.cv_delete') }}</button></form>
                             </div>
                         </li>

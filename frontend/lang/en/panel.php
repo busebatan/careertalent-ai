@@ -383,6 +383,7 @@ return [
         'cv_restore' => 'Open and edit',
         'cv_analyze_active' => 'Set as active analysis',
         'cv_analyze_active_working' => 'Analyzing…',
+        'cv_analysis_ready' => 'CV analysis is complete. Your career route is ready.',
         'cv_delete' => 'Delete',
         'cv_delete_confirm' => 'Permanently delete this CV record and file?',
         'cv_archived' => 'Current CV moved to history.',

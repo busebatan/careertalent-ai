@@ -383,6 +383,7 @@ return [
         'cv_restore' => 'Aç ve düzenle',
         'cv_analyze_active' => 'Aktif analiz yap',
         'cv_analyze_active_working' => 'Analiz ediliyor…',
+        'cv_analysis_ready' => 'CV analizi tamamlandı. Kariyer rotan hazır.',
         'cv_delete' => 'Sil',
         'cv_delete_confirm' => 'Bu CV kaydı ve dosyası kalıcı silinsin mi?',
         'cv_archived' => 'Mevcut CV geçmişe taşındı.',
