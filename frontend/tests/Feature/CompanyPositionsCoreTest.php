@@ -84,7 +84,7 @@ class CompanyPositionsCoreTest extends TestCase
             ]],
             'applications' => [[
                 'id' => 'application-1', 'candidate_name' => 'Aday Kullanıcı', 'candidate_email' => 'aday@example.com',
-                'stage' => 'new', 'completion_status' => 'completed', 'missing_documents' => [], 'last_action_at' => '2026-07-20T10:00:00Z',
+                'stage' => 'new', 'completion_status' => 'not_requested', 'missing_documents' => ['cv'], 'last_action_at' => '2026-07-20T10:00:00Z',
             ]], 'assessments' => [], 'comparison' => [],
             'activities' => [['event_type' => 'position.published', 'details' => ['status' => 'published'], 'actor_name' => 'Acme Owner', 'occurred_at' => '2026-07-20T10:00:00Z']],
             'members' => [],
@@ -228,7 +228,10 @@ class CompanyPositionsCoreTest extends TestCase
         $this->withSession(['company_auth.access_token' => 'company-token'])
             ->get('/acme/pozisyonlar/position-1?tab=applications')
             ->assertOk()
-            ->assertSee('Aşama / not / karar');
+            ->assertSee('Aşama / not / karar')
+            ->assertSee('Analiz istenmedi')
+            ->assertSee('Eksik belgeler')
+            ->assertDontSee('not_requested');
 
         $this->withSession(['company_auth.access_token' => 'company-token'])
             ->patch('/acme/pozisyonlar/position-1/adaylar/application-1', [
@@ -241,6 +244,27 @@ class CompanyPositionsCoreTest extends TestCase
             && $request->data()['stage'] === 'shortlisted'
             && $request->data()['note'] === 'Teknik kanıt güçlü'
             && $request->data()['decision'] === 'İnsan kısa liste kararı');
+    }
+
+    public function test_application_completion_status_follows_english_panel_locale(): void
+    {
+        Http::fake(function (Request $request) {
+            if (str_ends_with($request->url(), '/api/v1/auth/me')) {
+                return Http::response([...$this->companyUser(), 'preferred_locale' => 'en']);
+            }
+            if (str_ends_with($request->url(), '/api/v1/company/context')) return Http::response(['memberships' => [$this->membership()]]);
+            if (str_contains($request->url(), '/api/v1/company/positions/position-1')) return Http::response($this->detailPayload());
+            return Http::response([], 404);
+        });
+
+        $this->withSession(['company_auth.access_token' => 'company-token'])
+            ->get('/acme/pozisyonlar/position-1?tab=applications')
+            ->assertOk()
+            ->assertSee('Analysis not requested')
+            ->assertSee('Missing documents')
+            ->assertSee('Human review')
+            ->assertDontSee('not_requested')
+            ->assertDontSee('Tamamlanma durumu');
     }
 
     public function test_ats_dictionary_uses_granular_permission_and_backend_list_contract(): void
