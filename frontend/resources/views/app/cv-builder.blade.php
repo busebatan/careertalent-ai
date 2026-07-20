@@ -52,6 +52,7 @@
                 'fromApi' => $hasCvAnalysis ?? false,
                 'showClearInline' => true,
                 'collapsible' => true,
+                'radarAlignment' => 'left',
             ])
         </div>
     @endif

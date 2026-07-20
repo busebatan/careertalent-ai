@@ -1,5 +1,11 @@
-<div data-skill-radar-layout="split" class="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(15rem,18rem)] md:items-center">
-    <div class="relative mx-auto min-w-0 w-full max-w-[32rem] overflow-hidden md:ml-auto md:mr-0">
+@php
+    $radarAlignment = ($radarAlignment ?? 'left') === 'intro-centered' ? 'intro-centered' : 'left';
+@endphp
+
+<div data-skill-radar-layout="split"
+    data-skill-radar-alignment="{{ $radarAlignment }}"
+    class="grid min-w-0 gap-4 md:w-fit md:max-w-full md:grid-cols-[minmax(0,32rem)_minmax(15rem,18rem)] md:items-center {{ $radarAlignment === 'intro-centered' ? 'md:ml-10 md:mr-auto' : 'md:mr-auto' }}">
+    <div class="relative mx-auto min-w-0 w-full max-w-[32rem] overflow-hidden">
         <svg viewBox="0 0 320 320" class="h-auto w-full overflow-hidden" role="img" aria-label="{{ __('panel.skill_radar.title') }}">
             @foreach ([25, 50, 75, 100] as $ring)
                 @php

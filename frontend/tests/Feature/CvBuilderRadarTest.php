@@ -28,6 +28,10 @@ class CvBuilderRadarTest extends TestCase
         $response = $this->get(route('panel.cv-builder', ['locale' => 'en']));
         $response->assertOk()
             ->assertSee('id="yetenek-radari"', false)
+            ->assertSee('data-skill-radar-alignment="left"', false)
+            ->assertSee('md:grid-cols-[minmax(0,32rem)_minmax(15rem,18rem)]', false)
+            ->assertSee('md:mr-auto', false)
+            ->assertDontSee('md:ml-auto', false)
             ->assertSee('Business Analyst', false)
             ->assertSee('%80', false)
             ->assertSee('group-open:rotate-180', false)
