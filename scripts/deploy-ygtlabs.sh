@@ -89,6 +89,10 @@ rsync -a --delete \
   --exclude 'backend/uploads' \
   --exclude '.superpowers' \
   "$SRC/" "$DEST/"
+# `rsync -a` also copies the source root mode. Temporary release archives are
+# commonly 0700, which would lock PHP-FPM and the yigit deploy user out.
+chown yigit:www-data "$DEST"
+chmod 0755 "$DEST"
 git -C "$SRC" rev-parse HEAD > "$DEST/REVISION"
 
 cd "$DEST/frontend"
