@@ -16,6 +16,11 @@ class CvBuilderController extends PanelController
         $profile = ($profileResult['ok'] ?? false) && is_array($profileResult['body'] ?? null) ? $profileResult['body'] : [];
         $analysis = ($analysisResult['ok'] ?? false) && is_array($analysisResult['body'] ?? null) ? $analysisResult['body'] : [];
         $hasCvAnalysis = ($analysis['status'] ?? null) === 'ready';
+        $documentsResult = $api->cvDocuments();
+        $documents = ($documentsResult['ok'] ?? false) && is_array($documentsResult['body'] ?? null) ? $documentsResult['body'] : [];
+        $currentCv = collect($documents)->first(
+            fn ($item) => is_array($item) && ($item['kind'] ?? null) === 'uploaded' && ($item['is_current'] ?? false)
+        );
 
         $cvDraft = $this->blankCvDraft($profile);
         $restoredFromHistory = false;
@@ -34,7 +39,8 @@ class CvBuilderController extends PanelController
             'cvLabels' => $this->cvLabelsForJs(),
             'skillRadar' => $this->skillRadar($analysis),
             'hasCvAnalysis' => $hasCvAnalysis,
-            'cvFileName' => '',
+            'cvFileName' => is_array($currentCv) ? (string) ($currentCv['display_name'] ?? '') : '',
+            'currentCv' => $currentCv,
         ]);
     }
 
@@ -134,4 +140,3 @@ class CvBuilderController extends PanelController
         );
     }
 }
-

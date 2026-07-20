@@ -106,6 +106,24 @@
         class="panel-card mb-8 overflow-hidden p-6 lg:p-8"
         data-cv-analysis-upload
         x-data="profileCvUpload(@js(app()->getLocale()), @js(route('panel.cv.analyze')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), '', '', @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])))">
+        <div class="mb-6">
+            <h2 class="mb-2 font-semibold">{{ __('panel.profile.cv_file_title') }}</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400">{{ __('panel.cv_builder.upload_desc') }}</p>
+        </div>
+
+        @if (is_array($currentCv ?? null))
+            <div data-cv-current-file class="mb-4 flex flex-col gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-emerald-700 dark:text-emerald-300">{{ $currentCv['display_name'] }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('panel.profile.last_upload', ['date' => \Illuminate\Support\Carbon::parse($currentCv['created_at'])->format('d.m.Y H:i')]) }}</p>
+                </div>
+                <button type="button" @click.stop="resetOpen = true"
+                    class="font-medium text-emerald-600 hover:underline dark:text-emerald-400">
+                    {{ __('panel.skill_radar.clear_cv') }}
+                </button>
+            </div>
+        @endif
+
         <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-stretch">
             <div class="min-w-0">
                 <p x-show="loading" x-cloak
@@ -156,6 +174,8 @@
             </div>
         </div>
     </section>
+
+    @include('app.partials.career-reset-modal', ['resetAction' => 'clearCvAnalysis()'])
 
     <p x-show="analyzeError" x-cloak class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200" x-text="analyzeError"></p>
 

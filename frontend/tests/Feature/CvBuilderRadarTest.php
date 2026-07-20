@@ -28,6 +28,9 @@ class CvBuilderRadarTest extends TestCase
                 'status' => 'ready', 'current_role' => 'Business Analyst', 'created_at' => '2026-07-04T00:00:00Z',
                 'radar' => [['label' => 'Excel', 'score' => 80, 'target' => 70]], 'career_ladder' => [],
             ], 200),
+            'http://localhost:8000/api/v1/cv/documents' => Http::response([
+                ['id' => 'current-1', 'kind' => 'uploaded', 'display_name' => 'Fatma_Kesici.pdf', 'is_current' => true, 'created_at' => '2026-07-20T21:17:00+00:00'],
+            ], 200),
             'http://localhost:8000/api/v1/career/targets' => Http::response([], 200),
             'http://localhost:8000/*' => Http::response([], 200),
         ]);
@@ -39,6 +42,16 @@ class CvBuilderRadarTest extends TestCase
             ->assertSee('lg:grid-cols-[minmax(0,1fr)_auto]', false)
             ->assertSee('%80', false)
             ->assertSee(route('panel.career-ladder'), false)
+            ->assertSee(__('panel.profile.cv_file_title'), false)
+            ->assertSee(__('panel.cv_builder.upload_desc'), false)
+            ->assertSee('Fatma_Kesici.pdf', false)
+            ->assertSee(__('panel.profile.last_upload', ['date' => '20.07.2026 21:17']), false)
+            ->assertSee('@click.stop="resetOpen = true"', false)
+            ->assertSee('value="analysis"', false)
+            ->assertSee('value="plan"', false)
+            ->assertSee('value="all"', false)
+            ->assertDontSee(__('panel.profile.cv_go_roadmap'), false)
+            ->assertDontSee(__('panel.profile.remove'), false)
             ->assertDontSee('id="yetenek-radari"', false)
             ->assertDontSee('@toggle="onRadarToggle($event)"', false)
             ->assertDontSee('data-skill-radar-layout', false)

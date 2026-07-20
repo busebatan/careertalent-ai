@@ -420,6 +420,7 @@ return [
         'analyzing' => 'Analyzing CV…',
         'saved' => 'Saved',
         'save_hint' => 'Save runs AI analysis on your CV content and updates the skill radar.',
+        'upload_desc' => 'Upload a PDF to extract skills automatically and reflect them in your career ladder.',
         'analyze_too_short' => 'CV content is too short to analyze. Add a summary, experience, or skills.',
         'analyze_failed' => 'CV analysis could not complete. Try again shortly.',
         'ai_title' => 'AI suggestion for your CV',

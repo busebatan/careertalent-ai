@@ -420,6 +420,7 @@ return [
         'analyzing' => 'CV analiz ediliyor…',
         'saved' => 'Kaydedildi',
         'save_hint' => 'Kaydet: CV içeriği AI ile analiz edilir ve yetenek radarı güncellenir.',
+        'upload_desc' => 'PDF yüklediğinde yeteneklerin otomatik çıkarılır ve kariyer merdivenine yansır.',
         'analyze_too_short' => 'CV içeriği analiz için çok kısa. Özet, deneyim veya yetenek ekleyin.',
         'analyze_failed' => 'CV analizi tamamlanamadı. Biraz sonra tekrar dene.',
         'ai_title' => 'CV için AI önerisi',
