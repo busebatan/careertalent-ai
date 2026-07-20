@@ -188,57 +188,29 @@
         </form>
     </section>
 
-    <section id="cv-yukle" x-show="tab === 'cv'" x-cloak x-data="profileCvUpload(@js(app()->getLocale()), @js(route('panel.cv.analyze')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), '', @js(route('panel.cv-history.analyze', ['documentId' => '__DOCUMENT_ID__'])), @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])))">
+    <section id="cv-yukle" x-show="tab === 'cv'" x-cloak x-data="profileCvUpload(@js(app()->getLocale()), '', @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), '', @js(route('panel.cv-history.analyze', ['documentId' => '__DOCUMENT_ID__'])), @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])))">
         <div class="panel-card p-6">
-            <h2 class="mb-2 font-semibold">{{ __('panel.profile.cv_file_title') }}</h2>
-            <p class="mb-6 text-sm text-slate-600 dark:text-slate-400">
-                {!! __('panel.profile.cv_file_desc', [
-                    'link' => '<a href="'.route('panel.cv-builder').'" class="text-emerald-600 hover:underline dark:text-emerald-400">'.e(__('panel.profile.cv_file_link')).'</a>',
-                ]) !!}
-            </p>
-
-            <p x-show="loading" x-cloak class="mb-4 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-800 dark:text-sky-200">
-                {{ __('panel.profile.cv_analyzing') }}
-            </p>
-            <p x-show="error" x-cloak class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200" x-text="error"></p>
-
-            @if (is_array($currentCv ?? null))
-                <div class="mb-4 flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
-                    <div><p class="text-sm text-emerald-700 dark:text-emerald-300">{{ $currentCv['display_name'] }}</p><p class="mt-1 text-xs text-slate-500">{{ __('panel.profile.last_upload', ['date' => \Illuminate\Support\Carbon::parse($currentCv['created_at'])->format('d.m.Y H:i')]) }}</p></div>
-                    <div class="flex items-center gap-3"><a href="{{ route('panel.roadmap') }}" class="text-xs text-emerald-600 hover:underline dark:text-emerald-400">{{ __('panel.profile.cv_go_roadmap') }}</a><form method="post" action="{{ route('panel.cv-history.archive-current', $currentCv['id']) }}">@csrf<button type="submit" class="text-xs text-slate-500 hover:text-red-500">{{ __('panel.profile.remove') }}</button></form></div>
-                </div>
-            @endif
-
-            <label class="panel-upload-zone"
-                :class="[
-                    loading ? 'pointer-events-none opacity-60' : '',
-                    dragOver ? 'panel-upload-zone-active' : '',
-                ]"
-                @dragover.prevent="onDragOver($event)"
-                @dragleave.prevent="onDragLeave($event)"
-                @drop.prevent="onDrop($event)">
-                <i data-lucide="file-text" class="mb-2 h-8 w-8 text-emerald-500" aria-hidden="true"></i>
-                <span class="mb-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ __('panel.profile.upload_drag') }}</span>
-                <span class="text-xs text-slate-500">{{ __('panel.profile.upload_hint') }}</span>
-                <input type="file" accept="application/pdf,.pdf" class="hidden"
-                    @change="onFileSelect($event)">
-            </label>
-
-            <p class="mt-4 text-xs text-slate-500">
-                @if (! is_array($currentCv ?? null))
-                    {{ __('panel.profile.no_cv') }}
-                @endif
-            </p>
-        </div>
-
-        <div class="panel-card mt-6 p-6">
             <h2 class="font-semibold">{{ __('panel.profile.cv_history_title') }}</h2>
             <p class="panel-muted mt-1 text-sm">{{ __('panel.profile.cv_history_desc') }}</p>
+
+            <p x-show="historyLoadingId" x-cloak class="mt-4 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-800 dark:text-sky-200">
+                {{ __('panel.profile.cv_analyze_active_working') }}
+            </p>
+            <p x-show="error" x-cloak class="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200" x-text="error"></p>
+
             @if (! empty($cvHistory))
                 <ul class="mt-5 divide-y divide-slate-200 dark:divide-slate-800">
                     @foreach ($cvHistory as $document)
                         <li class="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
-                            <div class="min-w-0"><p class="truncate text-sm font-medium">{{ $document['display_name'] }}</p><p class="panel-muted mt-1 text-xs">{{ ($document['kind'] ?? '') === 'generated' ? __('panel.profile.cv_generated') : __('panel.profile.cv_uploaded') }} · {{ \Illuminate\Support\Carbon::parse($document['created_at'])->format('d.m.Y H:i') }}</p></div>
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="truncate text-sm font-medium">{{ $document['display_name'] }}</p>
+                                    @if ($document['is_current'] ?? false)
+                                        <span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{{ __('panel.profile.cv_current') }}</span>
+                                    @endif
+                                </div>
+                                <p class="panel-muted mt-1 text-xs">{{ ($document['kind'] ?? '') === 'generated' ? __('panel.profile.cv_generated') : __('panel.profile.cv_uploaded') }} · {{ \Illuminate\Support\Carbon::parse($document['created_at'])->format('d.m.Y H:i') }}</p>
+                            </div>
                             <div class="flex flex-wrap items-center gap-3 text-xs">
                                 <button type="button" @click="analyzeHistory(@js($document['id']))" :disabled="historyLoadingId !== null"
                                     class="font-medium text-violet-600 hover:underline disabled:cursor-not-allowed disabled:opacity-60 dark:text-violet-400">

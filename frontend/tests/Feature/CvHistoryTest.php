@@ -30,8 +30,8 @@ class CvHistoryTest extends TestCase
             ->assertSee('current.pdf')->assertSee('Trendyol CV.pdf')->assertSee('old.pdf')
             ->assertSee('Kariyer rotasına git')
             ->assertSee('href="'.route('panel.roadmap').'"', false)
-            ->assertSee('@drop.prevent="onDrop($event)"', false)
-            ->assertSee('panel-upload-zone-active', false)
+            ->assertDontSee('@drop.prevent="onDrop($event)"', false)
+            ->assertDontSee('panel-upload-zone', false)
             ->assertDontSee('Tekrar indir')
             ->assertSee('Aç ve düzenle')->assertSee('Aktif analiz yap')
             ->assertSee('13.07.2026 21:30');

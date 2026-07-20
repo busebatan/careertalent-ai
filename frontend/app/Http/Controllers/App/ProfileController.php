@@ -40,13 +40,11 @@ class ProfileController extends PanelController
         $profile = array_replace($defaults, ($result['ok'] ?? false) && is_array($result['body'] ?? null) ? $result['body'] : []);
         $documentsResult = $api->cvDocuments();
         $documents = ($documentsResult['ok'] ?? false) && is_array($documentsResult['body'] ?? null) ? $documentsResult['body'] : [];
-        $currentCv = collect($documents)->first(fn ($item) => is_array($item) && ($item['kind'] ?? null) === 'uploaded' && ($item['is_current'] ?? false));
-        $history = array_values(array_filter($documents, fn ($item) => is_array($item) && ! ($item['is_current'] ?? false)));
+        $cvHistory = array_values(array_filter($documents, fn ($item) => is_array($item)));
 
         return $this->panelView('app.account', [
             'profile' => $profile,
-            'currentCv' => $currentCv,
-            'cvHistory' => $history,
+            'cvHistory' => $cvHistory,
             'initialTab' => $initialTab,
             'profileError' => ($result['ok'] ?? false) ? null : $result['error'],
         ]);

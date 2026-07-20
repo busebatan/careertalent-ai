@@ -27,8 +27,8 @@ class PanelPagesI18nTest extends TestCase
     return [
       'dashboard-tr' => ['/panel', 'tr', ['Ana Sayfa', 'Hoş geldin', 'CV yükle', 'CV oluştur', 'Henüz CV analizi yok']],
       'dashboard-en' => ['/panel', 'en', ['Dashboard', 'Welcome', 'Upload CV', 'Build CV', 'No CV analysis yet']],
-      'account-tr' => ['/panel/hesap', 'tr', ['Hesap', 'Profil bilgileri', 'LinkedIn', 'Profil ve portfolyo bağlantıları', 'Bağlantı ekle', 'Giriş bilgileri', 'CV yükle', 'Abonelik', 'Gizlilik']],
-      'account-en' => ['/panel/hesap', 'en', ['Account', 'Profile details', 'LinkedIn', 'Profile and portfolio links', 'Add link', 'Upload CV']],
+      'account-tr' => ['/panel/hesap', 'tr', ['Hesap', 'Profil bilgileri', 'LinkedIn', 'Profil ve portfolyo bağlantıları', 'Bağlantı ekle', 'Giriş bilgileri', 'CV geçmişi', 'Abonelik', 'Gizlilik']],
+      'account-en' => ['/panel/hesap', 'en', ['Account', 'Profile details', 'LinkedIn', 'Profile and portfolio links', 'Add link', 'CV history']],
       'skill-passport-tr' => ['/panel/yetenek-pasaportu', 'tr', ['Yetenek Pasaportu', 'Kanıt skoru', 'Kanıt yüklemek için bir yeteneğe tıkla', 'Onaylandı', 'İnceleniyor', 'Bekleniyor', 'Kanıt eksik']],
       'skill-passport-en' => ['/panel/yetenek-pasaportu', 'en', ['Skill Passport', 'Evidence score', 'Click a skill to open the upload area below the card.', 'Approved', 'Under review', 'Awaiting evidence', 'Missing evidence']],
       'cv-builder-tr' => ['/panel/cv-merkezi', 'tr', ['CV Merkezi', 'PDF indir', 'Kaydet', 'CvOptionalSections']],
