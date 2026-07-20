@@ -72,6 +72,27 @@ class AuthFlowTest extends TestCase
         $response->assertSessionHas('panel_locale', 'en');
     }
 
+    public function test_student_login_replaces_a_stale_company_shaped_candidate_session(): void
+    {
+        Http::fake([
+            '*/api/v1/auth/login' => Http::response(['access_token' => 'fresh-student-token', 'token_type' => 'bearer']),
+            '*/api/v1/auth/me' => Http::response(array_merge($this->user(), ['role' => 'student'])),
+        ]);
+
+        $this->withSession([
+            'auth' => [
+                'access_token' => 'stale-company-token',
+                'user' => array_merge($this->user(), ['role' => 'company']),
+            ],
+        ])->post('/panel/login', [
+            'email' => 'ayse@example.com',
+            'password' => 'GucluParola123!',
+        ])->assertRedirect('/panel')
+            ->assertSessionHas('auth.access_token', 'fresh-student-token')
+            ->assertSessionHas('auth.user.role', 'student')
+            ->assertSessionDoesntHaveErrors();
+    }
+
     public function test_admin_account_using_panel_login_is_redirected_to_admin_panel(): void
     {
         Http::fake([
