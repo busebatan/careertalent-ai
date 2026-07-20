@@ -57,5 +57,76 @@
             </article></template>
         </div>
     </section>
+
+    <!-- Apply Modal -->
+    <div x-show="showApplyModal" x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"
+        @keydown.escape.window="showApplyModal = false">
+        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
+            @click.outside="showApplyModal = false">
+            
+            <div class="mb-4 flex items-center gap-3">
+                <div class="rounded-xl bg-emerald-50 p-2 dark:bg-emerald-950/30">
+                    <i data-lucide="send" class="h-6 w-6 text-emerald-600 dark:text-emerald-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white">
+                        {{ app()->getLocale() === 'en' ? 'Position Application' : 'Pozisyona Başvur' }}
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400" x-show="activeJobForApply" x-text="activeJobForApply.title + ' - ' + activeJobForApply.company"></p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <template x-if="loadingVersions">
+                    <div class="py-4 text-center text-sm text-slate-500">
+                        <span class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-emerald-600 border-t-transparent mr-2"></span>
+                        {{ app()->getLocale() === 'en' ? 'Loading resume versions...' : 'Özgeçmiş sürümleri yükleniyor...' }}
+                    </div>
+                </template>
+
+                <template x-if="!loadingVersions && cvVersions.length === 0">
+                    <div class="rounded-xl border border-amber-200 bg-amber-50/50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+                        <p class="font-semibold mb-1">
+                            {{ app()->getLocale() === 'en' ? 'No CV Versions Found' : 'CV Sürümü Bulunamadı' }}
+                        </p>
+                        <p class="text-xs">
+                            {{ app()->getLocale() === 'en' ? 'You do not have any saved CV versions. Your main profile will be used as a backup snapshot copy.' : 'Kaydedilmiş bir CV sürümünüz bulunmuyor. Başvurunuz için ana profil verileriniz yedek snapshot kopyası olarak kullanılacaktır.' }}
+                        </p>
+                    </div>
+                </template>
+
+                <template x-if="!loadingVersions && cvVersions.length > 0">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                            {{ app()->getLocale() === 'en' ? 'Choose Resume Version' : 'Başvuru Yapılacak Özgeçmiş Sürümü' }}
+                        </label>
+                        <select x-model="selectedCvVersionId" class="panel-input-block mt-2 w-full">
+                            <template x-for="version in cvVersions" :key="version.id">
+                                <option :value="version.id" :selected="version.id === selectedCvVersionId"
+                                    x-text="version.version_name + ' (' + version.language.toUpperCase() + ')' + (version.is_main ? ' [Ana Sürüm]' : '')">
+                                </option>
+                            </template>
+                        </select>
+                        <p class="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                            {{ app()->getLocale() === 'en' ? 'Only the snapshot copy of this selected version will be shared with the company. The company will not see your other versions.' : 'Kurum adayı incelerken yalnızca seçtiğiniz bu sürümün statik snapshot kopyasını görebilecektir. Diğer sürümleriniz gizli kalır.' }}
+                        </p>
+                    </div>
+                </template>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" @click="showApplyModal = false"
+                    class="rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                    {{ app()->getLocale() === 'en' ? 'Cancel' : 'İptal' }}
+                </button>
+                <button type="button" @click="confirmApply()"
+                    class="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition shadow-sm hover:shadow active:scale-95">
+                    {{ app()->getLocale() === 'en' ? 'Submit Application' : 'Başvuruyu Gönder' }}
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
+

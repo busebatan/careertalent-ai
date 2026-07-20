@@ -265,6 +265,24 @@ class AssessmentUsageLedger(Base):
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)
 
 
+class RecruitingApplicationSnapshot(Base):
+    __tablename__ = "recruiting_application_snapshots"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["application_id"],
+            ["recruiting_applications.id"],
+            name="fk_recruiting_application_snapshots_application",
+            ondelete="CASCADE",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    application_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    consent_scope: Mapped[str] = mapped_column(String(80), nullable=False, default="all")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
 class OrganizationAtsConfiguration(Base):
     __tablename__ = "organization_ats_configurations"
     __table_args__ = (CheckConstraint("provider IN ('generic', 'greenhouse', 'lever', 'workable', 'sap_successfactors', 'teamtailor', 'custom')", name="ck_organization_ats_configurations_provider"),)

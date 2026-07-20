@@ -28,6 +28,16 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         streamUrl,
         cvFileLabel: @js(__('panel.skill_radar.cv_file', ['name' => ':name'])),
         optionalSectionPick: '',
+        cvVersions: [],
+        showVersionCreateModal: false,
+        newVersionName: '',
+        newVersionLang: 'tr',
+        newVersionIsMain: false,
+        versionError: '',
+        listVersionsUrl: @js(route('panel.cv.versions.list')),
+        createVersionUrl: @js(route('panel.cv.versions.create')),
+        updateVersionUrl: @js(route('panel.cv.versions.update', ['id' => '__ID__'])),
+        deleteVersionUrl: @js(route('panel.cv.versions.delete', ['id' => '__ID__'])),
         _skipLocalesSync: false,
 
         init() {
@@ -43,6 +53,7 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
 
             this.normalizeAllLocales();
             window.addEventListener('panel-cv-updated', () => this.syncFromStore());
+            this.fetchVersions();
         },
 
         syncFromStore() {
@@ -346,6 +357,122 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
                         this.pdfExportStatus = 'idle';
                     }
                 }, 2500);
+            }
+        },
+
+        async fetchVersions() {
+            try {
+                const response = await fetch(this.listVersionsUrl);
+                if (response.ok) {
+                    this.cvVersions = await response.json();
+                }
+            } catch (err) {
+                // handle error
+            }
+        },
+
+        openCreateVersionModal() {
+            this.newVersionName = '';
+            this.newVersionLang = this.editLang;
+            this.newVersionIsMain = false;
+            this.versionError = '';
+            this.showVersionCreateModal = true;
+        },
+
+        async createVersionFromCurrent() {
+            if (!this.newVersionName.trim()) {
+                this.versionError = 'Lütfen bir sürüm adı girin.';
+                return;
+            }
+            this.versionError = '';
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const response = await fetch(this.createVersionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                    },
+                    body: JSON.stringify({
+                        version_name: this.newVersionName,
+                        language: this.newVersionLang,
+                        is_main: this.newVersionIsMain,
+                        payload: this.locales[this.newVersionLang]
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || 'Sürüm oluşturulamadı');
+                }
+                this.showVersionCreateModal = false;
+                await this.fetchVersions();
+            } catch (err) {
+                this.versionError = err.message;
+            }
+        },
+
+        async loadVersion(version) {
+            if (!confirm('Seçilen sürümün içeriği editöre yüklenecektir. Kaydedilmemiş değişiklikler kaybolabilir. Devam etmek istiyor musunuz?')) {
+                return;
+            }
+            this.locales[version.language] = JSON.parse(JSON.stringify(version.payload));
+            this.normalizeAllLocales();
+            this.editLang = version.language;
+            this.previewLang = version.language;
+            if (window.PanelCvStore) {
+                window.PanelCvStore.saveBuilder(this.locales, this.panelLocale);
+            }
+            alert('Sürüm başarıyla yüklendi!');
+        },
+
+        async setVersionMain(version) {
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const url = this.updateVersionUrl.replace('__ID__', version.id);
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                    },
+                    body: JSON.stringify({
+                        is_main: true
+                    })
+                });
+                if (response.ok) {
+                    await this.fetchVersions();
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'Ana sürüm ayarlanamadı');
+                }
+            } catch (err) {
+                alert('Bir hata oluştu');
+            }
+        },
+
+        async deleteVersion(version) {
+            if (!confirm('Bu sürümü silmek istediğinize emin misiniz?')) {
+                return;
+            }
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const url = this.deleteVersionUrl.replace('__ID__', version.id);
+                const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        Accept: 'application/json',
+                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                    }
+                });
+                if (response.ok) {
+                    await this.fetchVersions();
+                } else {
+                    alert('Sürüm silinemedi');
+                }
+            } catch (err) {
+                alert('Bir hata oluştu');
             }
         }
     };

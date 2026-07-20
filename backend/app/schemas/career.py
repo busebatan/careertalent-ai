@@ -252,3 +252,5 @@ class JobAnalyzeRequest(BaseModel):
 class JobApplyRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     suggestion_ids: list[str] = Field(min_length=1, max_length=20)
+    cv_version_id: str | None = None
+

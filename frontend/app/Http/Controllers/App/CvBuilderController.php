@@ -4,6 +4,7 @@ namespace App\Http\Controllers\App;
 
 use App\Services\CareerTalentApiClient;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Lang;
 
 class CvBuilderController extends PanelController
@@ -88,4 +89,49 @@ class CvBuilderController extends PanelController
 
         return $labels;
     }
+
+    public function listVersions(CareerTalentApiClient $api): JsonResponse
+    {
+        $result = $api->cvVersions();
+        return $this->apiResponse($result);
+    }
+
+    public function createVersion(Request $request, CareerTalentApiClient $api): JsonResponse
+    {
+        $payload = $request->validate([
+            'version_name' => ['required', 'string', 'max:160'],
+            'language' => ['required', 'in:tr,en'],
+            'is_main' => ['required', 'boolean'],
+            'payload' => ['required', 'array'],
+        ]);
+        $result = $api->createCvVersion($payload);
+        return $this->apiResponse($result);
+    }
+
+    public function updateVersion(Request $request, string $id, CareerTalentApiClient $api): JsonResponse
+    {
+        $payload = $request->validate([
+            'version_name' => ['sometimes', 'string', 'max:160'],
+            'language' => ['sometimes', 'in:tr,en'],
+            'is_main' => ['sometimes', 'boolean'],
+            'payload' => ['sometimes', 'array'],
+        ]);
+        $result = $api->updateCvVersion($id, $payload);
+        return $this->apiResponse($result);
+    }
+
+    public function deleteVersion(string $id, CareerTalentApiClient $api): JsonResponse
+    {
+        $result = $api->deleteCvVersion($id);
+        return $this->apiResponse($result);
+    }
+
+    private function apiResponse(array $result): JsonResponse
+    {
+        return response()->json(
+            $result['ok'] ? $result['body'] : ['message' => $result['error'] ?? __('panel.job_matches.error_generic')],
+            $result['ok'] ? ($result['status'] ?? 200) : ($result['status'] ?? 502)
+        );
+    }
 }
+

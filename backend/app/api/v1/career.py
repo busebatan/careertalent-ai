@@ -140,11 +140,89 @@ def apply_job(job_id: str, request: JobApplyRequest, db: DB, user: CurrentUser):
     selected = [indexed.get(item_id) for item_id in request.suggestion_ids]
     if row.status != "ready" or any(item is None or not item.get("safe_to_apply") for item in selected):
         raise HTTPException(status_code=422, detail="Yalnız güvenli CV önerileri uygulanabilir")
+
+    # ── B2B Snapshots Integration ──────────────────────────────────────
+    from datetime import timedelta
+    from app.models.company_recruiting import RecruitingPosition, RecruitingApplication, RecruitingApplicationSnapshot
+    from app.models.engagement import CandidateCvVersion
+    
+    position = db.scalar(select(RecruitingPosition).where(RecruitingPosition.id == job_id))
+    if position is not None:
+        existing_app = db.scalar(
+            select(RecruitingApplication).where(
+                RecruitingApplication.position_id == position.id,
+                RecruitingApplication.candidate_user_id == user.id
+            )
+        )
+        if not existing_app:
+            payload_data = {}
+            if request.cv_version_id:
+                cv_ver = db.scalar(
+                    select(CandidateCvVersion).where(
+                        CandidateCvVersion.id == request.cv_version_id,
+                        CandidateCvVersion.user_id == user.id
+                    )
+                )
+                if cv_ver:
+                    payload_data = cv_ver.payload
+            
+            if not payload_data:
+                cv_ver = db.scalar(
+                    select(CandidateCvVersion).where(
+                        CandidateCvVersion.user_id == user.id,
+                        CandidateCvVersion.is_main.is_(True)
+                    )
+                )
+                if cv_ver:
+                    payload_data = cv_ver.payload
+                else:
+                    latest_analysis = db.scalar(
+                        select(CareerAnalysis)
+                        .where(CareerAnalysis.user_id == user.id, CareerAnalysis.status == "ready")
+                        .order_by(CareerAnalysis.created_at.desc())
+                    )
+                    if latest_analysis:
+                        payload_data = {
+                            "current_role": latest_analysis.current_role,
+                            "profile": latest_analysis.profile,
+                            "skills": latest_analysis.skills,
+                            "radar": latest_analysis.radar
+                        }
+            
+            app_id = str(uuid4())
+            new_app = RecruitingApplication(
+                id=app_id,
+                organization_id=position.organization_id,
+                position_id=position.id,
+                candidate_user_id=user.id,
+                candidate_name=user.full_name or "Aday",
+                candidate_email=user.email,
+                current_stage="new",
+                applied_at=datetime.now(timezone.utc),
+                retention_expires_at=datetime.now(timezone.utc) + timedelta(days=180),
+            )
+            db.add(new_app)
+            db.flush()
+            
+            snapshot_id = str(uuid4())
+            new_snapshot = RecruitingApplicationSnapshot(
+                id=snapshot_id,
+                application_id=app_id,
+                schema_version=1,
+                payload=payload_data,
+                consent_scope="all",
+                created_at=datetime.now(timezone.utc)
+            )
+            db.add(new_snapshot)
+            db.commit()
+    # ───────────────────────────────────────────────────────────────────
+
     row.apply_status = "queued"
     db.commit()
     apply_job_suggestions_task.delay(row.id, request.suggestion_ids)
     db.refresh(row)
     return serialize_job(row)
+
 
 
 @router.get("/analysis/current", response_model=CareerAnalysisResponse | None)
