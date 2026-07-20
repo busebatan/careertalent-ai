@@ -14,6 +14,7 @@
                 'cvFileDynamic' => ! empty($cvFileName),
                 'showCvToolbar' => true,
                 'fromApi' => $hasCvAnalysis ?? false,
+                'radarAlignment' => 'intro-centered',
             ])
         @endif
     </div>

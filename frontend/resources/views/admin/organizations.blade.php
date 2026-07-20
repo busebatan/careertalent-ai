@@ -38,7 +38,6 @@
         <span class="rounded-full bg-slate-100 px-3 py-1 text-xs dark:bg-slate-800">{{ trans_choice('admin.organizations.total', $organizationsTotal, ['count' => $organizationsTotal]) }}</span>
     </header>
 
-    @if (session('status'))<p class="mb-5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-200">{{ session('status') }}</p>@endif
     @if (session('company_invite_url'))<div class="mb-5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4"><p class="text-sm font-semibold">{{ __('admin.organizations.owner_invite_link') }}</p><input class="panel-input-block mt-2" readonly value="{{ session('company_invite_url') }}"></div>@endif
     @if ($adminError)<p class="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">{{ $adminError }}</p>@endif
     @if ($errors->has('organizations'))<p class="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">{{ $errors->first('organizations') }}</p>@endif

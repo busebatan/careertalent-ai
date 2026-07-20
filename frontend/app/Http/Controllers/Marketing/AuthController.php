@@ -90,7 +90,7 @@ class AuthController extends Controller
             return redirect()->to('/'.$intendedPath);
         }
 
-        return redirect()->route('company.dashboard', [
+        return redirect()->route('company.positions', [
             'organizationSlug' => $membership['organization_slug'],
         ]);
     }
@@ -199,7 +199,7 @@ class AuthController extends Controller
 
         $this->startSession($request, $loggedIn['body']['access_token'], $registered['body']);
 
-        return redirect()->route('panel.dashboard');
+        return redirect()->intended(route('panel.dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse

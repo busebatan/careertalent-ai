@@ -75,6 +75,112 @@ export async function pollCvAnalysis(analysisId, statusUrl, locale, onProgress =
     throw new Error(locale === 'en' ? 'CV analysis is still running. Refresh this page to check again.' : 'CV analizi hâlâ sürüyor. Durumu kontrol etmek için sayfayı yenile.');
 }
 
+function parseSsePayload(event) {
+    if (!event?.data) {
+        return {};
+    }
+
+    try {
+        return JSON.parse(event.data);
+    } catch {
+        return {};
+    }
+}
+
+export function watchCvAnalysisViaSse(analysisId, streamUrl, locale, onProgress = null) {
+    const url = streamUrl.replace('__ANALYSIS_ID__', encodeURIComponent(analysisId));
+
+    return new Promise((resolve, reject) => {
+        if (typeof EventSource === 'undefined') {
+            reject(new Error('sse_unavailable'));
+            return;
+        }
+
+        const source = new EventSource(url);
+        let settled = false;
+
+        const finish = (handler, value) => {
+            if (settled) {
+                return;
+            }
+
+            settled = true;
+            source.close();
+            handler(value);
+        };
+
+        source.addEventListener('status', (event) => {
+            onProgress?.(parseSsePayload(event));
+        });
+
+        source.addEventListener('complete', (event) => {
+            const payload = parseSsePayload(event);
+            onProgress?.(payload);
+            finish(resolve, payload);
+        });
+
+        source.addEventListener('failed', (event) => {
+            const payload = parseSsePayload(event);
+            finish(reject, new Error(payload.error_message || payload.message || 'CV analizi başarısız'));
+        });
+
+        source.addEventListener('error', (event) => {
+            const payload = parseSsePayload(event);
+            finish(reject, new Error(payload.message || 'CV analizi başarısız'));
+        });
+
+        source.addEventListener('timeout', (event) => {
+            const payload = parseSsePayload(event);
+            finish(
+                reject,
+                new Error(
+                    payload.message
+                        || (locale === 'en'
+                            ? 'CV analysis is still running. Refresh this page to check again.'
+                            : 'CV analizi hâlâ sürüyor. Durumu kontrol etmek için sayfayı yenile.'),
+                ),
+            );
+        });
+
+        source.onerror = () => {
+            if (settled) {
+                return;
+            }
+
+            settled = true;
+            source.close();
+            reject(new Error('sse_unavailable'));
+        };
+    });
+}
+
+export async function waitForCvAnalysis(analysisId, { statusUrl, streamUrl, locale, onProgress = null } = {}) {
+    if (streamUrl) {
+        try {
+            return await watchCvAnalysisViaSse(analysisId, streamUrl, locale, onProgress);
+        } catch (error) {
+            if (error?.message !== 'sse_unavailable') {
+                throw error;
+            }
+        }
+    }
+
+    if (!statusUrl) {
+        throw new Error(locale === 'en' ? 'CV analysis status endpoint is missing.' : 'CV analiz durumu uç noktası eksik.');
+    }
+
+    return pollCvAnalysis(analysisId, statusUrl, locale, onProgress);
+}
+
+function reloadAfterCvAnalysis(redirectUrl) {
+    if (redirectUrl) {
+        window.location.href = redirectUrl;
+        return;
+    }
+
+    window.location.reload();
+}
+
 export const PanelCvStore = {
     get: readState,
 
@@ -162,12 +268,13 @@ export function panelCvRadar(labels, serverHasCv = false, serverFileName = '', c
     };
 }
 
-export function profileCvUpload(locale, analyzeUrl, statusUrl = '', redirectUrl = '', historyAnalyzeUrl = '') {
+export function profileCvUpload(locale, analyzeUrl, statusUrl = '', redirectUrl = '', historyAnalyzeUrl = '', streamUrl = '') {
     return {
         fileName: null,
         locale,
         analyzeUrl,
         statusUrl,
+        streamUrl,
         redirectUrl,
         historyAnalyzeUrl,
         loading: false,
@@ -252,16 +359,20 @@ export function profileCvUpload(locale, analyzeUrl, statusUrl = '', redirectUrl 
                     throw new Error(payload.message || 'CV analizi başarısız');
                 }
 
-                if (payload.status === 'queued' && payload.analysis_id && this.statusUrl) {
+                if (payload.status === 'queued' && payload.analysis_id && (this.streamUrl || this.statusUrl)) {
                     this.loading = true;
-                    const completed = await pollCvAnalysis(payload.analysis_id, this.statusUrl, this.locale);
+                    const completed = await waitForCvAnalysis(payload.analysis_id, {
+                        statusUrl: this.statusUrl,
+                        streamUrl: this.streamUrl,
+                        locale: this.locale,
+                    });
                     const completedRadar = completed.skill_radar || {
                         overall_match: completed.radar?.reduce((sum, item) => sum + Number(item.score || 0), 0) / Math.max(completed.radar?.length || 1, 1),
                         target_role: completed.current_role || '',
                         skills: completed.radar || [],
                     };
                     PanelCvStore.saveFromAnalysis(file.name, this.locale, completedRadar);
-                    if (this.redirectUrl) window.location.href = this.redirectUrl;
+                    reloadAfterCvAnalysis(this.redirectUrl);
                     return;
                 }
 
@@ -273,7 +384,12 @@ export function profileCvUpload(locale, analyzeUrl, statusUrl = '', redirectUrl 
                 if (radar) PanelCvStore.saveFromAnalysis(file.name, this.locale, radar);
 
                 if (payload.redirect) {
-                    window.location.href = payload.redirect;
+                    reloadAfterCvAnalysis(payload.redirect);
+                    return;
+                }
+
+                if (radar) {
+                    reloadAfterCvAnalysis(this.redirectUrl);
                 }
             } catch (err) {
                 this.error = err?.message || 'CV analizi başarısız';
@@ -294,12 +410,16 @@ export function profileCvUpload(locale, analyzeUrl, statusUrl = '', redirectUrl 
                 });
                 const payload = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(payload.message || 'CV analizi başlatılamadı');
-                const completed = await pollCvAnalysis(payload.analysis_id, this.statusUrl, this.locale);
+                const completed = await waitForCvAnalysis(payload.analysis_id, {
+                    statusUrl: this.statusUrl,
+                    streamUrl: this.streamUrl,
+                    locale: this.locale,
+                });
                 PanelCvStore.saveFromAnalysis(completed.file_name || 'cv', this.locale, {
                     overall_match: completed.radar?.reduce((sum, item) => sum + Number(item.score || 0), 0) / Math.max(completed.radar?.length || 1, 1),
                     target_role: completed.current_role || '', skills: completed.radar || [], analyzed_at: completed.created_at,
                 });
-                window.location.href = this.redirectUrl || '/panel';
+                reloadAfterCvAnalysis(this.redirectUrl);
             } catch (err) {
                 this.error = err?.message || 'CV analizi başlatılamadı';
                 this.historyLoadingId = null;

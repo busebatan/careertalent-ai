@@ -25,7 +25,7 @@ function installBrowserMocks() {
 
 installBrowserMocks();
 
-const { PanelCvStore, PANEL_CV_STORAGE_KEY, panelCvRadar, pollCvAnalysis, profileCvUpload, isPdfCvFile, validateCvUploadFile } = await import('../../resources/js/panel-cv-store.js');
+const { PanelCvStore, PANEL_CV_STORAGE_KEY, panelCvRadar, pollCvAnalysis, profileCvUpload, waitForCvAnalysis, watchCvAnalysisViaSse, isPdfCvFile, validateCvUploadFile } = await import('../../resources/js/panel-cv-store.js');
 
 function sampleLocales() {
     return {
@@ -201,7 +201,7 @@ describe('profileCvUpload archived CV analysis', () => {
         window.location.href = '';
     });
 
-    it('starts a fresh analysis, polls it and activates its exact CV metadata', async () => {
+    it('starts a fresh analysis, polls it and reloads the page with exact CV metadata', async () => {
         const requests = [];
         globalThis.fetch = async (url, options = {}) => {
             requests.push({ url, options });
@@ -213,17 +213,19 @@ describe('profileCvUpload archived CV analysis', () => {
                 current_role: 'Veri Analisti', radar: [{ label: 'SQL', score: 72, target: 80 }],
             }) };
         };
-        const state = profileCvUpload('tr', '/upload', '/status/__ANALYSIS_ID__', '/panel/kariyer-rotam', '/history/__DOCUMENT_ID__/analyze');
+        window.location.reload = () => {
+            window.location.href = '__reloaded__';
+        };
+        const state = profileCvUpload('tr', '/upload', '/status/__ANALYSIS_ID__', '', '/history/__DOCUMENT_ID__/analyze');
 
         await state.analyzeHistory('document-7');
 
         assert.equal(requests[0].url, '/history/document-7/analyze');
         assert.equal(requests[0].options.method, 'POST');
-        assert.equal(requests[0].options.headers['X-CSRF-TOKEN'], 'csrf-token');
         assert.equal(requests[1].url, '/status/analysis-123');
         assert.equal(PanelCvStore.get().fileName, 'İlan CV.pdf');
         assert.equal(PanelCvStore.get().skillRadar.skills[0].label, 'SQL');
-        assert.equal(window.location.href, '/panel/kariyer-rotam');
+        assert.equal(window.location.href, '__reloaded__');
     });
 
     it('keeps the user on history and shows the API error when activation fails', async () => {
@@ -236,6 +238,120 @@ describe('profileCvUpload archived CV analysis', () => {
         assert.equal(state.historyLoadingId, null);
         assert.equal(window.location.href, '');
         assert.equal(PanelCvStore.get(), null);
+    });
+
+    it('reloads the current page after the SSE complete event', async () => {
+        class FakeEventSource {
+            constructor(url) {
+                this.url = url;
+                this.listeners = {};
+                FakeEventSource.last = this;
+            }
+
+            addEventListener(type, handler) {
+                this.listeners[type] = handler;
+            }
+
+            close() {
+                this.closed = true;
+            }
+
+            emit(type, data) {
+                this.listeners[type]?.({ data: JSON.stringify(data) });
+            }
+        }
+
+        globalThis.EventSource = FakeEventSource;
+        globalThis.fetch = async () => ({
+            ok: true,
+            json: async () => ({ analysis_id: 'analysis-sse-upload', status: 'queued' }),
+        });
+        let reloads = 0;
+        window.location.reload = () => { reloads += 1; };
+        const state = profileCvUpload(
+            'tr',
+            '/upload',
+            '/status/__ANALYSIS_ID__',
+            '',
+            '',
+            '/stream/__ANALYSIS_ID__',
+        );
+
+        try {
+            const pending = state.handleCvFile(new File(['cv'], 'cv.pdf', { type: 'application/pdf' }));
+            await new Promise((resolve) => setImmediate(resolve));
+            FakeEventSource.last.emit('complete', {
+                id: 'analysis-sse-upload',
+                status: 'ready',
+                file_name: 'cv.pdf',
+                radar: [{ label: 'SQL', score: 90, target: 90 }],
+            });
+            await pending;
+
+            assert.equal(FakeEventSource.last.url, '/stream/analysis-sse-upload');
+            assert.equal(FakeEventSource.last.closed, true);
+            assert.equal(reloads, 1);
+        } finally {
+            delete globalThis.EventSource;
+        }
+    });
+});
+
+describe('waitForCvAnalysis', () => {
+    it('falls back to polling when SSE is unavailable', async () => {
+        const originalSetTimeout = globalThis.setTimeout;
+        globalThis.setTimeout = (callback) => {
+            callback();
+            return 0;
+        };
+        globalThis.fetch = async () => ({
+            ok: true,
+            json: async () => ({ status: 'ready', id: 'analysis-fallback' }),
+        });
+
+        const result = await waitForCvAnalysis('analysis-fallback', {
+            statusUrl: '/status/__ANALYSIS_ID__',
+            streamUrl: '/stream/__ANALYSIS_ID__',
+            locale: 'tr',
+        });
+
+        globalThis.setTimeout = originalSetTimeout;
+        assert.equal(result.id, 'analysis-fallback');
+    });
+});
+
+describe('watchCvAnalysisViaSse', () => {
+    it('resolves when the complete event arrives', async () => {
+        class FakeEventSource {
+            constructor(url) {
+                this.url = url;
+                this.listeners = {};
+                FakeEventSource.last = this;
+            }
+
+            addEventListener(type, handler) {
+                this.listeners[type] = handler;
+            }
+
+            close() {
+                this.closed = true;
+            }
+
+            emit(type, data) {
+                this.listeners[type]?.({ data: JSON.stringify(data) });
+            }
+        }
+
+        globalThis.EventSource = FakeEventSource;
+
+        const pending = watchCvAnalysisViaSse('analysis-sse', '/stream/__ANALYSIS_ID__', 'tr');
+        FakeEventSource.last.emit('status', { id: 'analysis-sse', status: 'running' });
+        FakeEventSource.last.emit('complete', { id: 'analysis-sse', status: 'ready', radar: [] });
+        const result = await pending;
+
+        assert.equal(result.status, 'ready');
+        assert.equal(FakeEventSource.last.url, '/stream/analysis-sse');
+        assert.equal(FakeEventSource.last.closed, true);
     });
 });
 

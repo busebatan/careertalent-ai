@@ -79,7 +79,7 @@ class CompanyPanelTest extends TestCase
 
         $this->withSession(['auth.access_token' => 'admin-token', 'url.intended' => url('/panel')])
             ->post('/company/login', ['email' => 'owner@acme.example.com', 'password' => 'password'])
-            ->assertRedirect('/acme')
+            ->assertRedirect('/acme/pozisyonlar')
             ->assertSessionHas('company_auth.access_token', 'company-token')
             ->assertSessionHas('auth.access_token', 'admin-token')
             ->assertSessionHas('company.organization_id', 'org-1')
@@ -179,11 +179,11 @@ class CompanyPanelTest extends TestCase
 
         $this->withSession($session)->get('/acme/pozisyonlar')->assertOk()->assertSee('Yeni pozisyon oluştur');
         $this->withSession($session)->post('/acme/pozisyonlar', [
-            'title' => 'Backend Developer', 'status' => 'open',
-        ])->assertRedirect('/acme/pozisyonlar');
+            'title' => 'Backend Developer', 'status' => 'published',
+        ])->assertRedirect('/acme/pozisyonlar/position-1');
         $this->withSession($session)->patch('/acme/pozisyonlar/position-1', [
             'title' => 'Senior Backend Developer', 'status' => 'paused',
-        ])->assertRedirect('/acme/pozisyonlar');
+        ])->assertRedirect('/acme/pozisyonlar/position-1');
         $this->withSession($session)->delete('/acme/pozisyonlar/position-1')->assertRedirect('/acme/pozisyonlar');
         $this->withSession($session)->get('/acme/adaylar?queue=new')->assertOk()->assertSee('Henüz aday bulunmuyor');
         $this->withSession($session)->get('/acme/degerlendirmeler')->assertOk()->assertSee('Bu ay kullanılan hak');
@@ -192,6 +192,42 @@ class CompanyPanelTest extends TestCase
             && $request->hasHeader('X-Organization-ID', 'org-1'));
         Http::assertSent(fn (Request $request): bool => str_contains($request->url(), '/api/v1/company/applications?queue=new')
             && $request->hasHeader('X-Organization-ID', 'org-1'));
+    }
+
+    public function test_company_applications_and_assessments_tables_include_filters_and_status_badges(): void
+    {
+        Http::fake([
+            '*/api/v1/auth/me' => Http::response($this->user()),
+            '*/api/v1/company/context' => Http::response(['memberships' => [$this->membership()]]),
+            '*/api/v1/company/applications*' => Http::response(['items' => [[
+                'id' => 'app-1', 'position_id' => 'pos-1', 'position_title' => 'Demo: Backend Developer',
+                'candidate_name' => 'Ayşe Yılmaz', 'candidate_email' => 'demo.ayse@ygtlabs.ai',
+                'current_stage' => 'new', 'first_reviewed_at' => null,
+                'applied_at' => '2026-07-20T10:00:00Z', 'retention_expires_at' => '2026-08-20T10:00:00Z',
+            ]]]),
+            '*/api/v1/company/assessments*' => Http::response([
+                'usage' => ['used' => 2, 'quota' => null],
+                'items' => [[
+                    'id' => 'asm-1', 'application_id' => 'app-2', 'position_title' => 'Demo: QA Engineer',
+                    'candidate_name' => 'Can Öztürk', 'title' => 'Test Otomasyonu', 'status' => 'in_progress',
+                    'assigned_at' => '2026-07-18T10:00:00Z', 'completed_at' => null,
+                ]],
+            ]),
+        ]);
+
+        $this->withSession(['company_auth.access_token' => 'company-token'])
+            ->get('/acme/adaylar')
+            ->assertOk()
+            ->assertSee('companyApplications', false)
+            ->assertSee('company-status-badge--neutral', false)
+            ->assertSee('Ara');
+
+        $this->withSession(['company_auth.access_token' => 'company-token'])
+            ->get('/acme/degerlendirmeler')
+            ->assertOk()
+            ->assertSee('companyAssessments', false)
+            ->assertSee('company-status-badge--warning', false)
+            ->assertSee('Tüm durumlar');
     }
 
     public function test_company_panel_uses_shared_admin_shell_without_changing_its_visual_identity(): void
@@ -291,6 +327,43 @@ class CompanyPanelTest extends TestCase
         $this->withSession($session)->get('/acme/profil')->assertForbidden();
     }
 
+    public function test_company_team_permissions_are_grouped_by_module_with_dropdown_controls(): void
+    {
+        Http::fake([
+            '*/api/v1/auth/me' => Http::response($this->user()),
+            '*/api/v1/company/context' => Http::response(['memberships' => [$this->membership()]]),
+            '*/api/v1/company/members' => Http::response([
+                'permission_keys' => [
+                    'dashboard.view',
+                    'positions.view', 'positions.write', 'positions.delete',
+                    'applications.view', 'applications.write',
+                    'members.view', 'members.invite', 'members.manage',
+                ],
+                'members' => [[
+                    'membership_id' => 'm2', 'user_id' => 45, 'full_name' => 'Recruiter User', 'email' => 'recruiter@acme.example.com',
+                    'role' => 'recruiter', 'permissions' => ['dashboard.view', 'positions.view', 'applications.view'],
+                    'status' => 'active', 'created_at' => '2026-07-19T10:00:00Z',
+                ]],
+                'pending_invitations' => [],
+            ]),
+        ]);
+
+        $this->withSession(['company_auth.access_token' => 'company-token'])
+            ->get('/acme/ekip')
+            ->assertOk()
+            ->assertSee('data-permission-selector="company-invite-permissions"', false)
+            ->assertSee('data-permission-section="recruiting"', false)
+            ->assertSee('data-permission-module="positions"', false)
+            ->assertSee('data-permission-module-toggle', false)
+            ->assertSee('value="positions.view"', false)
+            ->assertSee('value="positions.write"', false)
+            ->assertSee('value="positions.delete"', false)
+            ->assertSee('data-permission-selector="company-member-m2-permissions"', false)
+            ->assertSee('İşe Alım')
+            ->assertSee('Pozisyonlar')
+            ->assertDontSee('company.nav.', false);
+    }
+
     public function test_members_view_permission_is_read_only_in_team_ui(): void
     {
         $readOnly = $this->membership([
@@ -373,7 +446,7 @@ class CompanyPanelTest extends TestCase
 
         $this->withSession(['company_auth.access_token' => 'company-token'])
             ->post('/acme/kurum-degistir/org-2')
-            ->assertRedirect('/beta')
+            ->assertRedirect('/beta/pozisyonlar')
             ->assertSessionHas('company.organization_id', 'org-2');
     }
 
@@ -425,7 +498,7 @@ class CompanyPanelTest extends TestCase
 
         $this->withSession(['auth.access_token' => 'admin-token', 'auth.user' => $admin])
             ->post('/company/login', ['email' => 'owner@acme.example.com', 'password' => 'password'])
-            ->assertRedirect('/acme')
+            ->assertRedirect('/acme/pozisyonlar')
             ->assertSessionHas('auth.access_token', 'admin-token')
             ->assertSessionHas('company_auth.access_token', 'company-token');
 

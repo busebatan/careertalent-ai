@@ -1,80 +1,125 @@
 @extends('company.layouts.app')
-@section('title', __('company.positions.title'))
+@section('title', __('company_positions.title'))
 @section('content')
-@php $permissions = $companyMembership['permissions'] ?? []; @endphp
-<div class="mx-auto max-w-7xl">
-    <div class="mb-8">
-        <p class="company-accent-text text-sm font-semibold">{{ $companyMembership['organization_name'] }}</p>
-        <h1 class="mt-1 text-3xl font-bold">{{ __('company.positions.title') }}</h1>
-        <p class="panel-muted mt-2">{{ __('company.positions.subtitle') }}</p>
-    </div>
-
-    @if (session('status'))<div class="company-feedback-success mb-6 rounded-xl border p-4 text-sm font-semibold">{{ session('status') }}</div>@endif
-    @if ($companyError)<div class="panel-card mb-6 border-red-500/30 p-5 text-red-500">{{ $companyError }}</div>@endif
-    @if ($errors->any())<div class="panel-card mb-6 border-red-500/30 p-5 text-sm text-red-500">{{ $errors->first() }}</div>@endif
-
-    @if (in_array('positions.write', $permissions, true))
-        <details class="panel-card mb-6 p-6" @if($errors->any()) open @endif>
-            <summary class="cursor-pointer list-none text-lg font-semibold">{{ __('company.positions.create') }}</summary>
-            <form method="post" action="{{ route('company.positions.create') }}" class="mt-6 grid gap-5 md:grid-cols-2">
-                @csrf
-                <label class="text-sm md:col-span-2">{{ __('company.positions.title_label') }}<input class="panel-input-block mt-2" name="title" value="{{ old('title') }}" required></label>
-                <label class="text-sm">{{ __('company.positions.department') }}<input class="panel-input-block mt-2" name="department" value="{{ old('department') }}"></label>
-                <label class="text-sm">{{ __('company.positions.status') }}<select class="panel-input-block mt-2" name="status" required>@foreach(['draft','open','paused','closed'] as $value)<option value="{{ $value }}" @selected(old('status','draft')===$value)>{{ __('company.positions.status_'.$value) }}</option>@endforeach</select></label>
-                <label class="text-sm">{{ __('company.positions.employment_type') }}<select class="panel-input-block mt-2" name="employment_type"><option value="">—</option>@foreach(['full_time','part_time','contract','internship'] as $value)<option value="{{ $value }}" @selected(old('employment_type')===$value)>{{ __('company.positions.employment_'.$value) }}</option>@endforeach</select></label>
-                <label class="text-sm">{{ __('company.positions.workplace_type') }}<select class="panel-input-block mt-2" name="workplace_type"><option value="">—</option>@foreach(['onsite','hybrid','remote'] as $value)<option value="{{ $value }}" @selected(old('workplace_type')===$value)>{{ __('company.positions.workplace_'.$value) }}</option>@endforeach</select></label>
-                <label class="text-sm">{{ __('company.positions.deadline') }}<input class="panel-input-block mt-2" type="datetime-local" name="application_deadline" value="{{ old('application_deadline') }}"></label>
-                <label class="text-sm md:col-span-2">{{ __('company.positions.description') }}<textarea class="panel-input-block mt-2 min-h-28" name="description">{{ old('description') }}</textarea></label>
-                <div class="md:col-span-2"><button class="company-btn-primary" type="submit">{{ __('company.positions.save') }}</button></div>
-            </form>
-        </details>
-    @endif
-
-    <nav class="mb-5 flex flex-wrap gap-2" aria-label="{{ __('company.positions.status') }}">
-        <a class="{{ $positionStatus === null ? 'company-btn-primary' : 'company-btn-secondary' }}" href="{{ route('company.positions') }}">{{ __('company.positions.all') }}</a>
-        @foreach(['open','draft','paused','closed','archived'] as $status)
-            <a class="{{ $positionStatus === $status ? 'company-btn-primary' : 'company-btn-secondary' }}" href="{{ route('company.positions', ['status' => $status]) }}">{{ __('company.positions.status_'.$status) }}</a>
-        @endforeach
-    </nav>
+@php
+    $permissions = $companyMembership['permissions'] ?? [];
+    $statusKeys = ['draft', 'published', 'paused', 'closed', 'archived'];
+    $statusOptions = collect($statusKeys)->map(fn (string $status) => [
+        'value' => $status,
+        'label' => __('company_positions.status.'.$status),
+        'count' => $positionStatusCounts[$status] ?? 0,
+    ])->values()->all();
+    $workplaceOptions = collect($positions)->pluck('workplace_type')->filter()->unique()->sort()->values()->map(fn (string $type) => [
+        'value' => $type,
+        'label' => __('company.positions.workplace_'.$type),
+    ])->values()->all();
+    $showUrlTemplate = route('company.positions.show', ['position' => '__ID__']);
+    $tableLabels = [
+        'results' => __('company_positions.results', ['count' => ':count']),
+        'no_results' => __('company_positions.no_results'),
+    ];
+@endphp
+<div class="mx-auto max-w-[1480px]"
+    x-data="companyPositions({
+        positions: @js($positions),
+        statusOptions: @js($statusOptions),
+        workplaceOptions: @js($workplaceOptions),
+        showUrlTemplate: @js($showUrlTemplate),
+        labels: @js($tableLabels),
+    })">
+    <header class="mb-8 flex flex-wrap items-end justify-between gap-5">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight">{{ __('company_positions.title') }}</h1>
+            <p class="panel-muted mt-2 max-w-3xl">{{ __('company_positions.subtitle') }}</p>
+        </div>
+        @if(in_array('positions.write', $permissions, true))
+            <a class="company-btn-primary" href="{{ route('company.positions.new') }}">
+                <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                {{ __('company_positions.new') }}
+            </a>
+        @endif
+    </header>
 
     @if ($positions === [])
-        <section class="panel-card border-dashed p-12 text-center"><p class="panel-muted">{{ __('company.positions.empty') }}</p></section>
+        <section class="panel-card border-dashed p-12 text-center">
+            <span class="company-dashboard-icon mx-auto"><i data-lucide="briefcase-business" class="h-5 w-5" aria-hidden="true"></i></span>
+            <p class="panel-muted mt-4">{{ __('company_positions.empty') }}</p>
+        </section>
     @else
-        <div class="space-y-4">
-            @foreach ($positions as $position)
-                <article id="position-{{ $position['id'] }}" class="panel-card p-6">
-                    <div class="flex flex-wrap items-start justify-between gap-5">
-                        <div>
-                            <div class="flex flex-wrap items-center gap-3"><h2 class="text-lg font-semibold">{{ $position['title'] }}</h2><span class="rounded-full px-2.5 py-1 text-xs font-semibold company-context-card">{{ __('company.positions.status_'.$position['status']) }}</span></div>
-                            <p class="panel-muted mt-2 text-sm">{{ $position['department'] ?: '—' }} · {{ __('company.positions.candidate_count', ['count' => $position['application_count'] ?? 0]) }}</p>
-                            @if($position['application_deadline'])<p class="panel-muted mt-1 text-xs">{{ __('company.positions.deadline') }}: {{ \Carbon\Carbon::parse($position['application_deadline'])->format('d.m.Y H:i') }}</p>@endif
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            @if(in_array('applications.view', $permissions, true))<a class="company-btn-secondary" href="{{ route('company.positions.applications', ['position' => $position['id']]) }}">{{ __('company.positions.applications') }}</a>@endif
-                            @if(in_array('positions.delete', $permissions, true) && $position['status'] !== 'archived')
-                                <form method="post" action="{{ route('company.positions.delete', ['position' => $position['id']]) }}" onsubmit="return confirm('{{ __('company.positions.archive') }}?')">@csrf @method('DELETE')<button class="company-btn-secondary" type="submit">{{ __('company.positions.archive') }}</button></form>
-                            @endif
-                        </div>
-                    </div>
-                    @if(in_array('positions.write', $permissions, true) && $position['status'] !== 'archived')
-                        <details class="mt-5 border-t border-slate-200 pt-5 dark:border-slate-800">
-                            <summary class="company-accent-text cursor-pointer text-sm font-semibold">{{ __('company.positions.edit') }}</summary>
-                            <form method="post" action="{{ route('company.positions.update', ['position' => $position['id']]) }}" class="mt-5 grid gap-4 md:grid-cols-2">
-                                @csrf @method('PATCH')
-                                <label class="text-sm md:col-span-2">{{ __('company.positions.title_label') }}<input class="panel-input-block mt-2" name="title" value="{{ $position['title'] }}" required></label>
-                                <label class="text-sm">{{ __('company.positions.department') }}<input class="panel-input-block mt-2" name="department" value="{{ $position['department'] }}"></label>
-                                <label class="text-sm">{{ __('company.positions.status') }}<select class="panel-input-block mt-2" name="status">@foreach(['draft','open','paused','closed'] as $value)<option value="{{ $value }}" @selected($position['status']===$value)>{{ __('company.positions.status_'.$value) }}</option>@endforeach</select></label>
-                                <label class="text-sm">{{ __('company.positions.employment_type') }}<select class="panel-input-block mt-2" name="employment_type"><option value="">—</option>@foreach(['full_time','part_time','contract','internship'] as $value)<option value="{{ $value }}" @selected(($position['employment_type']??null)===$value)>{{ __('company.positions.employment_'.$value) }}</option>@endforeach</select></label>
-                                <label class="text-sm">{{ __('company.positions.workplace_type') }}<select class="panel-input-block mt-2" name="workplace_type"><option value="">—</option>@foreach(['onsite','hybrid','remote'] as $value)<option value="{{ $value }}" @selected(($position['workplace_type']??null)===$value)>{{ __('company.positions.workplace_'.$value) }}</option>@endforeach</select></label>
-                                <label class="text-sm">{{ __('company.positions.deadline') }}<input class="panel-input-block mt-2" type="datetime-local" name="application_deadline" value="{{ $position['application_deadline'] ? \Carbon\Carbon::parse($position['application_deadline'])->format('Y-m-d\TH:i') : '' }}"></label>
-                                <label class="text-sm md:col-span-2">{{ __('company.positions.description') }}<textarea class="panel-input-block mt-2 min-h-28" name="description">{{ $position['description'] }}</textarea></label>
-                                <div class="md:col-span-2"><button class="company-btn-primary" type="submit">{{ __('company.positions.update') }}</button></div>
-                            </form>
-                        </details>
-                    @endif
-                </article>
-            @endforeach
-        </div>
+        <section class="panel-card mb-6 p-4">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-end">
+                <label class="min-w-0 flex-1 text-sm">
+                    <span class="font-medium">{{ __('company_positions.search') }}</span>
+                    <input class="panel-input-block mt-2" type="search" x-model="query" placeholder="{{ __('company_positions.search_placeholder') }}">
+                </label>
+                <label class="w-full text-sm sm:w-auto sm:min-w-[200px]">
+                    <span class="font-medium">{{ __('company_positions.filter_status') }}</span>
+                    <select class="panel-input-block mt-2" x-model="statusFilter">
+                        <option value="all">{{ __('company_positions.filter_status_all') }}</option>
+                        <template x-for="option in statusOptions" :key="option.value">
+                            <option :value="option.value" x-text="option.count > 0 ? `${option.label} (${option.count})` : option.label"></option>
+                        </template>
+                    </select>
+                </label>
+                <label class="w-full text-sm sm:w-auto sm:min-w-[200px]">
+                    <span class="font-medium">{{ __('company_positions.filter_workplace') }}</span>
+                    <select class="panel-input-block mt-2" x-model="workplaceFilter">
+                        <option value="all">{{ __('company_positions.filter_workplace_all') }}</option>
+                        <template x-for="option in workplaceOptions" :key="option.value">
+                            <option :value="option.value" x-text="option.label"></option>
+                        </template>
+                    </select>
+                </label>
+            </div>
+            <p class="panel-muted mt-3 text-xs" x-text="labels.results.replace(':count', String(visibleCount()))"></p>
+        </section>
+
+        <section class="panel-card overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-[860px] w-full text-left text-sm">
+                    <thead class="border-b border-slate-200 bg-slate-50/80 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-400">
+                        <tr>
+                            <th class="px-5 py-4 font-semibold">{{ __('company_positions.fields.title') }}</th>
+                            <th class="px-4 py-4 font-semibold">{{ __('company_positions.fields.status') }}</th>
+                            <th class="px-4 py-4 font-semibold">{{ __('company_positions.fields.workplace_type') }}</th>
+                            <th class="px-4 py-4 font-semibold">{{ __('company_positions.fields.opened_at') }}</th>
+                            <th class="px-4 py-4 text-center font-semibold">{{ __('company_positions.metrics.applications') }}</th>
+                            <th class="px-4 py-4 text-center font-semibold">{{ __('company_positions.metrics.assessments') }}</th>
+                            <th class="px-4 py-4 text-center font-semibold">{{ __('company_positions.metrics.shortlisted') }}</th>
+                            <th class="px-5 py-4 font-semibold">{{ __('company_positions.fields.location') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                        @foreach($positions as $position)
+                            <tr
+                                class="cursor-pointer transition hover:bg-emerald-500/[0.04]"
+                                x-show="isVisible(@js($position))"
+                                x-cloak
+                                role="link"
+                                tabindex="0"
+                                @click="goToPosition(@js($position))"
+                                @keydown.enter.prevent="goToPosition(@js($position))"
+                            >
+                                <td class="px-5 py-5">
+                                    <span class="font-semibold text-slate-950 dark:text-white">{{ $position['title'] }}</span>
+                                    <p class="panel-muted mt-1 text-xs">{{ $position['department'] ?: '—' }}</p>
+                                </td>
+                                <td class="px-4 py-5">@include('company.partials.position-status-badge', ['status' => $position['status'] ?? 'draft'])</td>
+                                <td class="px-4 py-5 text-slate-600 dark:text-slate-300">{{ isset($position['workplace_type']) ? __('company.positions.workplace_'.$position['workplace_type']) : '—' }}</td>
+                                <td class="px-4 py-5 text-slate-600 dark:text-slate-300">{{ !empty($position['opened_at']) ? \Carbon\Carbon::parse($position['opened_at'])->format('d.m.Y') : '—' }}</td>
+                                <td class="px-4 py-5 text-center text-lg font-bold">{{ $position['application_count'] ?? 0 }}</td>
+                                <td class="px-4 py-5 text-center text-lg font-bold">{{ $position['assessment_completed_count'] ?? 0 }}</td>
+                                <td class="px-4 py-5 text-center text-lg font-bold">{{ $position['shortlisted_count'] ?? 0 }}</td>
+                                <td class="px-5 py-5 text-slate-600 dark:text-slate-300">{{ $position['location'] ?? '—' }}</td>
+                            </tr>
+                        @endforeach
+                        <tr x-show="visibleCount() === 0" x-cloak>
+                            <td class="px-5 py-8 text-center text-sm text-slate-500" colspan="8">{{ __('company_positions.no_results') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     @endif
 </div>
 @endsection

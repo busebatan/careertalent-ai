@@ -174,7 +174,7 @@ class MarketingPagesTest extends TestCase
         $response->assertSee('Henüz CV analizi yok');
         $response->assertDontSee('CV ve profil');
         $response->assertSee('Eğitim önerileri');
-        $response->assertSee('Bu haftanın görevleri');
+        $response->assertSee('Görevlerim');
         $response->assertDontSee('Google Data Analytics');
         $response->assertSee('CV oluştur');
         $response->assertSee('API bağlı', false);

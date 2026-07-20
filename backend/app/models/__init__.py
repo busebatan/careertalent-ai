@@ -8,3 +8,9 @@ from app.models.user import User
 
 __all__ = ["AssessmentUsageLedger", "CareerAnalysis", "CareerChatMessage", "CareerDataSource", "CareerInterview", "CareerInterviewAnswer", "CareerRole", "CareerRoleSkillRequirement", "CareerSkill", "CareerTarget", "CareerTask", "CvDocument", "Evidence", "JobApplication", "JobOpportunity", "Organization", "OrganizationInvitation", "OrganizationMembership", "PersonalTask", "RecruitingApplication", "RecruitingApplicationStageEvent", "RecruitingAssessment", "RecruitingPosition", "RecruitingScorecard", "User", "UserProfile", "CandidateCvVersion", "RecruitingApplicationSnapshot"]
 
+from app.models.company_recruiting import AssessmentUsageLedger, CompanyTaskOutbox, OrganizationAtsConfiguration, RecruitingApplication, RecruitingApplicationStageEvent, RecruitingAssessment, RecruitingPosition, RecruitingPositionActivity, RecruitingPositionAiAnalysis, RecruitingPositionCriteriaVersion, RecruitingScorecard, RecruitingShareLink
+from app.models.engagement import CareerChatMessage, CareerInterview, CareerInterviewAnswer, CvDocument, JobApplication, PersonalTask, UserProfile
+from app.models.recruiting import Organization, OrganizationInvitation, OrganizationMembership
+from app.models.user import User
+
+__all__ = ["AssessmentUsageLedger", "CareerAnalysis", "CareerChatMessage", "CareerDataSource", "CareerInterview", "CareerInterviewAnswer", "CareerRole", "CareerRoleSkillRequirement", "CareerSkill", "CareerTarget", "CareerTask", "CompanyTaskOutbox", "CvDocument", "Evidence", "JobApplication", "JobOpportunity", "Organization", "OrganizationAtsConfiguration", "OrganizationInvitation", "OrganizationMembership", "PersonalTask", "RecruitingApplication", "RecruitingApplicationStageEvent", "RecruitingAssessment", "RecruitingPosition", "RecruitingPositionActivity", "RecruitingPositionAiAnalysis", "RecruitingPositionCriteriaVersion", "RecruitingScorecard", "RecruitingShareLink", "User", "UserProfile"]

@@ -188,7 +188,7 @@
         </form>
     </section>
 
-    <section id="cv-yukle" x-show="tab === 'cv'" x-cloak x-data="profileCvUpload(@js(app()->getLocale()), @js(route('panel.cv.analyze')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), @js(route('panel.career-ladder')), @js(route('panel.cv-history.analyze', ['documentId' => '__DOCUMENT_ID__'])))">
+    <section id="cv-yukle" x-show="tab === 'cv'" x-cloak x-data="profileCvUpload(@js(app()->getLocale()), @js(route('panel.cv.analyze')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), '', @js(route('panel.cv-history.analyze', ['documentId' => '__DOCUMENT_ID__'])), @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])))">
         <div class="panel-card p-6">
             <h2 class="mb-2 font-semibold">{{ __('panel.profile.cv_file_title') }}</h2>
             <p class="mb-6 text-sm text-slate-600 dark:text-slate-400">

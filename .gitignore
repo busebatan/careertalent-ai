@@ -18,7 +18,8 @@ Thumbs.db
 
 # Python
 backend/.venv/
-backend/**/__pycache__/
+**/__pycache__/
+*.py[cod]
 backend/.pytest_cache/
 backend/*.db
 uploads/
@@ -42,3 +43,9 @@ frontend/database/database.sqlite
 /public/storage
 /storage/*.key
 /storage/pail
+
+/.playwright-cli
+/.playwright-mcp
+
+scripts
+

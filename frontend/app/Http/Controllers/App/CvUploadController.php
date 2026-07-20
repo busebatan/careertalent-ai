@@ -4,8 +4,10 @@ namespace App\Http\Controllers\App;
 
 use App\Services\BuilderCvTextExporter;
 use App\Services\CareerTalentApiClient;
+use App\Support\PortalAuthSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CvUploadController extends PanelController
 {
@@ -21,6 +23,49 @@ class CvUploadController extends PanelController
 
         $body = $result['body'] ?? [];
         return response()->json($body);
+    }
+
+    public function stream(string $analysisId, CareerTalentApiClient $api): StreamedResponse
+    {
+        $upstream = $api->careerAnalysisStreamUrl($analysisId);
+        $token = PortalAuthSession::token(request());
+
+        return response()->stream(function () use ($upstream, $token): void {
+            $handle = curl_init($upstream);
+            if ($handle === false) {
+                echo "event: error\ndata: {\"message\":\"CV analiz akışı başlatılamadı\"}\n\n";
+                return;
+            }
+
+            $headers = ['Accept: text/event-stream'];
+            if ($token !== null) {
+                $headers[] = 'Authorization: Bearer '.$token;
+            }
+
+            curl_setopt_array($handle, [
+                CURLOPT_HTTPHEADER => $headers,
+                CURLOPT_RETURNTRANSFER => false,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_TIMEOUT => 200,
+                CURLOPT_WRITEFUNCTION => static function ($curl, string $chunk): int {
+                    echo $chunk;
+                    if (ob_get_level() > 0) {
+                        ob_flush();
+                    }
+                    flush();
+
+                    return strlen($chunk);
+                },
+            ]);
+
+            curl_exec($handle);
+            curl_close($handle);
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+            'X-Accel-Buffering' => 'no',
+        ]);
     }
 
     public function analyze(Request $request, CareerTalentApiClient $api): JsonResponse

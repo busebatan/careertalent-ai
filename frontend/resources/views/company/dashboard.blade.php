@@ -31,8 +31,7 @@
 <div class="mx-auto max-w-7xl">
     <div class="mb-8 flex flex-wrap items-end justify-between gap-5">
         <div>
-            <p class="company-accent-text text-sm font-semibold">{{ $companyMembership['organization_name'] }}</p>
-            <h1 class="mt-1 text-3xl font-bold">{{ __('company.dashboard.title') }}</h1>
+            <h1 class="text-3xl font-bold">{{ __('company.dashboard.title') }}</h1>
             <p class="panel-muted mt-2">{{ __('company.dashboard.subtitle') }}</p>
         </div>
         <form method="get" action="{{ route('company.dashboard') }}" class="flex items-center gap-3">
@@ -45,9 +44,7 @@
         </form>
     </div>
 
-    @if ($companyError)
-        <div class="panel-card border-red-500/30 p-5 text-red-500">{{ $companyError }}</div>
-    @else
+    @if (! $companyError)
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="{{ __('company.dashboard.title') }}">
             @foreach ($metricCards as $card)
                 @php

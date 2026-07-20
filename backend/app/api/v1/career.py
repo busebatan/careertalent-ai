@@ -1,14 +1,17 @@
 """Authenticated career-engine state and queue endpoints."""
 
 from datetime import datetime, timezone
+import json
 import os
 from pathlib import Path
-from typing import Annotated
+import time
+from typing import Annotated, Iterator
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy import delete, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -43,10 +46,16 @@ from app.tasks.career import analyze_cv_task, analyze_job_task, apply_job_sugges
 router = APIRouter(prefix="/career", tags=["Career Engine"], dependencies=[Depends(get_current_user)])
 DB = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+ANALYSIS_STREAM_MAX_POLLS = 180
+ANALYSIS_STREAM_POLL_SECONDS = 1.0
 
 
 def _not_found() -> HTTPException:
     return HTTPException(status_code=404, detail="Kariyer kaydı bulunamadı")
+
+
+def _format_sse(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 def _localized_locale(
@@ -238,6 +247,70 @@ def analysis_status(analysis_id: str, db: DB, user: CurrentUser):
         include_targets=False,
     ) if row.status == "ready" else user.preferred_locale
     return serialize_analysis(row, locale)
+
+
+@router.get("/analysis/{analysis_id}/stream")
+def analysis_stream(analysis_id: str, db: DB, user: CurrentUser) -> StreamingResponse:
+    stream_session_factory = sessionmaker(
+        bind=db.get_bind(),
+        autocommit=False,
+        autoflush=False,
+    )
+    user_id = user.id
+
+    def generate() -> Iterator[str]:
+        with stream_session_factory() as stream_db:
+            for attempt in range(ANALYSIS_STREAM_MAX_POLLS):
+                stream_db.expire_all()
+                row = stream_db.scalar(
+                    select(CareerAnalysis).where(
+                        CareerAnalysis.id == analysis_id,
+                        CareerAnalysis.user_id == user_id,
+                    )
+                )
+                if row is None:
+                    yield _format_sse("error", {"message": "Kariyer kaydı bulunamadı"})
+                    return
+
+                stream_user = stream_db.get(User, user_id)
+                if stream_user is None:
+                    yield _format_sse("error", {"message": "Kullanıcı bulunamadı"})
+                    return
+
+                if row.status == "ready":
+                    locale = _localized_locale(
+                        stream_db,
+                        stream_user,
+                        analysis_id=row.id,
+                        include_targets=False,
+                    )
+                    yield _format_sse("complete", serialize_analysis(row, locale))
+                    return
+
+                if row.status == "failed":
+                    yield _format_sse("failed", serialize_analysis(row, stream_user.preferred_locale))
+                    return
+
+                yield _format_sse("status", {"id": row.id, "status": row.status})
+                if attempt < ANALYSIS_STREAM_MAX_POLLS - 1:
+                    time.sleep(ANALYSIS_STREAM_POLL_SECONDS)
+
+            yield _format_sse(
+                "timeout",
+                {
+                    "message": "CV analizi hâlâ sürüyor. Durumu kontrol etmek için sayfayı yenile.",
+                },
+            )
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/targets", response_model=CareerTargetResponse, status_code=202)

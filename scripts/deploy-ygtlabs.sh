@@ -5,10 +5,72 @@ set -euo pipefail
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="/var/www/vhosts/ygtlabs.ai/careertalent.ygtlabs.ai"
 DOMAIN="careertalent.ygtlabs.ai"
+CELERY_ENV_FILE="/etc/careertalent-celery.env"
+COMPILED_VIEW_PATH="$DEST/.runtime/laravel/views"
+SERVICES_STOPPED=0
+MIGRATION_COMPLETE=0
+
+normalize_frontend_runtime_permissions() {
+  local frontend="$DEST/frontend"
+
+  [[ -d "$frontend" ]] || return 0
+
+  mkdir -p \
+    "$frontend/storage/framework/cache" \
+    "$frontend/storage/framework/sessions" \
+    "$frontend/storage/framework/views" \
+    "$frontend/storage/logs" \
+    "$frontend/bootstrap/cache" \
+    "$COMPILED_VIEW_PATH"
+  chown -R yigit:www-data "$frontend/storage" "$frontend/bootstrap/cache" "$COMPILED_VIEW_PATH"
+  chmod -R ug+rwX "$frontend/storage" "$frontend/bootstrap/cache" "$COMPILED_VIEW_PATH"
+  find "$frontend/storage" "$frontend/bootstrap/cache" "$COMPILED_VIEW_PATH" -type d -exec chmod g+s {} +
+
+  if command -v setfacl >/dev/null 2>&1; then
+    setfacl -R -m g:www-data:rwX,m::rwX "$frontend/storage" "$frontend/bootstrap/cache" "$COMPILED_VIEW_PATH"
+    find "$frontend/storage" "$frontend/bootstrap/cache" "$COMPILED_VIEW_PATH" -type d \
+      -exec setfacl -m d:g:www-data:rwx,d:m::rwx {} +
+  fi
+}
+
+restart_services_after_error() {
+  status=$?
+  trap - ERR
+  normalize_frontend_runtime_permissions || true
+  if [[ "$SERVICES_STOPPED" == "1" && "$MIGRATION_COMPLETE" == "1" ]]; then
+    systemctl start careertalent-fastapi.service 2>/dev/null || true
+    if ! grep -Eq '^CELERY_TASK_ALWAYS_EAGER=(true|1|yes|on)$' "$CELERY_ENV_FILE"; then
+      systemctl start careertalent-celery.service careertalent-celery-beat.service 2>/dev/null || true
+    fi
+  elif [[ "$SERVICES_STOPPED" == "1" ]]; then
+    echo "Migration failed; backend stays stopped until code/schema rollback" >&2
+  fi
+  exit "$status"
+}
+trap restart_services_after_error ERR
+
+if [[ ! -r "$CELERY_ENV_FILE" ]]; then
+  echo "Missing Celery environment file: $CELERY_ENV_FILE" >&2
+  exit 1
+fi
+if ! grep -Eq '^CELERY_TASK_ALWAYS_EAGER=(true|1|yes|on)$' "$CELERY_ENV_FILE" \
+  && ! grep -Eq '^REDIS_URL=.+$' "$CELERY_ENV_FILE"; then
+  echo "REDIS_URL is required when Celery eager mode is disabled" >&2
+  exit 1
+fi
+if ! grep -Fxq "VIEW_COMPILED_PATH=$COMPILED_VIEW_PATH" "$DEST/frontend/.env"; then
+  echo "VIEW_COMPILED_PATH must be $COMPILED_VIEW_PATH in $DEST/frontend/.env" >&2
+  exit 1
+fi
+if ! grep -Fxq 'VIEW_CHECK_CACHE_TIMESTAMPS=false' "$DEST/frontend/.env"; then
+  echo "VIEW_CHECK_CACHE_TIMESTAMPS must be false in $DEST/frontend/.env" >&2
+  exit 1
+fi
 
 echo "→ rsync $SRC → $DEST"
 rsync -a --delete \
   --exclude '.git' \
+  --exclude '.runtime' \
   --exclude '.pytest_cache' \
   --exclude '__pycache__' \
   --exclude '*.pyc' \
@@ -27,6 +89,11 @@ rsync -a --delete \
   --exclude 'backend/uploads' \
   --exclude '.superpowers' \
   "$SRC/" "$DEST/"
+# `rsync -a` also copies the source root mode. Temporary release archives are
+# commonly 0700, which would lock PHP-FPM and the yigit deploy user out.
+chown yigit:www-data "$DEST"
+chmod 0755 "$DEST"
+git -C "$SRC" rev-parse HEAD > "$DEST/REVISION"
 
 cd "$DEST/frontend"
 
@@ -37,9 +104,19 @@ echo "→ npm ci + build"
 npm ci --silent 2>/dev/null || npm ci
 npm run build
 
+echo "→ service units + graceful backend drain"
+install -m 0644 "$DEST/deploy/careertalent-fastapi.service" /etc/systemd/system/careertalent-fastapi.service
+install -m 0644 "$DEST/deploy/careertalent-celery.service" /etc/systemd/system/careertalent-celery.service
+install -m 0644 "$DEST/deploy/careertalent-celery-beat.service" /etc/systemd/system/careertalent-celery-beat.service
+systemctl daemon-reload
+SERVICES_STOPPED=1
+systemctl stop careertalent-fastapi.service
+systemctl stop careertalent-celery.service careertalent-celery-beat.service 2>/dev/null || true
+
 echo "→ FastAPI forward migration"
 cd "$DEST/backend"
 DEBUG=false .venv/bin/alembic upgrade head
+MIGRATION_COMPLETE=1
 
 echo "→ landing export"
 bash "$DEST/scripts/build-landing.sh"
@@ -47,19 +124,22 @@ cd "$DEST/frontend"
 
 echo "→ storage dirs"
 mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
-chmod -R ug+rwx storage bootstrap/cache
+normalize_frontend_runtime_permissions
 
 echo "→ Laravel runtime schema check"
 # FastAPI/Alembic owns the shared PostgreSQL business schema. Laravel only
 # consumes the existing users/career tables and needs its session/cache tables.
-php artisan tinker --execute="foreach (['sessions', 'cache', 'cache_locks'] as \$table) { if (! Illuminate\\Support\\Facades\\Schema::hasTable(\$table)) { throw new RuntimeException('Missing Laravel runtime table: '.\$table); } }"
+sudo -u yigit php artisan tinker --execute="foreach (['sessions', 'cache', 'cache_locks'] as \$table) { if (! Illuminate\\Support\\Facades\\Schema::hasTable(\$table)) { throw new RuntimeException('Missing Laravel runtime table: '.\$table); } }"
 
 echo "→ Livewire assets (Alpine panel UI)"
-php artisan livewire:publish --assets --no-interaction
+mkdir -p public/vendor/livewire
+chown -R yigit:www-data public/vendor/livewire
+chmod -R ug+rwX public/vendor/livewire
+sudo -u yigit php artisan livewire:publish --assets --no-interaction
 
 echo "→ permissions"
 chown -R yigit:www-data "$DEST"
-chmod -R ug+rwx "$DEST/frontend/storage" "$DEST/frontend/bootstrap/cache"
+normalize_frontend_runtime_permissions
 
 echo "→ Laravel caches (yigit user — PHP-FPM ile aynı sahip)"
 cd "$DEST/frontend"
@@ -70,16 +150,21 @@ sudo -u yigit php artisan config:cache
 sudo -u yigit php artisan route:cache
 sudo -u yigit php artisan view:clear
 sudo -u yigit php artisan view:cache
+normalize_frontend_runtime_permissions
 
 echo "→ backend services restart"
 systemctl restart careertalent-fastapi.service
 systemctl is-active --quiet careertalent-fastapi.service
-if grep -Eq '^CELERY_TASK_ALWAYS_EAGER=(true|1|yes|on)$' "$DEST/backend/.env"; then
-  systemctl stop careertalent-celery.service 2>/dev/null || true
+if grep -Eq '^CELERY_TASK_ALWAYS_EAGER=(true|1|yes|on)$' "$CELERY_ENV_FILE"; then
+  systemctl disable --now careertalent-celery.service careertalent-celery-beat.service 2>/dev/null || true
 else
-  systemctl restart careertalent-celery.service
+  systemctl enable --now careertalent-celery.service careertalent-celery-beat.service
+  systemctl restart careertalent-celery.service careertalent-celery-beat.service
   systemctl is-active --quiet careertalent-celery.service
+  systemctl is-active --quiet careertalent-celery-beat.service
 fi
+SERVICES_STOPPED=0
+trap - ERR
 for attempt in {1..15}; do
   if curl -fsS --max-time 3 http://127.0.0.1:8000/health >/dev/null; then
     break

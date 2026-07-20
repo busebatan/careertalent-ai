@@ -16,6 +16,10 @@
             <div class="form-alert is-error" role="alert" aria-live="polite">{{ $errors->first() }}</div>
         @endif
 
+        @if (session('status'))
+            <div class="form-alert is-success" role="status" aria-live="polite" data-flash-toast data-flash-toast-duration="4000">{{ session('status') }}</div>
+        @endif
+
         @if ($isRegister)
             <label>
                 <span>{{ __('marketing.auth.name') }}</span>

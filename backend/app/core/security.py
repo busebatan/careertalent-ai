@@ -167,6 +167,16 @@ def require_candidate_portal_user(
     return current_user
 
 
+def require_student_candidate_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Restrict candidate-owned mutations such as job applications to students."""
+    if current_user.role != "student":
+        raise HTTPException(status_code=403, detail="Candidate account required")
+
+    return current_user
+
+
 def is_admin_user(user: User) -> bool:
     return user.role in {"admin", "super_admin"} or user.is_admin
 

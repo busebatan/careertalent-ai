@@ -489,6 +489,20 @@ html:not(.dark) { color-scheme: light; }
         color: var(--company-accent-ink-dark);
     }
 
+    [data-flash-toast] {
+        transition: opacity 500ms ease, margin 500ms ease, padding 500ms ease, max-height 500ms ease, border-width 500ms ease;
+        overflow: hidden;
+    }
+
+    [data-flash-toast].flash-toast-leaving {
+        opacity: 0;
+        margin-bottom: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        max-height: 0 !important;
+        border-width: 0 !important;
+    }
+
     .company-shell .company-btn-primary {
         display: inline-flex;
         align-items: center;
@@ -527,6 +541,18 @@ html:not(.dark) { color-scheme: light; }
         color: var(--company-accent-ink-dark);
     }
 
+    .company-shell .company-confirm-modal {
+        @apply fixed inset-0 z-[60] flex items-center justify-center p-4;
+    }
+
+    .company-shell .company-confirm-backdrop {
+        @apply absolute inset-0 bg-slate-950/50;
+    }
+
+    .company-shell .company-confirm-dialog {
+        @apply relative z-10 w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950;
+    }
+
     .company-shell .company-dashboard-icon {
         display: inline-flex;
         height: 2.5rem;
@@ -542,6 +568,30 @@ html:not(.dark) { color-scheme: light; }
     :is(.dark) .company-shell .company-dashboard-icon {
         background: var(--company-accent-soft-strong);
         color: var(--company-accent-ink-dark);
+    }
+
+    .company-shell .company-drawer-backdrop {
+        @apply fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm;
+    }
+
+    .company-shell .company-drawer-panel {
+        @apply fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950;
+    }
+
+    .company-shell .company-drawer-body {
+        @apply min-h-0 flex-1 overflow-y-auto overscroll-contain p-6;
+    }
+
+    .company-shell .company-detail-section {
+        @apply mt-6 border-t border-slate-200 pt-6 dark:border-slate-800;
+    }
+
+    .company-shell .company-detail-list {
+        @apply mt-3 space-y-2;
+    }
+
+    .company-shell .company-detail-row {
+        @apply rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/50;
     }
 
     .company-shell .company-task-row {
@@ -602,6 +652,87 @@ html:not(.dark) { color-scheme: light; }
 
     .company-shell .company-sidebar-footer {
         border-top: 1px solid var(--company-accent-border-soft);
+    }
+
+    .company-shell .company-status-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 9999px;
+        padding: 0.25rem 0.625rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .company-shell .company-status-badge--neutral {
+        background: rgb(241 245 249);
+        color: rgb(51 65 85);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--neutral {
+        background: rgb(30 41 59);
+        color: rgb(203 213 225);
+    }
+
+    .company-shell .company-status-badge--info {
+        background: var(--company-accent-soft);
+        color: var(--company-accent-ink);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--info {
+        background: var(--company-accent-soft-strong);
+        color: var(--company-accent-ink-dark);
+    }
+
+    .company-shell .company-status-badge--warning {
+        background: rgb(254 243 199);
+        color: rgb(146 64 14);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--warning {
+        background: rgb(120 53 15 / 0.35);
+        color: rgb(253 230 138);
+    }
+
+    .company-shell .company-status-badge--success {
+        background: rgb(209 250 229);
+        color: rgb(4 120 87);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--success {
+        background: rgb(6 78 59 / 0.45);
+        color: rgb(110 231 183);
+    }
+
+    .company-shell .company-status-badge--positive {
+        background: rgb(16 185 129 / 0.16);
+        color: rgb(5 150 105);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--positive {
+        background: rgb(16 185 129 / 0.24);
+        color: rgb(52 211 153);
+    }
+
+    .company-shell .company-status-badge--danger {
+        background: rgb(254 226 226);
+        color: rgb(185 28 28);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--danger {
+        background: rgb(127 29 29 / 0.35);
+        color: rgb(252 165 165);
+    }
+
+    .company-shell .company-status-badge--archived {
+        background: rgb(219 234 254);
+        color: rgb(29 78 216);
+    }
+
+    :is(.dark) .company-shell .company-status-badge--archived {
+        background: rgb(30 58 138 / 0.4);
+        color: rgb(147 197 253);
     }
 
     .workspace-header {

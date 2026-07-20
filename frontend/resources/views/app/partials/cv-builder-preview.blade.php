@@ -28,17 +28,6 @@
             </div>
         </template>
 
-        <template x-if="verifiedAchievements.length">
-            <div>
-                <h2>{{ app()->getLocale() === 'en' ? 'Verified achievements' : 'Doğrulanmış kazanımlar' }}</h2>
-                <ul>
-                    <template x-for="achievement in verifiedAchievements" :key="achievement.title">
-                        <li><strong x-text="achievement.title"></strong><span x-show="achievement.skill_impacts?.length" x-text="' · ' + achievement.skill_impacts.join(', ')"></span></li>
-                    </template>
-                </ul>
-            </div>
-        </template>
-
         <template x-if="locales[previewLang].education.length">
             <div>
                 <h2 x-text="uiLabels[previewLang].sections.education"></h2>

@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     # Yapay zeka — AI_PROVIDER ile seçilir: deepseek | gemini | groq
     AI_PROVIDER: str = "deepseek"
     AI_TEMPERATURE: float = 0.3
+    AI_REQUEST_TIMEOUT_SECONDS: float = 90.0
+    AI_PROVIDER_MAX_RETRIES: int = 1
 
     DEEPSEEK_API_KEY: str = ""
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"

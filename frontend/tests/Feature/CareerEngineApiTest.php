@@ -37,6 +37,14 @@ class CareerEngineApiTest extends TestCase
             ->assertOk()->assertJsonPath('status', 'ready');
     }
 
+    public function test_analysis_stream_route_name_resolves_panel_path(): void
+    {
+        $this->assertStringContainsString(
+            '/panel/cv-merkezi/analiz/analysis-1/akis',
+            route('panel.cv.analysis-stream', ['analysisId' => 'analysis-1'])
+        );
+    }
+
     public function test_evidence_file_is_forwarded_as_private_multipart_upload(): void
     {
         $this->withoutMiddleware();

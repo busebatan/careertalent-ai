@@ -1,0 +1,8 @@
+@php($config = $position['evaluation_config'] ?? [])
+<div class="grid gap-6 lg:grid-cols-2">
+    @foreach(['tasks' => 'tasks', 'allowed_tools' => 'human_review'] as $field => $title)
+        <section class="panel-card p-6"><h2 class="text-lg font-semibold">{{ __('company_positions.sections.'.$title) }}</h2><ul class="mt-4 space-y-2 text-sm">@forelse(($config[$field] ?? []) as $item)<li class="rounded-lg bg-slate-50 p-3 dark:bg-slate-900">{{ is_array($item) ? ($item['title'] ?? json_encode($item, JSON_UNESCAPED_UNICODE)) : $item }}</li>@empty<li class="panel-muted">—</li>@endforelse</ul></section>
+    @endforeach
+    <section class="panel-card p-6"><h2 class="text-lg font-semibold">{{ __('company_positions.sections.rubric') }}</h2><p class="panel-muted mt-4 whitespace-pre-line text-sm">{{ $config['rubric'] ?? '—' }}</p></section>
+    <section class="panel-card p-6"><h2 class="text-lg font-semibold">{{ __('company_positions.sections.threshold') }}</h2><dl class="mt-4 space-y-3 text-sm"><div class="flex justify-between"><dt class="panel-muted">Süre</dt><dd class="font-semibold">{{ $config['duration_minutes'] ?? '—' }} dk</dd></div><div class="flex justify-between"><dt class="panel-muted">{{ __('company_positions.sections.threshold') }}</dt><dd class="font-semibold">{{ isset($config['success_threshold']) ? '%'.$config['success_threshold'] : '—' }}</dd></div><div class="flex justify-between"><dt class="panel-muted">{{ __('company_positions.sections.human_review') }}</dt><dd class="font-semibold">{{ ($config['human_review_required'] ?? true) ? 'Zorunlu' : 'İsteğe bağlı' }}</dd></div></dl></section>
+</div>

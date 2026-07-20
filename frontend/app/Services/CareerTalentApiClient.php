@@ -242,11 +242,17 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/company/dashboard?'.http_build_query(['period' => $period]), 10, ['X-Organization-ID' => $organizationId]);
     }
 
-    public function companyPositions(string $organizationId, ?string $status = null): array
+    /** @param array<string, int|string> $filters */
+    public function companyPositions(string $organizationId, array $filters = []): array
     {
-        $query = $status !== null ? '?'.http_build_query(['status' => $status]) : '';
+        $query = $filters !== [] ? '?'.http_build_query($filters) : '';
 
         return $this->getJson('/api/v1/company/positions'.$query, 10, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function companyPosition(string $organizationId, string $positionId): array
+    {
+        return $this->getJson('/api/v1/company/positions/'.rawurlencode($positionId), 15, ['X-Organization-ID' => $organizationId]);
     }
 
     /** @param array<string, mixed> $payload */
@@ -266,12 +272,83 @@ class CareerTalentApiClient
         return $this->deleteJson('/api/v1/company/positions/'.rawurlencode($positionId), 15, ['X-Organization-ID' => $organizationId]);
     }
 
+    public function copyCompanyPosition(string $organizationId, string $positionId): array
+    {
+        return $this->postJson('/api/v1/company/positions/'.rawurlencode($positionId).'/copy', [], 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function companyAtsConfig(string $organizationId): array
+    {
+        return $this->getJson('/api/v1/company/ats-config', 10, ['X-Organization-ID' => $organizationId]);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateCompanyAtsConfig(string $organizationId, array $payload): array
+    {
+        return $this->patchJson('/api/v1/company/ats-config', $payload, 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function analyzeCompanyPosition(string $organizationId, string $positionId): array
+    {
+        return $this->postJson('/api/v1/company/positions/'.rawurlencode($positionId).'/ai-analysis', [], 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function companyPositionAiAnalysis(string $organizationId, string $positionId, string $analysisId): array
+    {
+        return $this->getJson('/api/v1/company/positions/'.rawurlencode($positionId).'/ai-analyses/'.rawurlencode($analysisId), 10, ['X-Organization-ID' => $organizationId]);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateCompanyPositionCriteria(string $organizationId, string $positionId, string $criteriaId, array $payload): array
+    {
+        return $this->patchJson('/api/v1/company/positions/'.rawurlencode($positionId).'/criteria/'.rawurlencode($criteriaId), $payload, 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function approveCompanyPositionCriteria(string $organizationId, string $positionId, string $criteriaId): array
+    {
+        return $this->postJson('/api/v1/company/positions/'.rawurlencode($positionId).'/criteria/'.rawurlencode($criteriaId).'/approve', [], 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createCompanyShareLink(string $organizationId, string $positionId, array $payload): array
+    {
+        return $this->postJson('/api/v1/company/positions/'.rawurlencode($positionId).'/share-links', $payload, 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateCompanyShareLink(string $organizationId, string $positionId, string $linkId, array $payload): array
+    {
+        return $this->patchJson('/api/v1/company/positions/'.rawurlencode($positionId).'/share-links/'.rawurlencode($linkId), $payload, 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function publicJob(string $organizationSlug, string $positionPath): array
+    {
+        return $this->getJson('/api/v1/public/apply/'.rawurlencode($organizationSlug).'/'.rawurlencode($positionPath), 10);
+    }
+
+    public function resolvePublicJobShareLink(string $shortCode): array
+    {
+        return $this->getJson('/api/v1/public/a/'.rawurlencode($shortCode), 10);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function submitPublicJobApplication(string $publicId, array $payload): array
+    {
+        return $this->postJson('/api/v1/public/positions/'.rawurlencode($publicId).'/applications', $payload, 20);
+    }
+
     /** @param array<string, string> $filters */
     public function companyApplications(string $organizationId, array $filters = []): array
     {
         $query = $filters !== [] ? '?'.http_build_query($filters) : '';
 
         return $this->getJson('/api/v1/company/applications'.$query, 10, ['X-Organization-ID' => $organizationId]);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateCompanyPositionApplication(string $organizationId, string $positionId, string $applicationId, array $payload): array
+    {
+        return $this->patchJson('/api/v1/company/positions/'.rawurlencode($positionId).'/applications/'.rawurlencode($applicationId), $payload, 15, ['X-Organization-ID' => $organizationId]);
     }
 
     public function companyAssessments(string $organizationId): array
@@ -474,6 +551,11 @@ class CareerTalentApiClient
     public function careerAnalysis(string $analysisId): array
     {
         return $this->getJson('/api/v1/career/analysis/'.rawurlencode($analysisId), 10);
+    }
+
+    public function careerAnalysisStreamUrl(string $analysisId): string
+    {
+        return $this->baseUrl().'/api/v1/career/analysis/'.rawurlencode($analysisId).'/stream';
     }
 
     public function currentCareerAnalysis(): array
