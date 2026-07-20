@@ -11,12 +11,18 @@ class ChatController extends PanelController
     public function show(CareerTalentApiClient $api)
     {
         $result = $api->careerChat();
+        $historyResult = $api->careerChatThreads();
         $analysisResult = $api->currentCareerAnalysis();
         $analysis = ($analysisResult['ok'] ?? false) && is_array($analysisResult['body'] ?? null) ? $analysisResult['body'] : [];
 
         return $this->panelView('app.chat', [
             'messages' => ($result['ok'] ?? false) && is_array($result['body'] ?? null) ? $result['body'] : [],
             'chatError' => ($result['ok'] ?? false) ? null : $result['error'],
+            'chatThreads' => ($historyResult['ok'] ?? false) && is_array($historyResult['body']['items'] ?? null)
+                ? $historyResult['body']['items']
+                : [],
+            'chatHistoryHasMore' => (bool) (($historyResult['body']['has_more'] ?? false) && ($historyResult['ok'] ?? false)),
+            'chatHistoryError' => ($historyResult['ok'] ?? false) ? null : $historyResult['error'],
             'activeCvName' => (string) ($analysis['file_name'] ?? ''),
         ]);
     }
@@ -42,9 +48,27 @@ class ChatController extends PanelController
         ));
     }
 
-    public function clear(CareerTalentApiClient $api): JsonResponse
+    public function startNew(CareerTalentApiClient $api): JsonResponse
     {
-        return $this->apiJson($api->clearCareerChat());
+        return $this->apiJson($api->startNewCareerChat());
+    }
+
+    public function history(Request $request, CareerTalentApiClient $api): JsonResponse
+    {
+        $validated = $request->validate([
+            'limit' => ['sometimes', 'integer', 'min:1', 'max:50'],
+            'offset' => ['sometimes', 'integer', 'min:0'],
+        ]);
+
+        return $this->apiJson($api->careerChatThreads(
+            (int) ($validated['limit'] ?? 20),
+            (int) ($validated['offset'] ?? 0),
+        ));
+    }
+
+    public function historyDetail(string $threadId, CareerTalentApiClient $api): JsonResponse
+    {
+        return $this->apiJson($api->careerChatThread($threadId));
     }
 
     private function apiJson(array $result): JsonResponse

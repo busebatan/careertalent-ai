@@ -700,6 +700,24 @@ class CareerTalentApiClient
         return $this->postJson('/api/v1/career/chat', ['message' => $message], 90);
     }
 
+    public function careerChatThreads(int $limit = 20, int $offset = 0): array
+    {
+        return $this->getJson('/api/v1/career/chat/threads?'.http_build_query([
+            'limit' => $limit,
+            'offset' => $offset,
+        ]), 10);
+    }
+
+    public function startNewCareerChat(): array
+    {
+        return $this->postJson('/api/v1/career/chat/threads', [], 15);
+    }
+
+    public function careerChatThread(string $threadId): array
+    {
+        return $this->getJson('/api/v1/career/chat/threads/'.rawurlencode($threadId), 10);
+    }
+
     /** @param list<string> $suggestionIds */
     public function createCareerChatCvVersion(string $jobId, array $suggestionIds, ?string $sourceCvVersionId): array
     {

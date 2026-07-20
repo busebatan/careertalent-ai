@@ -7,7 +7,7 @@ function endpoint(template, id) {
     return template.replace('__JOB__', encodeURIComponent(id));
 }
 
-export function careerChat(initialMessages, sendUrl, clearUrl, labels, actions = {}, runtime = {}) {
+export function careerChat(initialMessages, sendUrl, newChatUrl, labels, actions = {}, runtime = {}) {
     const fetcher = runtime.fetch || globalThis.fetch;
     const sleep = runtime.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
     const navigate = runtime.navigate || ((url) => globalThis.location?.assign(url));
@@ -18,10 +18,17 @@ export function careerChat(initialMessages, sendUrl, clearUrl, labels, actions =
         sending: false,
         error: '',
         sendUrl,
-        clearUrl,
+        newChatUrl,
         labels,
         actions,
         cvVersions: [],
+        threads: Array.isArray(actions.initialThreads) ? [...actions.initialThreads] : [],
+        historyHasMore: Boolean(actions.historyHasMore),
+        historyOffset: Array.isArray(actions.initialThreads) ? actions.initialThreads.length : 0,
+        historyLoading: false,
+        newChatLoading: false,
+        historyOpen: false,
+        selectedThread: null,
         async init() {
             this.messages.forEach((message) => this.prepareAction(message));
             if (this.messages.some((message) => message.meta?.action?.type === 'job_cv_draft')) {
@@ -150,9 +157,69 @@ export function careerChat(initialMessages, sendUrl, clearUrl, labels, actions =
                 this.scrollToBottom();
             }
         },
-        async clear() {
-            const response = await fetcher(this.clearUrl, { method: 'DELETE', headers: { ...csrfHeaders(), Accept: 'application/json' } });
-            if (response.ok) this.messages = [];
+        async startNewChat() {
+            if (this.newChatLoading || !this.messages.length) return;
+            this.newChatLoading = true;
+            this.error = '';
+            try {
+                const payload = await this.request(this.newChatUrl, { method: 'POST' });
+                this.messages = [];
+                this.text = '';
+                if (payload.archived && !this.threads.some((thread) => thread.id === payload.archived.id)) {
+                    this.threads.unshift(payload.archived);
+                    this.historyOffset += 1;
+                }
+            } catch (error) {
+                this.error = error?.message || this.labels.failed;
+            } finally {
+                this.newChatLoading = false;
+                this.scrollToBottom();
+            }
+        },
+        async loadMoreHistory() {
+            if (this.historyLoading || !this.historyHasMore || !this.actions.historyUrl) return;
+            this.historyLoading = true;
+            this.error = '';
+            try {
+                const separator = this.actions.historyUrl.includes('?') ? '&' : '?';
+                const payload = await this.request(`${this.actions.historyUrl}${separator}offset=${this.historyOffset}&limit=20`, { method: 'GET' });
+                const known = new Set(this.threads.map((thread) => thread.id));
+                const items = Array.isArray(payload.items) ? payload.items : [];
+                this.threads.push(...items.filter((thread) => !known.has(thread.id)));
+                this.historyOffset += items.length;
+                this.historyHasMore = Boolean(payload.has_more);
+            } catch (error) {
+                this.error = error?.message || this.labels.failed;
+            } finally {
+                this.historyLoading = false;
+            }
+        },
+        async openHistory(thread) {
+            if (!thread?.id || !this.actions.historyDetailUrl) return;
+            this.historyLoading = true;
+            this.error = '';
+            try {
+                const url = this.actions.historyDetailUrl.replace('__THREAD__', encodeURIComponent(thread.id));
+                this.selectedThread = await this.request(url, { method: 'GET' });
+                this.historyOpen = true;
+            } catch (error) {
+                this.error = error?.message || this.labels.failed;
+            } finally {
+                this.historyLoading = false;
+            }
+        },
+        closeHistory() {
+            this.historyOpen = false;
+            this.selectedThread = null;
+        },
+        formatHistoryDate(value) {
+            if (!value) return '';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            return new Intl.DateTimeFormat(this.actions.locale || 'tr-TR', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+            }).format(date);
         },
     };
 }
