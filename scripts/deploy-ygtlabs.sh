@@ -6,12 +6,37 @@ SRC="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="/var/www/vhosts/ygtlabs.ai/careertalent.ygtlabs.ai"
 DOMAIN="careertalent.ygtlabs.ai"
 CELERY_ENV_FILE="/etc/careertalent-celery.env"
+COMPILED_VIEW_PATH="$DEST/.runtime/laravel/views"
 SERVICES_STOPPED=0
 MIGRATION_COMPLETE=0
+
+normalize_frontend_runtime_permissions() {
+  local frontend="$DEST/frontend"
+
+  [[ -d "$frontend" ]] || return 0
+
+  mkdir -p \
+    "$frontend/storage/framework/cache" \
+    "$frontend/storage/framework/sessions" \
+    "$frontend/storage/framework/views" \
+    "$frontend/storage/logs" \
+    "$frontend/bootstrap/cache" \
+    "$COMPILED_VIEW_PATH"
+  chown -R yigit:www-data "$frontend/storage" "$frontend/bootstrap/cache" "$COMPILED_VIEW_PATH"
+  chmod -R ug+rwX "$frontend/storage" "$frontend/bootstrap/cache" "$COMPILED_VIEW_PATH"
+  find "$frontend/storage" "$frontend/bootstrap/cache" "$COMPILED_VIEW_PATH" -type d -exec chmod g+s {} +
+
+  if command -v setfacl >/dev/null 2>&1; then
+    setfacl -R -m g:www-data:rwX,m::rwX "$frontend/storage" "$frontend/bootstrap/cache" "$COMPILED_VIEW_PATH"
+    find "$frontend/storage" "$frontend/bootstrap/cache" "$COMPILED_VIEW_PATH" -type d \
+      -exec setfacl -m d:g:www-data:rwx,d:m::rwx {} +
+  fi
+}
 
 restart_services_after_error() {
   status=$?
   trap - ERR
+  normalize_frontend_runtime_permissions || true
   if [[ "$SERVICES_STOPPED" == "1" && "$MIGRATION_COMPLETE" == "1" ]]; then
     systemctl start careertalent-fastapi.service 2>/dev/null || true
     if ! grep -Eq '^CELERY_TASK_ALWAYS_EAGER=(true|1|yes|on)$' "$CELERY_ENV_FILE"; then
@@ -33,10 +58,19 @@ if ! grep -Eq '^CELERY_TASK_ALWAYS_EAGER=(true|1|yes|on)$' "$CELERY_ENV_FILE" \
   echo "REDIS_URL is required when Celery eager mode is disabled" >&2
   exit 1
 fi
+if ! grep -Fxq "VIEW_COMPILED_PATH=$COMPILED_VIEW_PATH" "$DEST/frontend/.env"; then
+  echo "VIEW_COMPILED_PATH must be $COMPILED_VIEW_PATH in $DEST/frontend/.env" >&2
+  exit 1
+fi
+if ! grep -Fxq 'VIEW_CHECK_CACHE_TIMESTAMPS=false' "$DEST/frontend/.env"; then
+  echo "VIEW_CHECK_CACHE_TIMESTAMPS must be false in $DEST/frontend/.env" >&2
+  exit 1
+fi
 
 echo "→ rsync $SRC → $DEST"
 rsync -a --delete \
   --exclude '.git' \
+  --exclude '.runtime' \
   --exclude '.pytest_cache' \
   --exclude '__pycache__' \
   --exclude '*.pyc' \
@@ -86,19 +120,19 @@ cd "$DEST/frontend"
 
 echo "→ storage dirs"
 mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
-chmod -R ug+rwx storage bootstrap/cache
+normalize_frontend_runtime_permissions
 
 echo "→ Laravel runtime schema check"
 # FastAPI/Alembic owns the shared PostgreSQL business schema. Laravel only
 # consumes the existing users/career tables and needs its session/cache tables.
-php artisan tinker --execute="foreach (['sessions', 'cache', 'cache_locks'] as \$table) { if (! Illuminate\\Support\\Facades\\Schema::hasTable(\$table)) { throw new RuntimeException('Missing Laravel runtime table: '.\$table); } }"
+sudo -u yigit php artisan tinker --execute="foreach (['sessions', 'cache', 'cache_locks'] as \$table) { if (! Illuminate\\Support\\Facades\\Schema::hasTable(\$table)) { throw new RuntimeException('Missing Laravel runtime table: '.\$table); } }"
 
 echo "→ Livewire assets (Alpine panel UI)"
-php artisan livewire:publish --assets --no-interaction
+sudo -u yigit php artisan livewire:publish --assets --no-interaction
 
 echo "→ permissions"
 chown -R yigit:www-data "$DEST"
-chmod -R ug+rwx "$DEST/frontend/storage" "$DEST/frontend/bootstrap/cache"
+normalize_frontend_runtime_permissions
 
 echo "→ Laravel caches (yigit user — PHP-FPM ile aynı sahip)"
 cd "$DEST/frontend"
@@ -109,6 +143,7 @@ sudo -u yigit php artisan config:cache
 sudo -u yigit php artisan route:cache
 sudo -u yigit php artisan view:clear
 sudo -u yigit php artisan view:cache
+normalize_frontend_runtime_permissions
 
 echo "→ backend services restart"
 systemctl restart careertalent-fastapi.service
