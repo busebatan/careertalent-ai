@@ -29,8 +29,7 @@
     })">
     <header class="mb-8 flex flex-wrap items-end justify-between gap-5">
         <div>
-            <p class="company-accent-text text-sm font-semibold">{{ $companyMembership['organization_name'] }}</p>
-            <h1 class="mt-1 text-3xl font-bold tracking-tight">{{ __('company_positions.title') }}</h1>
+            <h1 class="text-3xl font-bold tracking-tight">{{ __('company_positions.title') }}</h1>
             <p class="panel-muted mt-2 max-w-3xl">{{ __('company_positions.subtitle') }}</p>
         </div>
         @if(in_array('positions.write', $permissions, true))

@@ -1,17 +1,147 @@
-@php($links = $positionDetail['share_links'] ?? [])
-@php($publicUrl = !empty($position['public_path']) ? url($position['public_path']) : null)
-<div class="space-y-6" x-data="{ copied: false, copy(value) { navigator.clipboard.writeText(value).then(() => { this.copied = true; setTimeout(() => this.copied = false, 1600) }) } }">
+@php
+    $links = $positionDetail['share_links'] ?? [];
+    $publicUrl = !empty($position['public_path']) ? url($position['public_path']) : null;
+    $shareLabels = [
+        'activate_title' => __('company_positions.share.confirm_activate_title'),
+        'deactivate_title' => __('company_positions.share.confirm_deactivate_title'),
+        'confirm_activate' => __('company_positions.share.confirm_activate'),
+        'confirm_deactivate' => __('company_positions.share.confirm_deactivate'),
+        'confirm_cancel' => __('company_positions.share.confirm_cancel'),
+        'confirm_proceed' => __('company_positions.share.confirm_proceed'),
+    ];
+@endphp
+<div class="space-y-6" x-data="companyShareLinks(@js($shareLabels))">
     <section class="panel-card p-6">
         <h2 class="text-lg font-semibold">{{ __('company_positions.share.canonical') }}</h2>
-        @if($publicUrl)<div class="mt-4 flex flex-col gap-3"><code class="min-w-0 overflow-x-auto rounded-xl bg-slate-950 px-4 py-3 text-sm text-emerald-300">{{ $publicUrl }}</code><div class="flex flex-wrap gap-2"><button class="company-btn-secondary" type="button" @click="copy(@js($publicUrl))"><span x-text="copied ? 'Kopyalandı' : @js(__('company_positions.share.copy'))"></span></button><a class="company-btn-secondary" href="{{ $publicUrl }}" target="_blank" rel="noopener">{{ __('company_positions.share.preview') }}</a><button class="company-btn-secondary" type="button" data-job-qr-download data-job-url="{{ $publicUrl }}">{{ __('company_positions.share.qr') }}</button><a class="company-btn-secondary" href="{{ route('company.positions.show', ['position' => $position['id'], 'tab' => 'settings']) }}">{{ __('company_positions.share.settings') }}</a>@if($canWrite && in_array($position['status'] ?? null, ['published','paused'], true))<form method="post" action="{{ route('company.positions.update', ['position' => $position['id']]) }}">@csrf @method('PATCH')<input type="hidden" name="status" value="{{ ($position['status'] ?? null) === 'published' ? 'paused' : 'published' }}"><button class="company-btn-secondary" type="submit">{{ ($position['status'] ?? null) === 'published' ? __('company_positions.share.pause') : __('company_positions.share.resume') }}</button></form><form method="post" action="{{ route('company.positions.update', ['position' => $position['id']]) }}">@csrf @method('PATCH')<input type="hidden" name="status" value="closed"><button class="company-btn-secondary" type="submit">{{ __('company_positions.share.close') }}</button></form>@endif</div></div>@else<p class="panel-muted mt-4">Bağlantı pozisyon yayımlandığında oluşturulur.</p>@endif
+        @if($publicUrl)
+            <div class="mt-4 flex flex-col gap-3">
+                <code class="min-w-0 overflow-x-auto rounded-xl bg-slate-950 px-4 py-3 text-sm text-emerald-300">{{ $publicUrl }}</code>
+                <div class="flex flex-wrap gap-2">
+                    <button class="company-btn-secondary" type="button" @click="copy(@js($publicUrl))">
+                        <span x-text="copied ? 'Kopyalandı' : @js(__('company_positions.share.copy'))"></span>
+                    </button>
+                    <a class="company-btn-secondary" href="{{ $publicUrl }}" target="_blank" rel="noopener">{{ __('company_positions.share.preview') }}</a>
+                    <button class="company-btn-secondary" type="button" data-job-qr-download data-job-url="{{ $publicUrl }}">{{ __('company_positions.share.qr') }}</button>
+                    <a class="company-btn-secondary" href="{{ route('company.positions.show', ['position' => $position['id'], 'tab' => 'settings']) }}">{{ __('company_positions.share.settings') }}</a>
+                    @if($canWrite && in_array($position['status'] ?? null, ['published', 'paused'], true))
+                        <form method="post" action="{{ route('company.positions.update', ['position' => $position['id']]) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="{{ ($position['status'] ?? null) === 'published' ? 'paused' : 'published' }}">
+                            <button class="company-btn-secondary" type="submit">{{ ($position['status'] ?? null) === 'published' ? __('company_positions.share.pause') : __('company_positions.share.resume') }}</button>
+                        </form>
+                        <form method="post" action="{{ route('company.positions.update', ['position' => $position['id']]) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="status" value="closed">
+                            <button class="company-btn-secondary" type="submit">{{ __('company_positions.share.close') }}</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        @else
+            <p class="panel-muted mt-4">Bağlantı pozisyon yayımlandığında oluşturulur.</p>
+        @endif
     </section>
 
     <section class="panel-card overflow-hidden">
-        <div class="border-b border-slate-200 p-6 dark:border-slate-800"><h2 class="text-lg font-semibold">{{ __('company_positions.share.channels') }}</h2></div>
-        @if($links === [])<p class="panel-muted p-8 text-center">Henüz takip bağlantısı yok.</p>@else<div class="overflow-x-auto"><table class="min-w-[900px] w-full text-left text-sm"><thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr><th class="px-5 py-4">{{ __('company_positions.share.label') }}</th><th class="px-4 py-4">{{ __('company_positions.share.channel') }}</th><th class="px-4 py-4">{{ __('company_positions.share.clicks') }}</th><th class="px-4 py-4">{{ __('company_positions.share.applications') }}</th><th class="px-4 py-4">{{ __('company_positions.share.completed') }}</th><th class="px-5 py-4">Durum</th></tr></thead><tbody class="divide-y divide-slate-200 dark:divide-slate-800">@foreach($links as $link)<tr><td class="px-5 py-4"><strong>{{ $link['label'] }}</strong><code class="panel-muted mt-1 block text-xs">{{ $link['short_path'] ?? '/a/'.$link['short_code'] }}</code></td><td class="px-4 py-4">{{ __('company_positions.channels.'.$link['channel']) }}</td><td class="px-4 py-4 font-bold">{{ $link['click_count'] ?? 0 }}</td><td class="px-4 py-4 font-bold">{{ $link['application_count'] ?? 0 }}</td><td class="px-4 py-4 font-bold">{{ $link['assessment_completed_count'] ?? 0 }}</td><td class="px-5 py-4"><div class="flex items-center gap-2"><span>{{ ($link['is_active'] ?? false) ? __('company_positions.share.active') : __('company_positions.share.inactive') }}</span>@if($canWrite)<form method="post" action="{{ route('company.positions.share-links.update', ['position' => $position['id'], 'link' => $link['id']]) }}">@csrf @method('PATCH')<input type="hidden" name="is_active" value="{{ ($link['is_active'] ?? false) ? 0 : 1 }}"><button class="company-accent-text text-xs font-semibold" type="submit">{{ ($link['is_active'] ?? false) ? __('company_positions.share.inactive') : __('company_positions.share.active') }}</button></form>@endif</div></td></tr>@endforeach</tbody></table></div>@endif
+        <div class="border-b border-slate-200 p-6 dark:border-slate-800">
+            <h2 class="text-lg font-semibold">{{ __('company_positions.share.channels') }}</h2>
+        </div>
+        @if($links === [])
+            <p class="panel-muted p-8 text-center">Henüz takip bağlantısı yok.</p>
+        @else
+            <div class="overflow-x-auto">
+                <table class="min-w-[900px] w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900">
+                        <tr>
+                            <th class="px-5 py-4">{{ __('company_positions.share.label') }}</th>
+                            <th class="px-4 py-4">{{ __('company_positions.share.channel') }}</th>
+                            <th class="px-4 py-4">{{ __('company_positions.share.clicks') }}</th>
+                            <th class="px-4 py-4">{{ __('company_positions.share.applications') }}</th>
+                            <th class="px-4 py-4">{{ __('company_positions.share.completed') }}</th>
+                            <th class="px-5 py-4">{{ __('company_positions.share.active') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                        @foreach($links as $link)
+                            @php($isActive = (bool) ($link['is_active'] ?? false))
+                            <tr>
+                                <td class="px-5 py-4">
+                                    <strong>{{ $link['label'] }}</strong>
+                                    <code class="panel-muted mt-1 block text-xs">{{ $link['short_path'] ?? '/a/'.$link['short_code'] }}</code>
+                                </td>
+                                <td class="px-4 py-4">{{ __('company_positions.channels.'.$link['channel']) }}</td>
+                                <td class="px-4 py-4 font-bold">{{ $link['click_count'] ?? 0 }}</td>
+                                <td class="px-4 py-4 font-bold">{{ $link['application_count'] ?? 0 }}</td>
+                                <td class="px-4 py-4 font-bold">{{ $link['assessment_completed_count'] ?? 0 }}</td>
+                                <td class="px-5 py-4">
+                                    @if($canWrite)
+                                        <button
+                                            type="button"
+                                            class="{{ $isActive ? 'company-btn-secondary' : 'company-btn-primary' }} whitespace-nowrap text-xs"
+                                            @click="openToggleConfirm(@js([
+                                                'label' => $link['label'],
+                                                'is_active' => $isActive,
+                                                'action' => route('company.positions.share-links.update', ['position' => $position['id'], 'link' => $link['id']]),
+                                            ]))"
+                                        >
+                                            {{ $isActive ? __('company_positions.share.deactivate') : __('company_positions.share.activate') }}
+                                        </button>
+                                    @else
+                                        <span class="text-sm font-medium">{{ $isActive ? __('company_positions.share.active') : __('company_positions.share.inactive') }}</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </section>
 
     @if($canWrite)
-    <details class="panel-card p-6" @if($errors->any()) open @endif><summary class="cursor-pointer list-none text-lg font-semibold">{{ __('company_positions.share.new') }}</summary><form class="mt-6 grid gap-5 md:grid-cols-2" method="post" action="{{ route('company.positions.share-links.create', ['position' => $position['id']]) }}">@csrf<label class="text-sm">{{ __('company_positions.share.label') }}<input class="panel-input-block mt-2" name="label" required></label><label class="text-sm">{{ __('company_positions.share.channel') }}<select class="panel-input-block mt-2" name="channel" required>@foreach(array_keys(__('company_positions.channels')) as $channel)<option value="{{ $channel }}">{{ __('company_positions.channels.'.$channel) }}</option>@endforeach</select></label><label class="text-sm">{{ __('company_positions.share.campaign') }}<input class="panel-input-block mt-2" name="campaign"></label><label class="text-sm">{{ __('company_positions.share.expires_at') }}<input class="panel-input-block mt-2" type="datetime-local" name="expires_at"></label><label class="text-sm">{{ __('company_positions.share.agency_label') }}<input class="panel-input-block mt-2" name="agency_reference"></label><label class="text-sm">{{ __('company_positions.share.referral_label') }}<input class="panel-input-block mt-2" name="employee_reference"></label><label class="text-sm">{{ __('company_positions.share.application_limit') }}<input class="panel-input-block mt-2" type="number" min="1" name="application_limit"></label><label class="text-sm">{{ __('company_positions.share.description') }}<input class="panel-input-block mt-2" name="source_description"></label><div class="md:col-span-2"><button class="company-btn-primary" type="submit">{{ __('company_positions.share.new') }}</button></div></form></details>
+        <form x-ref="toggleForm" method="post" action="#" class="hidden">
+            @csrf
+            @method('PATCH')
+            <input x-ref="toggleIsActive" type="hidden" name="is_active" value="0">
+        </form>
+
+        <div x-show="confirmOpen" x-cloak class="company-confirm-modal" @keydown.escape.window="closeConfirm()">
+            <div class="company-confirm-backdrop" @click="closeConfirm()" aria-hidden="true"></div>
+            <div class="company-confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="share-link-confirm-title" @click.stop>
+                <h3 id="share-link-confirm-title" class="text-lg font-semibold text-slate-900 dark:text-white" x-text="confirmTitle()"></h3>
+                <p class="mt-3 text-sm text-slate-600 dark:text-slate-300" x-text="confirmMessage()"></p>
+                <p class="mt-2 text-sm font-medium text-slate-900 dark:text-white" x-show="pending" x-text="pending?.label"></p>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" class="company-btn-secondary" @click="closeConfirm()">{{ __('company_positions.share.confirm_cancel') }}</button>
+                    <button type="button" class="company-btn-primary" @click="submitToggle()">{{ __('company_positions.share.confirm_proceed') }}</button>
+                </div>
+            </div>
+        </div>
+
+        <details class="panel-card p-6" @if($errors->any()) open @endif>
+            <summary class="cursor-pointer list-none text-lg font-semibold">{{ __('company_positions.share.new') }}</summary>
+            <form class="mt-6 grid gap-5 md:grid-cols-2" method="post" action="{{ route('company.positions.share-links.create', ['position' => $position['id']]) }}">
+                @csrf
+                <label class="text-sm">{{ __('company_positions.share.label') }}<input class="panel-input-block mt-2" name="label" required></label>
+                <label class="text-sm">{{ __('company_positions.share.channel') }}
+                    <select class="panel-input-block mt-2" name="channel" required>
+                        @foreach(array_keys(__('company_positions.channels')) as $channel)
+                            <option value="{{ $channel }}">{{ __('company_positions.channels.'.$channel) }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="text-sm">{{ __('company_positions.share.campaign') }}<input class="panel-input-block mt-2" name="campaign"></label>
+                <label class="text-sm">{{ __('company_positions.share.expires_at') }}<input class="panel-input-block mt-2" type="datetime-local" name="expires_at"></label>
+                <label class="text-sm">{{ __('company_positions.share.agency_label') }}<input class="panel-input-block mt-2" name="agency_reference"></label>
+                <label class="text-sm">{{ __('company_positions.share.referral_label') }}<input class="panel-input-block mt-2" name="employee_reference"></label>
+                <label class="text-sm">{{ __('company_positions.share.application_limit') }}<input class="panel-input-block mt-2" type="number" min="1" name="application_limit"></label>
+                <label class="text-sm">{{ __('company_positions.share.description') }}<input class="panel-input-block mt-2" name="source_description"></label>
+                <div class="md:col-span-2">
+                    <button class="company-btn-primary" type="submit">{{ __('company_positions.share.new') }}</button>
+                </div>
+            </form>
+        </details>
     @endif
 </div>

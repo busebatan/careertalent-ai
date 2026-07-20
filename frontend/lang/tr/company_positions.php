@@ -74,6 +74,11 @@ return [
         'label' => 'Bağlantı adı', 'channel' => 'Kaynak', 'campaign' => 'Kampanya etiketi', 'expires_at' => 'Sona erme tarihi',
         'application_limit' => 'Başvuru sayısı sınırı', 'agency_label' => 'Ajans adı / kimliği', 'referral_label' => 'Çalışan önerisi etiketi', 'description' => 'Kaynak açıklaması', 'clicks' => 'Tıklama',
         'applications' => 'Başvuru', 'completed' => 'Tamamlanan değerlendirme', 'active' => 'Aktif', 'inactive' => 'Devre dışı',
+        'activate' => 'Aktifleştir', 'deactivate' => 'Devre dışı bırak',
+        'confirm_activate_title' => 'Bağlantıyı aktifleştir', 'confirm_deactivate_title' => 'Bağlantıyı devre dışı bırak',
+        'confirm_activate' => '":label" bağlantısı aktif edilsin mi? Bu kanaldan yeni başvuru kabul edilir.',
+        'confirm_deactivate' => '":label" bağlantısı devre dışı bırakılsın mı? Bu kanaldan yeni başvuru alınmaz.',
+        'confirm_cancel' => 'Vazgeç', 'confirm_proceed' => 'Evet, onayla',
     ],
     'channels' => [
         'linkedin' => 'LinkedIn', 'kariyer_net' => 'Kariyer.net', 'indeed' => 'Indeed', 'company_website' => 'Şirket sitesi',

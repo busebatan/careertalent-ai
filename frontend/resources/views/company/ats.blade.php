@@ -6,7 +6,7 @@
     $canWrite = in_array('ats_config.write', $companyMembership['permissions'] ?? [], true);
 @endphp
 <div class="mx-auto max-w-5xl">
-    <header class="mb-8"><p class="company-accent-text text-sm font-semibold">{{ $companyMembership['organization_name'] }}</p><h1 class="mt-1 text-3xl font-bold tracking-tight">{{ __('company_positions.ats.title') }}</h1><p class="panel-muted mt-2 max-w-3xl">{{ __('company_positions.ats.subtitle') }}</p></header>
+    <header class="mb-8"><h1 class="text-3xl font-bold tracking-tight">{{ __('company_positions.ats.title') }}</h1><p class="panel-muted mt-2 max-w-3xl">{{ __('company_positions.ats.subtitle') }}</p></header>
     <section class="panel-card p-6">
         <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4 text-sm text-emerald-800 dark:text-emerald-200">{{ __('company_positions.ats.rule') }}</div>
         <form class="mt-6 grid gap-6 md:grid-cols-2" method="post" action="{{ route('company.ats.update') }}">@csrf @method('PATCH')

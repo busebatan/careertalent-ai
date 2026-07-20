@@ -139,3 +139,53 @@ export function companyPositions(config) {
         },
     };
 }
+
+export function companyShareLinks(labels = {}) {
+    return {
+        copied: false,
+        confirmOpen: false,
+        pending: null,
+        labels,
+        copy(value) {
+            navigator.clipboard.writeText(value).then(() => {
+                this.copied = true;
+                setTimeout(() => {
+                    this.copied = false;
+                }, 1600);
+            });
+        },
+        openToggleConfirm(link) {
+            this.pending = link;
+            this.confirmOpen = true;
+        },
+        closeConfirm() {
+            this.confirmOpen = false;
+            this.pending = null;
+        },
+        confirmTitle() {
+            if (!this.pending) {
+                return '';
+            }
+
+            return this.pending.is_active ? this.labels.deactivate_title : this.labels.activate_title;
+        },
+        confirmMessage() {
+            if (!this.pending) {
+                return '';
+            }
+
+            const template = this.pending.is_active ? this.labels.confirm_deactivate : this.labels.confirm_activate;
+
+            return (template || '').replace(':label', this.pending.label);
+        },
+        submitToggle() {
+            if (!this.pending) {
+                return;
+            }
+
+            this.$refs.toggleForm.action = this.pending.action;
+            this.$refs.toggleIsActive.value = this.pending.is_active ? '0' : '1';
+            this.$refs.toggleForm.submit();
+        },
+    };
+}

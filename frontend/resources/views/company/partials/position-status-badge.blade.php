@@ -3,8 +3,8 @@
         'draft' => 'neutral',
         'published' => 'success',
         'paused' => 'warning',
-        'closed' => 'info',
-        'archived' => 'danger',
+        'closed' => 'danger',
+        'archived' => 'archived',
         default => 'neutral',
     };
 @endphp

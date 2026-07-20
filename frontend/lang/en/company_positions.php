@@ -59,6 +59,11 @@ return [
         'channels' => 'Channel links', 'new' => 'Create tracking link', 'label' => 'Link name', 'channel' => 'Source', 'campaign' => 'Campaign tag',
         'expires_at' => 'Expiry date', 'application_limit' => 'Application limit', 'agency_label' => 'Agency name / ID', 'referral_label' => 'Employee referral label', 'description' => 'Source description', 'clicks' => 'Clicks',
         'applications' => 'Applications', 'completed' => 'Completed assessments', 'active' => 'Active', 'inactive' => 'Disabled',
+        'activate' => 'Activate', 'deactivate' => 'Deactivate',
+        'confirm_activate_title' => 'Activate link', 'confirm_deactivate_title' => 'Deactivate link',
+        'confirm_activate' => 'Activate ":label"? New applications will be accepted from this channel.',
+        'confirm_deactivate' => 'Deactivate ":label"? New applications will not be accepted from this channel.',
+        'confirm_cancel' => 'Cancel', 'confirm_proceed' => 'Yes, confirm',
     ],
     'channels' => ['linkedin' => 'LinkedIn', 'kariyer_net' => 'Kariyer.net', 'indeed' => 'Indeed', 'company_website' => 'Company website', 'social_media' => 'Social media', 'employee_referral' => 'Employee referral', 'agency' => 'Agency', 'email' => 'Email', 'other' => 'Other'],
     'ats' => [

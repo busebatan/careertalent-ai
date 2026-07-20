@@ -123,6 +123,36 @@ class CompanyPositionsCoreTest extends TestCase
             ->assertSee('showUrlTemplate', false);
     }
 
+    public function test_company_flash_status_uses_auto_dismiss_toast(): void
+    {
+        Http::fake(function (Request $request) {
+            if (str_ends_with($request->url(), '/api/v1/auth/me')) {
+                return Http::response($this->companyUser());
+            }
+            if (str_ends_with($request->url(), '/api/v1/company/context')) {
+                return Http::response(['memberships' => [$this->membership()]]);
+            }
+            if (str_contains($request->url(), '/api/v1/company/positions')) {
+                return Http::response([
+                    'items' => [$this->position()],
+                    'status_counts' => ['draft' => 0, 'published' => 1, 'paused' => 0, 'closed' => 0, 'archived' => 0],
+                ]);
+            }
+
+            return Http::response([], 404);
+        });
+
+        $this->withSession([
+            'company_auth.access_token' => 'company-token',
+            'status' => 'Takip bağlantısı güncellendi.',
+        ])
+            ->get('/acme/pozisyonlar')
+            ->assertOk()
+            ->assertSee('Takip bağlantısı güncellendi.')
+            ->assertSee('data-flash-toast', false)
+            ->assertSee('data-flash-toast-duration="4000"', false);
+    }
+
     public function test_position_create_form_forwards_full_hiring_contract(): void
     {
         Http::fake(function (Request $request) {
@@ -318,6 +348,9 @@ class CompanyPositionsCoreTest extends TestCase
             ->assertSee('326')
             ->assertSee('48')
             ->assertSee('31')
+            ->assertSee('Devre dışı bırak')
+            ->assertSee('companyShareLinks', false)
+            ->assertSee('share-link-confirm-title', false)
             ->assertSee('Yeni takip bağlantısı oluştur')
             ->assertSee('value="company_website"', false)
             ->assertSee('name="agency_reference"', false)

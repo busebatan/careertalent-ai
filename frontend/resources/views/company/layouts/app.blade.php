@@ -116,9 +116,7 @@
                 'workspaceSidebarId' => 'company-sidebar',
             ])
             <main class="flex-1 p-6 md:p-10">
-                @if (session('status'))
-                    <div class="company-feedback-success mb-5 rounded-xl border p-4 text-sm">{{ session('status') }}</div>
-                @endif
+                @include('partials.flash-status', ['variant' => 'company'])
                 @php
                     $panelErrorMessage = $errors->first() ?: ($companyError ?? null);
                 @endphp

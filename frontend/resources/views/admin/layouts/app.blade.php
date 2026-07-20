@@ -79,6 +79,7 @@
         <div class="panel-main">
             @include('admin.partials.admin-header')
             <main class="flex-1 p-6 md:p-10">
+                @include('partials.flash-status')
                 @yield('content')
             </main>
         </div>

@@ -57,7 +57,7 @@ return [
         'stage_new' => 'New', 'stage_assessment_pending' => 'Awaiting assessment', 'stage_assessment_in_progress' => 'Assessment in progress',
         'stage_technical_review' => 'Technical review', 'stage_shortlisted' => 'Shortlisted', 'stage_interview' => 'Interview',
         'stage_offer' => 'Offer', 'stage_hired' => 'Hired', 'stage_rejected' => 'Rejected', 'stage_withdrawn' => 'Withdrawn',
-        'review' => 'Human review', 'review_summary' => 'Stage / note / decision', 'decision_placeholder' => 'Human decision', 'note_placeholder' => 'Recruiter note', 'save' => 'Save',
+        'review' => 'Review', 'review_summary' => 'Stage / note / decision', 'decision_placeholder' => 'Final decision', 'note_placeholder' => 'Recruiter note', 'save' => 'Save',
         'completion_status' => 'Completion status', 'missing_documents' => 'Missing documents', 'last_action_at' => 'Last action',
         'completion_not_requested' => 'Analysis not requested', 'completion_queued' => 'Analysis queued',
         'completion_processing' => 'Analysis in progress', 'completion_completed' => 'Analysis completed',

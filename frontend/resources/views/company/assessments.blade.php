@@ -21,8 +21,7 @@
         labels: @js($tableLabels),
     })">
     <div class="mb-8">
-        <p class="company-accent-text text-sm font-semibold">{{ $companyMembership['organization_name'] }}</p>
-        <h1 class="mt-1 text-3xl font-bold">{{ __('company.assessments.title') }}</h1>
+        <h1 class="text-3xl font-bold">{{ __('company.assessments.title') }}</h1>
         <p class="panel-muted mt-2">{{ __('company.assessments.subtitle') }}</p>
     </div>
 

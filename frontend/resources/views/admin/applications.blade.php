@@ -10,7 +10,6 @@
 @endphp
 <div class="mx-auto max-w-7xl">
     <header class="mb-8 flex flex-wrap items-end justify-between gap-4"><div><h1 class="text-2xl font-bold">{{ __('admin.applications.title') }}</h1><p class="mt-1 text-slate-600 dark:text-slate-400">{{ __('admin.applications.subtitle') }}</p></div><span class="rounded-full bg-slate-100 px-3 py-1 text-xs dark:bg-slate-800">{{ __('admin.applications.total', ['count' => $total]) }}</span></header>
-    @if (session('status'))<p class="mb-5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-200">{{ session('status') }}</p>@endif
     @if ($adminError)<p class="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">{{ $adminError }}</p>@endif
     @if ($errors->has('applications'))<p class="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200">{{ $errors->first('applications') }}</p>@endif
     @if ($canWrite && $studentOptions !== [])
