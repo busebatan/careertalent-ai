@@ -271,6 +271,10 @@ def test_current_analysis_keeps_last_ready_result_while_new_analysis_is_not_read
 def test_target_closes_previous_and_evidence_review_is_confidence_gated(client, monkeypatch):
     register(client)
     monkeypatch.setattr(career_tasks.plan_target_task, "delay", lambda _target_id: None)
+    monkeypatch.setattr(career_engine, "_localize_plan", lambda source: career_engine.CareerPlanLocalizationsAI.model_validate({
+        "tr": {"target_title": source["target_title"], "tasks": []},
+        "en": {"target_title": source["target_title"], "tasks": []},
+    }))
     queued_reviews = []
     monkeypatch.setattr(career_tasks.review_evidence_task, "delay", lambda evidence_id: queued_reviews.append(evidence_id))
     auth = headers(client)
