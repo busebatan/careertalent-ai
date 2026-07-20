@@ -132,6 +132,9 @@ echo "→ Laravel runtime schema check"
 sudo -u yigit php artisan tinker --execute="foreach (['sessions', 'cache', 'cache_locks'] as \$table) { if (! Illuminate\\Support\\Facades\\Schema::hasTable(\$table)) { throw new RuntimeException('Missing Laravel runtime table: '.\$table); } }"
 
 echo "→ Livewire assets (Alpine panel UI)"
+mkdir -p public/vendor/livewire
+chown -R yigit:www-data public/vendor/livewire
+chmod -R ug+rwX public/vendor/livewire
 sudo -u yigit php artisan livewire:publish --assets --no-interaction
 
 echo "→ permissions"
