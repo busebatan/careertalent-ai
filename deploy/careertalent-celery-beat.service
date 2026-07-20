@@ -1,0 +1,21 @@
+[Unit]
+Description=CareerTalent AI Celery beat scheduler
+After=network.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=yigit
+Group=www-data
+WorkingDirectory=/var/www/vhosts/ygtlabs.ai/careertalent.ygtlabs.ai/backend
+Environment=DEBUG=false
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/etc/careertalent-celery.env
+StateDirectory=careertalent
+ExecStart=/var/www/vhosts/ygtlabs.ai/careertalent.ygtlabs.ai/backend/.venv/bin/celery -A app.celery_app:celery_app beat --loglevel=INFO --schedule=/var/lib/careertalent/celerybeat-schedule
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

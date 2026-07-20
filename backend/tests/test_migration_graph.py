@@ -16,7 +16,7 @@ def test_migration_graph_has_one_unambiguous_head() -> None:
 
     script = ScriptDirectory.from_config(config)
 
-    assert script.get_heads() == ["20260720_14"]
+    assert script.get_heads() == ["20260720_15"]
 
 
 def test_company_permission_migration_backfills_existing_role_behavior() -> None:

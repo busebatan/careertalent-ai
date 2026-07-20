@@ -393,7 +393,7 @@ class CompanyPositionMemberResponse(BaseModel):
 class CompanyPositionDetailResponse(BaseModel):
     position: CompanyPositionResponse
     counts: CompanyPositionCounts
-    ats_config: CompanyEffectiveAtsConfig
+    ats_config: CompanyEffectiveAtsConfig | None
     criteria_versions: list[CompanyCriteriaVersionResponse]
     active_criteria_version: CompanyCriteriaVersionResponse | None
     ai_analyses: list[CompanyPositionAiAnalysisResponse]

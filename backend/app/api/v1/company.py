@@ -80,7 +80,7 @@ from app.services.company_positions import (
     share_link_response,
     slugify,
 )
-from app.tasks.company_recruiting import analyze_position_task
+from app.services.company_outbox import POSITION_ANALYSIS_TASK, enqueue_company_task
 
 
 router = APIRouter()
@@ -492,7 +492,7 @@ def position_detail(position_id: str, db: DB, context=Depends(_context)) -> Comp
         .join(User, User.id == OrganizationMembership.user_id)
         .where(OrganizationMembership.organization_id == organization.id, OrganizationMembership.status == "active")
         .order_by(User.full_name)
-    ).all()
+    ).all() if "members.view" in permissions else []
     applications_payload = [{
         "id": row.id, "candidate_user_id": row.candidate_user_id,
         "candidate_name": row.candidate_name, "candidate_email": row.candidate_email,
@@ -516,7 +516,7 @@ def position_detail(position_id: str, db: DB, context=Depends(_context)) -> Comp
     return CompanyPositionDetailResponse.model_validate({
         "position": _response_payload(position_response(db, organization, position)),
         "counts": _response_payload(counts),
-        "ats_config": _response_payload(effective_ats_config(db, position)),
+        "ats_config": _response_payload(effective_ats_config(db, position)) if "ats_config.view" in permissions else None,
         "criteria_versions": [_response_payload(criteria_response(row)) for row in criteria_rows],
         "active_criteria_version": _response_payload(criteria_response(active)) if active else None,
         "ai_analyses": [_response_payload(analysis_response(row)) for row in analyses],
@@ -547,7 +547,15 @@ def queue_position_ai_analysis(position_id: str, db: DB, context=Depends(_contex
     _, organization, membership = _require_permission(context, "positions.write")
     position = _position(db, organization.id, position_id)
     analysis = request_position_analysis(db, position, membership)
-    analyze_position_task.delay(analysis.id)
+    enqueue_company_task(
+        db,
+        organization_id=organization.id,
+        task_name=POSITION_ANALYSIS_TASK,
+        aggregate_type="position_ai_analysis",
+        aggregate_id=analysis.id,
+    )
+    db.commit()
+    db.refresh(analysis)
     return analysis_response(analysis)
 
 

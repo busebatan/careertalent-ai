@@ -1,13 +1,20 @@
 from datetime import UTC, datetime, timedelta
 
+import pytest
 from sqlalchemy import select
 
 from app.core.database import get_db
 from app.main import app
-from app.models.company_recruiting import RecruitingApplication, RecruitingPositionCriteriaVersion
+from app.models.company_recruiting import CompanyTaskOutbox, RecruitingApplication, RecruitingPositionActivity, RecruitingPositionAiAnalysis, RecruitingPositionCriteriaVersion
 from app.models.engagement import CvDocument
 from app.models.recruiting import Organization, OrganizationMembership
 from app.models.user import User
+from app.services.ai_factory import AIProviderError
+from app.services.company_outbox import (
+    CANDIDATE_ANALYSIS_TASK,
+    POSITION_ANALYSIS_TASK,
+    claim_outbox_for_processing,
+)
 
 
 PASSWORD = "GucluParola123!"
@@ -123,16 +130,17 @@ def test_position_contract_ats_config_counts_and_canonical_status(client):
     ).status_code == 422
 
 
-def test_ai_analysis_creates_draft_criteria_and_only_human_approval_activates(client, monkeypatch):
+def test_ai_analysis_creates_draft_criteria_and_only_human_approval_activates(client):
     _organization_id, headers = _company(client, "ai")
     position = client.post("/api/v1/company/positions", headers=headers, json=_position_payload()).json()
-    queued: list[str] = []
-    monkeypatch.setattr("app.api.v1.company.analyze_position_task.delay", lambda analysis_id: queued.append(analysis_id))
-
     response = client.post(f"/api/v1/company/positions/{position['id']}/ai-analysis", headers=headers)
     assert response.status_code == 202
     assert response.json()["status"] == "queued"
-    assert queued == [response.json()["id"]]
+    with next(app.dependency_overrides[get_db]()) as db:
+        outbox = db.scalar(select(CompanyTaskOutbox).where(CompanyTaskOutbox.aggregate_id == response.json()["id"]))
+        assert outbox is not None
+        assert outbox.task_name == "company.analyze_position"
+        assert outbox.status == "pending"
 
     detail = client.get(f"/api/v1/company/positions/{position['id']}", headers=headers).json()
     version = detail["criteria_versions"][0]
@@ -167,8 +175,6 @@ def test_ai_analysis_creates_draft_criteria_and_only_human_approval_activates(cl
 
 
 def test_public_share_link_and_candidate_application_contract(client, monkeypatch):
-    queued: list[str] = []
-    monkeypatch.setattr("app.api.v1.public_recruiting.analyze_candidate_application_task.delay", lambda application_id: queued.append(application_id))
     organization_id, headers = _company(client, "public")
     position = client.post("/api/v1/company/positions", headers=headers, json=_position_payload("published")).json()
     link = client.post(f"/api/v1/company/positions/{position['id']}/share-links", headers=headers, json={
@@ -230,8 +236,11 @@ def test_public_share_link_and_candidate_application_contract(client, monkeypatc
     )
     assert submitted.status_code == 201, submitted.text
     assert submitted.json()["created"] is True
-    assert queued == [submitted.json()["id"]]
     with next(app.dependency_overrides[get_db]()) as db:
+        outbox = db.scalar(select(CompanyTaskOutbox).where(CompanyTaskOutbox.aggregate_id == submitted.json()["id"]))
+        assert outbox is not None
+        assert outbox.task_name == "company.analyze_candidate_application"
+        assert outbox.status == "pending"
         application = db.get(RecruitingApplication, submitted.json()["id"])
         assert application.original_share_link_id == link.json()["id"]
         assert application.criteria_version_id == "criteria-public-v1"
@@ -247,6 +256,7 @@ def test_public_share_link_and_candidate_application_contract(client, monkeypatc
         captured_prompts = []
 
         def fake_invoke(prompt, schema):
+            assert db.in_transaction() is False
             captured_prompts.append(prompt)
             return schema(
                 overall_score=74, overall_status="human_review_required",
@@ -257,7 +267,30 @@ def test_public_share_link_and_candidate_application_contract(client, monkeypatc
 
         monkeypatch.setattr("app.services.company_positions._invoke", fake_invoke)
         from app.services.company_positions import analyze_candidate_application
-        analyze_candidate_application(db, application)
+        outbox = db.scalar(select(CompanyTaskOutbox).where(CompanyTaskOutbox.aggregate_id == application.id))
+        claim = claim_outbox_for_processing(
+            db,
+            outbox_id=outbox.id,
+            task_name=CANDIDATE_ANALYSIS_TASK,
+            aggregate_id=application.id,
+            organization_id=organization_id,
+        )
+        assert claim is not None
+        analyze_candidate_application(
+            db,
+            application,
+            outbox_id=claim.id,
+            outbox_lock_token=claim.lock_token,
+        )
+        db.expire_all()
+        assert db.get(CompanyTaskOutbox, outbox.id).status == "succeeded"
+        assert claim_outbox_for_processing(
+            db,
+            outbox_id=outbox.id,
+            task_name=CANDIDATE_ANALYSIS_TASK,
+            aggregate_id=application.id,
+            organization_id=organization_id,
+        ) is None
         assert application.current_stage == "new"
         assert application.analysis_status == "completed"
         assert application.analysis_result["criteria_version_id"] == "criteria-public-v1"
@@ -322,9 +355,133 @@ def test_candidate_cannot_submit_another_users_cv_or_draft_position(client):
     ).status_code == 404
 
 
+def test_admin_identity_cannot_submit_candidate_application(client):
+    _organization_id, headers = _company(client, "admin-candidate-boundary")
+    position = client.post(
+        "/api/v1/company/positions", headers=headers, json=_position_payload("published"),
+    ).json()
+    admin = _register(client, "admin-candidate@example.com", "Admin Kullanici")
+    with next(app.dependency_overrides[get_db]()) as db:
+        stored = db.get(User, admin.id)
+        stored.role = "admin"
+        stored.is_admin = True
+        db.commit()
+    admin_headers = {"Authorization": f"Bearer {_token(client, admin.email)}"}
+    response = client.post(
+        f"/api/v1/public/positions/{position['public_id']}/applications",
+        headers=admin_headers,
+        json={"cv_document_id": "irrelevant", "consent": {"accepted": True, "version": "2026-07-20"}},
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Candidate account required"
+
+
+def test_position_ai_invocation_releases_transaction_before_provider_call(client, monkeypatch):
+    organization_id, headers = _company(client, "transaction-position")
+    position = client.post("/api/v1/company/positions", headers=headers, json=_position_payload()).json()
+    response = client.post(f"/api/v1/company/positions/{position['id']}/ai-analysis", headers=headers)
+    assert response.status_code == 202
+    with next(app.dependency_overrides[get_db]()) as db:
+        assert db.scalar(select(CompanyTaskOutbox).where(CompanyTaskOutbox.aggregate_id == response.json()["id"])) is not None
+
+    observed_transactions: list[bool] = []
+    active_db = None
+
+    def fake_invoke(_prompt, schema):
+        assert active_db is not None
+        observed_transactions.append(active_db.in_transaction())
+        from app.services.company_positions import PositionAnalysisOutput
+        assert schema is PositionAnalysisOutput
+        return PositionAnalysisOutput(recommended_weights={"Laravel": 60, "SQL": 40})
+
+    monkeypatch.setattr("app.services.company_positions._invoke", fake_invoke)
+    from app.services.company_positions import analyze_position
+    with next(app.dependency_overrides[get_db]()) as db:
+        active_db = db
+        row = db.get(RecruitingPositionAiAnalysis, response.json()["id"])
+        outbox = db.scalar(select(CompanyTaskOutbox).where(CompanyTaskOutbox.aggregate_id == row.id))
+        claim = claim_outbox_for_processing(
+            db,
+            outbox_id=outbox.id,
+            task_name=POSITION_ANALYSIS_TASK,
+            aggregate_id=row.id,
+            organization_id=organization_id,
+        )
+        assert claim is not None
+        result = analyze_position(db, row, outbox_id=claim.id, outbox_lock_token=claim.lock_token)
+        assert result.status == "completed"
+        assert row.status == "completed"
+        db.expire_all()
+        assert db.get(CompanyTaskOutbox, outbox.id).status == "succeeded"
+
+    assert observed_transactions == [False]
+    with next(app.dependency_overrides[get_db]()) as db:
+        activities = list(db.scalars(select(RecruitingPositionActivity).where(
+            RecruitingPositionActivity.organization_id == organization_id,
+            RecruitingPositionActivity.position_id == position["id"],
+            RecruitingPositionActivity.event_type == "position.ai_analysis_completed",
+        )).all())
+        assert len(activities) == 1
+
+    failed_response = client.post(f"/api/v1/company/positions/{position['id']}/ai-analysis", headers=headers)
+    assert failed_response.status_code == 202
+
+    def failing_invoke(_prompt, _schema):
+        raise RuntimeError("provider unavailable")
+
+    monkeypatch.setattr("app.services.company_positions._invoke", failing_invoke)
+    with next(app.dependency_overrides[get_db]()) as db:
+        failed_row = db.get(RecruitingPositionAiAnalysis, failed_response.json()["id"])
+        failed_result = analyze_position(db, failed_row)
+        assert failed_result.status == "failed"
+        assert failed_result.error_code == "ai_analysis_failed"
+
+    with next(app.dependency_overrides[get_db]()) as db:
+        failed_activities = list(db.scalars(select(RecruitingPositionActivity).where(
+            RecruitingPositionActivity.organization_id == organization_id,
+            RecruitingPositionActivity.position_id == position["id"],
+            RecruitingPositionActivity.event_type == "position.ai_analysis_failed",
+        )).all())
+        assert len(failed_activities) == 1
+
+
+def test_provider_network_failure_keeps_outbox_claim_retriable(client, monkeypatch):
+    organization_id, headers = _company(client, "provider-retry")
+    position = client.post("/api/v1/company/positions", headers=headers, json=_position_payload()).json()
+    response = client.post(f"/api/v1/company/positions/{position['id']}/ai-analysis", headers=headers)
+    assert response.status_code == 202
+
+    def unavailable(_prompt, _schema):
+        raise AIProviderError("provider timeout")
+
+    monkeypatch.setattr("app.services.company_positions._invoke", unavailable)
+    from app.services.company_positions import analyze_position
+    with next(app.dependency_overrides[get_db]()) as db:
+        row = db.get(RecruitingPositionAiAnalysis, response.json()["id"])
+        outbox = db.scalar(select(CompanyTaskOutbox).where(CompanyTaskOutbox.aggregate_id == row.id))
+        claim = claim_outbox_for_processing(
+            db,
+            outbox_id=outbox.id,
+            task_name=POSITION_ANALYSIS_TASK,
+            aggregate_id=row.id,
+            organization_id=organization_id,
+        )
+        assert claim is not None
+        with pytest.raises(AIProviderError):
+            analyze_position(db, row, outbox_id=claim.id, outbox_lock_token=claim.lock_token)
+        db.expire_all()
+        assert db.get(CompanyTaskOutbox, outbox.id).status == "processing"
+        assert db.get(RecruitingPositionAiAnalysis, row.id).status == "processing"
+
+
 def test_position_detail_redacts_candidate_data_without_application_permissions(client):
     organization_id, headers = _company(client, "redacted")
     position = client.post("/api/v1/company/positions", headers=headers, json=_position_payload()).json()
+    assert client.patch("/api/v1/company/ats-config", headers=headers, json={
+        "provider": "custom",
+        "notes": "GIZLI ATS NOTU",
+        "candidate_analysis_instructions": "GIZLI ANALIZ TALIMATI",
+    }).status_code == 200
     with next(app.dependency_overrides[get_db]()) as db:
         db.add(RecruitingApplication(
             id="redacted-application", organization_id=organization_id, position_id=position["id"],
@@ -341,4 +498,8 @@ def test_position_detail_redacts_candidate_data_without_application_permissions(
     assert detail.json()["applications"] == []
     assert detail.json()["assessments"] == []
     assert detail.json()["comparison"] == []
+    assert detail.json()["ats_config"] is None
+    assert detail.json()["members"] == []
     assert "Gizli Aday" not in detail.text
+    assert "GIZLI ATS NOTU" not in detail.text
+    assert "GIZLI ANALIZ TALIMATI" not in detail.text

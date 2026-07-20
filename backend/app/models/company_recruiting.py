@@ -356,3 +356,80 @@ class RecruitingPositionActivity(Base):
     actor_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     details: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
+
+
+class CompanyTaskOutbox(Base):
+    """Kurum kapsamındaki asenkron görevlerin güvenilir teslim kuyruğu."""
+
+    __tablename__ = "company_task_outbox"
+    __table_args__ = (
+        CheckConstraint(
+            "task_name IN ('company.analyze_position', 'company.analyze_candidate_application')",
+            name="ck_company_task_outbox_task_name",
+        ),
+        CheckConstraint(
+            "status IN ('pending', 'dispatching', 'dispatched', 'processing', 'succeeded', 'failed', 'dead_letter')",
+            name="ck_company_task_outbox_status",
+        ),
+        CheckConstraint("attempt_count >= 0", name="ck_company_task_outbox_attempt_count_nonnegative"),
+        CheckConstraint("max_attempts > 0", name="ck_company_task_outbox_max_attempts_positive"),
+        UniqueConstraint("dedupe_key", name="uq_company_task_outbox_dedupe_key"),
+        Index(
+            "ix_company_task_outbox_dispatch",
+            "status",
+            "available_at",
+            "id",
+        ),
+        Index(
+            "ix_company_task_outbox_lease",
+            "lease_until",
+            "id",
+        ),
+        Index(
+            "ix_company_task_outbox_organization_status_created",
+            "organization_id",
+            "status",
+            "created_at",
+        ),
+        Index(
+            "ix_company_task_outbox_aggregate",
+            "aggregate_type",
+            "aggregate_id",
+        ),
+        Index(
+            "ix_company_task_outbox_pending",
+            "available_at",
+            "id",
+            postgresql_where=text("status = 'pending'"),
+            sqlite_where=text("status = 'pending'"),
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    task_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    aggregate_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    aggregate_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    dedupe_key: Mapped[str] = mapped_column(String(200), unique=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    lock_token: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    celery_task_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )

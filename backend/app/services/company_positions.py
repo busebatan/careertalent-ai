@@ -1,5 +1,6 @@
 """Company positions: serialization, ATS snapshots, versioned AI drafts and audit."""
 from __future__ import annotations
+from copy import deepcopy
 from datetime import UTC, datetime
 import re, unicodedata
 from typing import Literal
@@ -7,13 +8,15 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.models.company_recruiting import OrganizationAtsConfiguration, RecruitingApplication, RecruitingAssessment, RecruitingPosition, RecruitingPositionActivity, RecruitingPositionAiAnalysis, RecruitingPositionCriteriaVersion, RecruitingShareLink
 from app.models.recruiting import Organization, OrganizationMembership
 from app.models.user import User
 from app.schemas.company import CompanyAtsConfigResponse, CompanyCriteriaVersionResponse, CompanyEffectiveAtsConfig, CompanyPositionActivityResponse, CompanyPositionAiAnalysisResponse, CompanyPositionCounts, CompanyPositionResponse, CompanyShareLinkResponse
+from app.services.ai_factory import AIProviderError
 from app.services.career_engine import _invoke
+from app.services.company_outbox import finalize_outbox_claim
 
 
 class PositionAnalysisOutput(BaseModel):
@@ -116,35 +119,133 @@ def activity_response(row, actor_name=None):
     return CompanyPositionActivityResponse(id=row.id,event_type=row.event_type,entity_type=row.entity_type,entity_id=row.entity_id,actor_membership_id=row.actor_membership_id,actor_user_id=row.actor_user_id,actor_name=actor_name,details=row.details or {},occurred_at=row.occurred_at)
 
 
+def _fresh_session(db: Session) -> Session:
+    """Open a persistence session on the caller's bind (including test binds)."""
+    return sessionmaker(bind=db.get_bind(), autocommit=False, autoflush=False)()
+
+
+def _sync_analysis(target, persisted) -> None:
+    """Keep the task's original ORM instance useful after fresh-session writes."""
+    for field in ("status", "result", "error_code", "error_message", "completed_at"):
+        setattr(target, field, getattr(persisted, field))
+
+
+def _sync_application(target, persisted) -> None:
+    """Keep the task's original ORM instance useful after fresh-session writes."""
+    for field in ("analysis_status", "analysis_result"):
+        setattr(target, field, getattr(persisted, field))
+
+
 def request_position_analysis(db, position, membership):
     number=(db.scalar(select(func.max(RecruitingPositionCriteriaVersion.version_number)).where(RecruitingPositionCriteriaVersion.organization_id==position.organization_id, RecruitingPositionCriteriaVersion.position_id==position.id)) or 0)+1
     criteria=RecruitingPositionCriteriaVersion(id=str(uuid4()),organization_id=position.organization_id,position_id=position.id,version_number=number,status="draft",criteria={},ai_suggestions={},created_by_membership_id=membership.id)
     snapshot={"title":position.title,"department":position.department,"level":position.level,"description":position.description,"responsibilities":position.responsibilities,"must_have_skills":position.must_have_skills or [],"preferred_skills":position.preferred_skills or [],"learnable_skills":position.learnable_skills or [],"experience_expectation":position.experience_expectation,"language_work_authorization":position.language_work_authorization,"source_text":position.source_text,"ats":effective_ats_config(db,position).model_dump(mode="json")}
     analysis=RecruitingPositionAiAnalysis(id=str(uuid4()),organization_id=position.organization_id,position_id=position.id,criteria_version_id=criteria.id,status="queued",input_snapshot=snapshot,result={},requested_by_membership_id=membership.id)
-    db.add_all([criteria,analysis]); add_activity(db,position,"position.ai_analysis_requested",membership_id=membership.id,entity_type="ai_analysis",entity_id=analysis.id,details={"criteria_version":number}); db.commit(); db.refresh(analysis); return analysis
+    db.add_all([criteria,analysis]); add_activity(db,position,"position.ai_analysis_requested",membership_id=membership.id,entity_type="ai_analysis",entity_id=analysis.id,details={"criteria_version":number}); db.flush(); return analysis
 
 
-def analyze_position(db, analysis):
-    criteria=db.get(RecruitingPositionCriteriaVersion,analysis.criteria_version_id); position=db.scalar(select(RecruitingPosition).where(RecruitingPosition.id==analysis.position_id,RecruitingPosition.organization_id==analysis.organization_id))
-    if not criteria or not position: return analysis
+def analyze_position(db, analysis, *, outbox_id: str | None = None, outbox_lock_token: str | None = None):
+    analysis_id = analysis.id
+    criteria_id = analysis.criteria_version_id
+    position_id = analysis.position_id
+    organization_id = analysis.organization_id
+    input_snapshot = deepcopy(analysis.input_snapshot or {})
+    previous_result = deepcopy(analysis.result or {})
+    criteria=db.get(RecruitingPositionCriteriaVersion, criteria_id); position=db.scalar(select(RecruitingPosition).where(RecruitingPosition.id==position_id,RecruitingPosition.organization_id==organization_id))
+    if not criteria or not position:
+        db.rollback()
+        if outbox_id and outbox_lock_token:
+            persist_db = _fresh_session(db)
+            try:
+                if finalize_outbox_claim(persist_db, outbox_id=outbox_id, lock_token=outbox_lock_token, succeeded=False, error="analysis_target_missing"):
+                    persist_db.commit()
+            finally:
+                persist_db.close()
+        return analysis
     analysis.status="processing"; db.commit()
+    prompt = "İlanı belirsizlik, çelişki, aşırı deneyim, ilgisiz şart, ölçülecek yetenek ve toplamı 100 öneri ağırlıkları açısından incele. ATS sözlüğünü kullan. İnsan onayı olmadan aktif değildir. " + str(input_snapshot)[:30000]
     try:
-        output=_invoke("İlanı belirsizlik, çelişki, aşırı deneyim, ilgisiz şart, ölçülecek yetenek ve toplamı 100 öneri ağırlıkları açısından incele. ATS sözlüğünü kullan. İnsan onayı olmadan aktif değildir. "+str(analysis.input_snapshot)[:30000],PositionAnalysisOutput)
-        result=output.model_dump(mode="json"); analysis.result=result; analysis.status="completed"; analysis.error_code=analysis.error_message=None
-        criteria.ai_suggestions=result; criteria.criteria={"must_have":position.must_have_skills or [],"preferred":position.preferred_skills or [],"learnable":position.learnable_skills or [],"weights":result.get("recommended_weights",{}),"preconditions":{"language_work_authorization":position.language_work_authorization}}
+        # No ORM attribute is read here: commit() expires instances and a lazy
+        # read would reopen a transaction while the provider call is running.
+        output=_invoke(prompt,PositionAnalysisOutput)
+        result=output.model_dump(mode="json"); status="completed"; error_code=None; error_message=None
+    except AIProviderError:
+        if outbox_id and outbox_lock_token:
+            raise
+        result=previous_result; status="failed"; error_code="ai_analysis_failed"; error_message="AI provider unavailable"
     except Exception as exc:
-        analysis.status="failed"; analysis.error_code="ai_analysis_failed"; analysis.error_message=str(exc)[:500]
-    analysis.completed_at=datetime.now(UTC); add_activity(db,position,f"position.ai_analysis_{analysis.status}",entity_type="ai_analysis",entity_id=analysis.id,details={"criteria_version_id":criteria.id}); db.commit(); db.refresh(analysis); return analysis
+        result=previous_result; status="failed"; error_code="ai_analysis_failed"; error_message=str(exc)[:500]
+
+    persist_db = _fresh_session(db)
+    try:
+        persisted = persist_db.get(RecruitingPositionAiAnalysis, analysis_id)
+        persisted_criteria = persist_db.get(RecruitingPositionCriteriaVersion, criteria_id)
+        persisted_position = persist_db.scalar(select(RecruitingPosition).where(RecruitingPosition.id==position_id,RecruitingPosition.organization_id==organization_id))
+        if not persisted or not persisted_criteria or not persisted_position:
+            return analysis
+        if outbox_id and outbox_lock_token and not finalize_outbox_claim(
+            persist_db,
+            outbox_id=outbox_id,
+            lock_token=outbox_lock_token,
+            succeeded=status == "completed",
+            error=error_message,
+        ):
+            persist_db.rollback()
+            return analysis
+        persisted.status=status; persisted.result=result; persisted.error_code=error_code; persisted.error_message=error_message; persisted.completed_at=datetime.now(UTC)
+        if status == "completed":
+            persisted_criteria.ai_suggestions=result
+            persisted_criteria.criteria={"must_have":input_snapshot.get("must_have_skills") or [],"preferred":input_snapshot.get("preferred_skills") or [],"learnable":input_snapshot.get("learnable_skills") or [],"weights":result.get("recommended_weights",{}),"preconditions":{"language_work_authorization":input_snapshot.get("language_work_authorization")}}
+        add_activity(persist_db,persisted_position,f"position.ai_analysis_{status}",entity_type="ai_analysis",entity_id=analysis_id,details={"criteria_version_id":criteria_id})
+        persist_db.commit(); persist_db.refresh(persisted); _sync_analysis(analysis, persisted); return persisted
+    finally:
+        persist_db.close()
 
 
-def analyze_candidate_application(db, application):
-    position=db.scalar(select(RecruitingPosition).where(RecruitingPosition.id==application.position_id,RecruitingPosition.organization_id==application.organization_id)); snapshot=application.application_snapshot or {}; cv_snapshot=snapshot.get("cv") if isinstance(snapshot,dict) else None; criteria_snapshot=snapshot.get("criteria_version") if isinstance(snapshot,dict) else None
+def analyze_candidate_application(db, application, *, outbox_id: str | None = None, outbox_lock_token: str | None = None):
+    application_id = application.id
+    position_id = application.position_id
+    organization_id = application.organization_id
+    candidate_user_id = application.candidate_user_id
+    criteria_version_id = application.criteria_version_id
+    snapshot=deepcopy(application.application_snapshot or {}); ats_snapshot=deepcopy(application.ats_context_snapshot or {}); cv_snapshot=snapshot.get("cv") if isinstance(snapshot,dict) else None; criteria_snapshot=snapshot.get("criteria_version") if isinstance(snapshot,dict) else None
+    position=db.scalar(select(RecruitingPosition).where(RecruitingPosition.id==position_id,RecruitingPosition.organization_id==organization_id)); position_title=position.title if position else None
     if not position or not isinstance(cv_snapshot,dict):
-        application.analysis_status="failed"; application.analysis_result={"error_code":"application_snapshot_missing"}; db.commit(); return application
-    application.analysis_status="processing"; db.commit()
+        db.rollback()
+        result={"error_code":"application_snapshot_missing"}; status="failed"
+    else:
+        application.analysis_status="processing"; db.commit()
+        prompt = "CV'yi yalnız başvuru anındaki snapshot ATS ve criteria sürümüne göre puanla. criteria_scores, cv_evidence, uncertainties döndür; overall_status human_review_required. Otomatik shortlist/ret yok. " + str({"position":{"title":position_title,"criteria_version":criteria_snapshot or {}},"ats":ats_snapshot,"cv":cv_snapshot})[:50000]
+        try:
+            # Prompt is made exclusively from primitive snapshot data before the
+            # status commit; the provider call cannot trigger a lazy DB transaction.
+            output=_invoke(prompt,CandidateAtsAnalysisOutput)
+            result=output.model_dump(mode="json"); result["criteria_version_id"]=criteria_version_id; status="completed"
+        except AIProviderError:
+            if outbox_id and outbox_lock_token:
+                raise
+            result={"error_code":"candidate_analysis_failed","message":"AI provider unavailable"}; status="failed"
+        except Exception as exc:
+            result={"error_code":"candidate_analysis_failed","message":str(exc)[:500]}; status="failed"
+
+    persist_db = _fresh_session(db)
     try:
-        output=_invoke("CV'yi yalnız başvuru anındaki snapshot ATS ve criteria sürümüne göre puanla. criteria_scores, cv_evidence, uncertainties döndür; overall_status human_review_required. Otomatik shortlist/ret yok. "+str({"position":{"title":position.title,"criteria_version":criteria_snapshot or {}},"ats":application.ats_context_snapshot or {},"cv":cv_snapshot})[:50000],CandidateAtsAnalysisOutput)
-        result=output.model_dump(mode="json"); result["criteria_version_id"]=application.criteria_version_id; application.analysis_result=result; application.analysis_status="completed"
-    except Exception as exc:
-        application.analysis_status="failed"; application.analysis_result={"error_code":"candidate_analysis_failed","message":str(exc)[:500]}
-    add_activity(db,position,f"application.analysis_{application.analysis_status}",user_id=application.candidate_user_id,entity_type="application",entity_id=application.id); db.commit(); db.refresh(application); return application
+        persisted = persist_db.get(RecruitingApplication, application_id)
+        persisted_position = persist_db.scalar(select(RecruitingPosition).where(RecruitingPosition.id==position_id,RecruitingPosition.organization_id==organization_id))
+        if not persisted or not persisted_position:
+            return application
+        error_message = (result.get("message") or result.get("error_code")) if status == "failed" else None
+        if outbox_id and outbox_lock_token and not finalize_outbox_claim(
+            persist_db,
+            outbox_id=outbox_id,
+            lock_token=outbox_lock_token,
+            succeeded=status == "completed",
+            error=error_message,
+        ):
+            persist_db.rollback()
+            return application
+        persisted.analysis_status=status; persisted.analysis_result=result
+        add_activity(persist_db,persisted_position,f"application.analysis_{status}",user_id=candidate_user_id,entity_type="application",entity_id=application_id)
+        persist_db.commit(); persist_db.refresh(persisted); _sync_application(application, persisted); return persisted
+    finally:
+        persist_db.close()

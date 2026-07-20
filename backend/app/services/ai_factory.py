@@ -57,6 +57,8 @@ def _build_deepseek() -> BaseChatModel:
         api_key=settings.DEEPSEEK_API_KEY,
         base_url=settings.DEEPSEEK_BASE_URL,
         temperature=settings.AI_TEMPERATURE,
+        request_timeout=settings.AI_REQUEST_TIMEOUT_SECONDS,
+        max_retries=settings.AI_PROVIDER_MAX_RETRIES,
         model_kwargs={"response_format": {"type": "json_object"}},
     )
 
@@ -68,6 +70,8 @@ def _build_gemini() -> BaseChatModel:
         model=settings.GEMINI_MODEL,
         google_api_key=settings.GEMINI_API_KEY,
         temperature=settings.AI_TEMPERATURE,
+        timeout=settings.AI_REQUEST_TIMEOUT_SECONDS,
+        max_retries=settings.AI_PROVIDER_MAX_RETRIES,
     )
 
 
@@ -79,6 +83,8 @@ def _build_groq() -> BaseChatModel:
         api_key=settings.GROQ_API_KEY,
         base_url=settings.GROQ_BASE_URL,
         temperature=settings.AI_TEMPERATURE,
+        request_timeout=settings.AI_REQUEST_TIMEOUT_SECONDS,
+        max_retries=settings.AI_PROVIDER_MAX_RETRIES,
     )
 
 

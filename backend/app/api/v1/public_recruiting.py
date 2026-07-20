@@ -7,17 +7,17 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.security import require_candidate_portal_user
+from app.core.security import require_student_candidate_user
 from app.models.career_engine import CareerAnalysis
 from app.models.company_recruiting import RecruitingApplication, RecruitingPosition, RecruitingPositionCriteriaVersion, RecruitingShareLink
 from app.models.engagement import CvDocument
 from app.models.recruiting import Organization
 from app.models.user import User
 from app.schemas.company import CandidatePositionApplicationCreate, CandidatePositionApplicationResponse, PublicOrganizationResponse, PublicPositionPageResponse, PublicPositionResponse
+from app.services.company_outbox import CANDIDATE_ANALYSIS_TASK, enqueue_company_task
 from app.services.company_positions import add_activity, effective_ats_config
-from app.tasks.company_recruiting import analyze_candidate_application_task
 
-router=APIRouter(); DB=Annotated[Session,Depends(get_db)]; Candidate=Annotated[User,Depends(require_candidate_portal_user)]
+router=APIRouter(); DB=Annotated[Session,Depends(get_db)]; Candidate=Annotated[User,Depends(require_student_candidate_user)]
 def _aware(value): return value if value.tzinfo else value.replace(tzinfo=UTC)
 
 def _public_position(db, public_id):
@@ -86,12 +86,14 @@ def submit(public_id:str,payload:CandidatePositionApplicationCreate,response:Res
         ats_context_snapshot=effective_ats_config(db,position).model_dump(mode="json"),analysis_status="queued",analysis_result={},current_stage="new",applied_at=now,retention_expires_at=now+timedelta(days=position.retention_days))
     db.add(app)
     try:
-        db.flush();add_activity(db,position,"application.submitted",user_id=candidate.id,entity_type="application",entity_id=app.id,details={"source_link_id":link.id if link else None});db.commit()
+        db.flush();add_activity(db,position,"application.submitted",user_id=candidate.id,entity_type="application",entity_id=app.id,details={"source_link_id":link.id if link else None})
+        enqueue_company_task(db,organization_id=org.id,task_name=CANDIDATE_ANALYSIS_TASK,aggregate_type="recruiting_application",aggregate_id=app.id)
+        db.commit()
     except IntegrityError:
         db.rollback()
         existing=db.scalar(select(RecruitingApplication).where(RecruitingApplication.organization_id==org.id,RecruitingApplication.position_id==position.id,RecruitingApplication.candidate_user_id==candidate.id))
         if existing is None: raise
         response.status_code=200
         return CandidatePositionApplicationResponse(id=existing.id,position_id=position.id,current_stage=existing.current_stage,analysis_status=existing.analysis_status,created=False,applied_at=existing.applied_at)
-    db.refresh(app);analyze_candidate_application_task.delay(app.id)
+    db.refresh(app)
     return CandidatePositionApplicationResponse(id=app.id,position_id=position.id,current_stage=app.current_stage,analysis_status=app.analysis_status,created=True,applied_at=app.applied_at)
