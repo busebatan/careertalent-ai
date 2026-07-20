@@ -1,5 +1,7 @@
 @php
-    $radarAlignment = ($radarAlignment ?? 'left') === 'intro-centered' ? 'intro-centered' : 'left';
+    $radarAlignment = in_array(($radarAlignment ?? 'left'), ['left', 'intro-centered', 'frame-centered'], true)
+        ? $radarAlignment
+        : 'left';
 @endphp
 
 <div data-skill-radar-layout="split"

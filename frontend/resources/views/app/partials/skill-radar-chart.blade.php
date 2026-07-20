@@ -78,12 +78,20 @@
     $analysisSource = (string) ($skillRadar['source'] ?? '');
     $sourceKey = 'panel.skill_radar.sources.'.$analysisSource;
     $sourceLabel = $analysisSource !== '' && __($sourceKey) !== $sourceKey ? __($sourceKey) : ($analysisSource ?: '—');
+    $radarAlignment = in_array(($radarAlignment ?? 'left'), ['left', 'intro-centered', 'frame-centered'], true)
+        ? $radarAlignment
+        : 'left';
 @endphp
 
 <section id="yetenek-radari" class="panel-card mb-8 overflow-hidden p-6 lg:p-8">
     @if (! empty($collapsible))
         <details class="group" :open="radarExpanded" @toggle="onRadarToggle($event)">
-            <summary class="flex cursor-pointer list-none flex-wrap items-start justify-between gap-4 [&::-webkit-details-marker]:hidden">
+            <summary
+                @if ($radarAlignment === 'frame-centered') data-skill-radar-frame="summary" @endif
+                @class([
+                    'flex w-full cursor-pointer list-none flex-wrap items-start justify-between gap-4 [&::-webkit-details-marker]:hidden',
+                    'md:mx-auto md:max-w-[54rem]' => $radarAlignment === 'frame-centered',
+                ])>
                 @include('app.partials.skill-radar-chart-intro')
                 <div class="flex flex-wrap items-center gap-3">
                     <div class="panel-card shrink-0 border-emerald-500/20 bg-emerald-500/5 px-5 py-4 text-center dark:bg-emerald-500/10">
@@ -97,7 +105,12 @@
                     <span class="sr-only">{{ __('panel.skill_radar.show_details') }}</span>
                 </div>
             </summary>
-            <div class="mt-6 border-t border-slate-200 pt-6 dark:border-slate-800">
+            <div
+                @if ($radarAlignment === 'frame-centered') data-skill-radar-frame="body" @endif
+                @class([
+                    'mt-6 w-full border-t border-slate-200 pt-6 dark:border-slate-800',
+                    'md:mx-auto md:max-w-[54rem]' => $radarAlignment === 'frame-centered',
+                ])>
                 @include('app.partials.skill-radar-chart-body')
             </div>
         </details>
