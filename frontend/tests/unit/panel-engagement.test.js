@@ -18,7 +18,16 @@ describe('account-backed engagement panels', () => {
         const requests = [];
         globalThis.fetch = async (url, options) => { requests.push([url, options]); return { ok: true, json: async () => url === '/start' ? ({ id: 'i1', questions: [{ id: 'q1', question: 'Örnek?', competency: 'SQL' }] }) : ({ score: 88, feedback: 'Güçlü', improvements: [] }) }; };
         const state = careerInterview(null, '/start', '/interviews/__INTERVIEW_ID__/answer', { failed: 'failed' }); await state.start(); state.answer = 'Execution plan ile sorguyu ölçüp indeks ekledim.'; await state.score();
+        assert.deepEqual(JSON.parse(requests[0][1].body), { language: 'tr' }); assert.equal(state.selectedLanguage, 'tr');
         assert.equal(state.result.score, 88); assert.equal(requests[1][0], '/interviews/i1/answer'); assert.equal(JSON.parse(requests[1][1].body).question_id, 'q1');
+    });
+
+    it('interview sends the language selected in modal state', async () => {
+        let sent;
+        globalThis.fetch = async (_url, options) => { sent = JSON.parse(options.body); return { ok: true, json: async () => ({ id: 'i-en', questions: [] }) }; };
+        const state = careerInterview(null, '/start', '/interviews/__INTERVIEW_ID__/answer', { failed: 'failed' });
+        state.selectedLanguage = 'en'; state.showLangModal = true; await state.start();
+        assert.deepEqual(sent, { language: 'en' }); assert.equal(state.selectedLanguage, 'en'); assert.equal(state.showLangModal, false);
     });
 
     it('application is server-created and moves between persisted stages', async () => {

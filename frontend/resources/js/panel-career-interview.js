@@ -16,6 +16,7 @@ export function careerInterview(initial, startUrl, scoreUrlTemplate, labels) {
         // start() — dil önceliği: 1) doğrudan argüman, 2) selectedLanguage state, 3) 'tr' güvenli fallback
         async start(language) {
             const selectedPracticeLanguage = language ?? this.selectedLanguage ?? 'tr';
+            this.selectedLanguage = selectedPracticeLanguage;
             this.showLangModal = false; // Mülakat başlarken modalı kapat
             this.busy = true; this.error = '';
             try {

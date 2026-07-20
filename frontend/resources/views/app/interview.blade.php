@@ -29,10 +29,10 @@
             <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Hangi dilde pratik yapmak istersin?</p>
             
             <div class="flex flex-col gap-3">
-                <button @click="selectedLanguage = 'tr'; start('tr')" class="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-50 p-4 font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700/50">
+                <button type="button" @click="selectedLanguage = 'tr'; start()" class="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-50 p-4 font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700/50">
                     <span class="text-2xl">🇹🇷</span> Türkçe Pratik Yap
                 </button>
-                <button @click="selectedLanguage = 'en'; start('en')" class="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-50 p-4 font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700/50">
+                <button type="button" @click="selectedLanguage = 'en'; start()" class="flex w-full items-center justify-center gap-3 rounded-xl bg-slate-50 p-4 font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700/50">
                     <span class="text-2xl">🇬🇧</span> Practice in English
                 </button>
             </div>
