@@ -93,30 +93,71 @@
             <p class="text-sm text-slate-600 dark:text-slate-400">{{ __('panel.cv_builder.upload_desc') }}</p>
         </div>
 
-        <div class="min-w-0">
-            <p x-show="loading" x-cloak
-                class="mb-4 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-800 dark:text-sky-200"
-                role="status">
-                {{ __('panel.profile.cv_analyzing') }}
-            </p>
-            <p x-show="error" x-cloak
-                class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200"
-                x-text="error" role="alert"></p>
+        @php($currentIsUploaded = is_array($currentCv ?? null) && ($currentCv['kind'] ?? null) === 'uploaded')
+        @php($currentIsGenerated = is_array($currentCv ?? null) && ($currentCv['kind'] ?? null) === 'generated')
 
-            <label class="panel-upload-zone min-h-36"
-                :class="[
-                    loading ? 'pointer-events-none opacity-60' : '',
-                    dragOver ? 'panel-upload-zone-active' : '',
-                ]"
-                @dragover.prevent="onDragOver($event)"
-                @dragleave.prevent="onDragLeave($event)"
-                @drop.prevent="onDrop($event)">
-                <i data-lucide="file-text" class="mb-2 h-8 w-8 text-emerald-500" aria-hidden="true"></i>
-                <span class="mb-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ __('panel.profile.upload_drag') }}</span>
-                <span class="text-xs text-slate-500">{{ __('panel.profile.upload_hint') }}</span>
-                <input type="file" accept="application/pdf,.pdf" class="hidden"
-                    :disabled="loading" @change="onFileSelect($event)">
-            </label>
+        @if ($currentIsUploaded)
+            <div data-cv-current-file x-show="saveStatus !== 'saving'"
+                class="mb-4 flex flex-col gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-emerald-700 dark:text-emerald-300">{{ $currentCv['display_name'] }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('panel.profile.last_upload', ['date' => \Illuminate\Support\Carbon::parse($currentCv['created_at'])->format('d.m.Y H:i')]) }}</p>
+                </div>
+                <button type="button" @click.stop="resetOpen = true"
+                    class="font-medium text-emerald-600 hover:underline dark:text-emerald-400">
+                    {{ __('panel.skill_radar.clear_cv') }}
+                </button>
+            </div>
+        @endif
+
+        <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-stretch">
+            <div class="min-w-0">
+                <p x-show="loading" x-cloak
+                    class="mb-4 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-800 dark:text-sky-200"
+                    role="status">
+                    {{ __('panel.profile.cv_analyzing') }}
+                </p>
+                <p x-show="error" x-cloak
+                    class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200"
+                    x-text="error" role="alert"></p>
+
+                <label class="panel-upload-zone min-h-36"
+                    :class="[
+                        loading ? 'pointer-events-none opacity-60' : '',
+                        dragOver ? 'panel-upload-zone-active' : '',
+                    ]"
+                    @dragover.prevent="onDragOver($event)"
+                    @dragleave.prevent="onDragLeave($event)"
+                    @drop.prevent="onDrop($event)">
+                    <i data-lucide="file-text" class="mb-2 h-8 w-8 text-emerald-500" aria-hidden="true"></i>
+                    <span class="mb-1 text-sm font-medium text-slate-800 dark:text-slate-200">{{ __('panel.profile.upload_drag') }}</span>
+                    <span class="text-xs text-slate-500">{{ __('panel.profile.upload_hint') }}</span>
+                    <input type="file" accept="application/pdf,.pdf" class="hidden"
+                        :disabled="loading" @change="onFileSelect($event)">
+                </label>
+            </div>
+
+            <div x-show="loading || (saveStatus !== 'saving' && @js($currentIsUploaded && ! empty($skillRadar)))" x-cloak
+                class="flex min-h-36 items-stretch lg:w-44">
+                <div x-show="loading" x-cloak
+                    class="panel-card flex w-full flex-col items-center justify-center border-sky-500/20 bg-sky-500/5 px-5 py-4 text-center dark:bg-sky-500/10"
+                    data-cv-analysis-pending role="status">
+                    <i data-lucide="loader-circle" class="mb-2 h-6 w-6 animate-spin text-sky-500" aria-hidden="true"></i>
+                    <p class="text-sm font-medium text-sky-700 dark:text-sky-300">{{ __('panel.profile.cv_analyzing') }}</p>
+                </div>
+
+                @if ($currentIsUploaded && ! empty($skillRadar))
+                    <div x-show="!loading"
+                        class="panel-card flex w-full flex-col items-center justify-center border-emerald-500/20 bg-emerald-500/5 px-5 py-4 text-center dark:bg-emerald-500/10"
+                        data-cv-analysis-score>
+                        <p class="panel-muted text-xs uppercase tracking-wide">{{ __('panel.skill_radar.overall') }}</p>
+                        <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">%{{ $skillRadar['overall_match'] }}</p>
+                        <a href="{{ route('panel.career-ladder') }}" class="mt-1 inline-block text-xs text-emerald-600 hover:underline dark:text-emerald-400">
+                            {{ __('panel.skill_radar.view_ladder') }} →
+                        </a>
+                    </div>
+                @endif
+            </div>
         </div>
     </section>
 
@@ -125,8 +166,8 @@
     <p x-show="analyzeError" x-cloak class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200" x-text="analyzeError"></p>
 
     <div data-cv-builder-status
-        x-show="saveStatus === 'saving' || @js(is_array($currentCv ?? null))"
-        @if (! is_array($currentCv ?? null)) x-cloak @endif
+        x-show="saveStatus === 'saving' || @js($currentIsGenerated)"
+        @if (! $currentIsGenerated) x-cloak @endif
         class="mb-4 flex flex-col gap-3 rounded-xl border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
         :class="analysisPending() ? 'border-sky-500/30 bg-sky-500/10' : 'border-emerald-500/30 bg-emerald-500/10'"
         role="status">
@@ -137,7 +178,7 @@
             </div>
             <div x-show="!analysisPending()">
                 <p class="truncate text-sm text-emerald-700 dark:text-emerald-300" x-text="cvFileName"></p>
-                @if (is_array($currentCv ?? null) && ! empty($currentCv['created_at']))
+                @if ($currentIsGenerated && ! empty($currentCv['created_at']))
                     <p class="mt-1 text-xs text-slate-500">{{ __('panel.profile.last_upload', ['date' => \Illuminate\Support\Carbon::parse($currentCv['created_at'])->format('d.m.Y H:i')]) }}</p>
                 @endif
             </div>

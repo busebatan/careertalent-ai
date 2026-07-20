@@ -55,8 +55,10 @@ class CvBuilderRadarTest extends TestCase
         $this->get(route('panel.cv-builder'))
             ->assertOk()
             ->assertSee('data-cv-builder-status', false)
+            ->assertDontSee('data-cv-current-file', false)
             ->assertSee('Buse Batan CV.pdf', false)
             ->assertSee('%72', false)
+            ->assertSeeInOrder(['data-cv-analysis-upload', 'data-cv-builder-status', 'grid gap-8 lg:grid-cols-2'], false)
             ->assertSeeInOrder([__('panel.skill_radar.view_ladder'), __('panel.skill_radar.clear_cv')], false);
     }
 
@@ -78,8 +80,9 @@ class CvBuilderRadarTest extends TestCase
         $response = $this->get(route('panel.cv-builder', ['locale' => 'en']));
         $response->assertOk()
             ->assertSee('data-cv-analysis-upload', false)
+            ->assertSee('data-cv-current-file', false)
             ->assertSee('data-cv-analysis-score', false)
-            ->assertSee('data-cv-builder-status', false)
+            ->assertSee('lg:grid-cols-[minmax(0,1fr)_auto]', false)
             ->assertSee('%80', false)
             ->assertSee(route('panel.career-ladder'), false)
             ->assertSee(__('panel.profile.cv_file_title'), false)
