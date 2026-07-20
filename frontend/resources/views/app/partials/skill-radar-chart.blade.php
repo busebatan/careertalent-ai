@@ -1,9 +1,13 @@
 @php
     $skills = $skillRadar['skills'];
     $n = count($skills);
-    $cx = 160;
-    $cy = 160;
-    $maxR = 105;
+    $svgSize = 360;
+    $cx = 180;
+    $cy = 180;
+    $maxR = 102;
+    $plotSafePadding = 4;
+    $plotSafeMin = $cx - $maxR - $plotSafePadding;
+    $plotSafeMax = $cx + $maxR + $plotSafePadding;
 
     $radarPoint = static function (int $i, int $total, float $score) use ($cx, $cy, $maxR): array {
         $angle = (2 * M_PI * $i / $total) - M_PI / 2;
@@ -15,17 +19,7 @@
         ];
     };
 
-    $labelPoint = static function (int $i, int $total) use ($cx, $cy, $maxR): array {
-        $angle = (2 * M_PI * $i / $total) - M_PI / 2;
-        $r = $maxR + 26;
-
-        return [
-            round($cx + $r * cos($angle), 2),
-            round($cy + $r * sin($angle), 2),
-        ];
-    };
-
-    $wrapSkillLabel = static function (string $label, int $maxChars = 16): array {
+    $wrapSkillLabel = static function (string $label, int $maxChars = 16, int $maxLines = 4): array {
         if (mb_strlen($label) <= $maxChars) {
             return [$label];
         }
@@ -55,6 +49,12 @@
 
         if ($current !== '') {
             $lines[] = $current;
+        }
+
+        if (count($lines) > $maxLines) {
+            $lines = array_slice($lines, 0, $maxLines);
+            $lastIndex = $maxLines - 1;
+            $lines[$lastIndex] = rtrim(mb_substr($lines[$lastIndex], 0, max(1, $maxChars - 1))).'…';
         }
 
         return $lines !== [] ? $lines : [$label];
