@@ -1,7 +1,7 @@
 """Kullanıcı bağlamını kullanan sohbet ve mülakat AI servisleri."""
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from sqlalchemy import func, select, update
@@ -224,7 +224,10 @@ def answer_chat(db: Session, user_id: int, message: str) -> CareerChatMessage:
     if not history:
         thread.title = _chat_title(message)
     thread.updated_at = datetime.now(timezone.utc)
-    user_row = CareerChatMessage(id=str(uuid4()), user_id=user_id, thread_id=thread.id, role="user", content=message, meta={})
+    message_time = datetime.now(timezone.utc)
+    user_row = CareerChatMessage(
+        id=str(uuid4()), user_id=user_id, thread_id=thread.id, role="user", content=message, meta={}, created_at=message_time
+    )
     assistant_row = CareerChatMessage(
         id=str(uuid4()),
         user_id=user_id,
@@ -232,6 +235,7 @@ def answer_chat(db: Session, user_id: int, message: str) -> CareerChatMessage:
         role="assistant",
         content=reply,
         meta={"suggested_actions": suggested_actions, **({"action": action} if action else {})},
+        created_at=message_time + timedelta(microseconds=1),
     )
     db.add_all([user_row, assistant_row]); db.commit(); db.refresh(assistant_row)
     return assistant_row

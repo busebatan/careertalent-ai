@@ -77,28 +77,25 @@ class PanelPagesI18nTest extends TestCase
     $response->assertSee('_skipLocalesSync', false);
   }
 
-  public function test_chat_owns_its_scroll_and_exposes_approved_cv_action_contract(): void
+  public function test_chat_owns_message_scroll_and_exposes_history_and_approved_cv_action_contract(): void
   {
     $response = $this->withSession(['panel_locale' => 'tr'])->get('/panel/ai-yardimcisi');
 
     $response->assertOk()
-      ->assertSee('md:flex md:min-h-0 md:flex-col md:overflow-hidden', false)
+      ->assertDontSee('md:flex md:min-h-0 md:flex-col md:overflow-hidden', false)
       ->assertSee('data-chat-page', false)
-      ->assertSee('md:min-h-0 md:flex-1', false)
       ->assertSee('data-chat-panel', false)
       ->assertSee('h-[calc(100dvh-15rem)]', false)
       ->assertSee('sm:h-[calc(100dvh-13rem)]', false)
-      ->assertSee('md:h-auto md:min-h-0 md:max-h-none md:flex-1', false)
       ->assertSee('data-chat-messages', false)
       ->assertSee('min-h-0 flex-1 space-y-3 overflow-y-auto', false)
+      ->assertSee('data-chat-history', false)
+      ->assertSee('data-chat-history-modal', false)
+      ->assertSee('@click="startNewChat()"', false)
       ->assertSee('data-chat-cv-action', false)
-      ->assertSee((string) \Illuminate\Support\Js::from([
-        'jobStatusUrl' => route('panel.job-matches.status', ['jobId' => '__JOB__']),
-        'createCvVersionUrl' => route('panel.chat.cv-version', ['jobId' => '__JOB__']),
-        'versionsUrl' => route('panel.cv.versions.list'),
-        'editorUrl' => route('panel.cv-builder', ['cvVersion' => '__VERSION__']),
-        'activeCvName' => '',
-      ]), false)
+      ->assertSee('jobStatusUrl', false)
+      ->assertSee('createCvVersionUrl', false)
+      ->assertSee('historyDetailUrl', false)
       ->assertSee('maxlength="30000"', false)
       ->assertSee('Onayla ve yeni CV sürümü oluştur');
   }

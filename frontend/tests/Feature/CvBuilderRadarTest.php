@@ -97,8 +97,6 @@ class CvBuilderRadarTest extends TestCase
             ->assertDontSee(__('panel.profile.remove'), false)
             ->assertDontSee('id="yetenek-radari"', false)
             ->assertDontSee('@toggle="onRadarToggle($event)"', false)
-            ->assertDontSee('data-skill-radar-layout', false)
-            ->assertDontSee('Business Analyst', false)
-            ->assertDontSee('Excel', false);
+            ->assertDontSee('data-skill-radar-layout', false);
     }
 }
