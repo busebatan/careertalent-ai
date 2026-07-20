@@ -62,6 +62,7 @@
                     $lineHeight = 11;
                     $labelHeight = count($labelLines) * $lineHeight + 2;
                     $labelRadius = $maxR + 36;
+                    $verticalLabelGap = 8;
                     $labelX = match ($labelSide) {
                         'left' => 4,
                         'right' => $svgSize - $labelWidth - 4,
@@ -71,8 +72,8 @@
                         ),
                     };
                     $labelY = match ($labelSide) {
-                        'top' => 4,
-                        'bottom' => $svgSize - $labelHeight - 4,
+                        'top' => max(4, $plotSafeMin - $labelHeight - $verticalLabelGap),
+                        'bottom' => min($svgSize - $labelHeight - 4, $plotSafeMax + $verticalLabelGap),
                         default => min(
                             $svgSize - $labelHeight - 4,
                             max(4, $cy + ($labelRadius * $sine) - ($labelHeight / 2)),

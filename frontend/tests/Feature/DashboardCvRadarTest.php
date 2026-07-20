@@ -102,6 +102,9 @@ class DashboardCvRadarTest extends TestCase
         $plotMinY = (float) $plot->getAttribute('data-radar-plot-min-y');
         $plotMaxX = (float) $plot->getAttribute('data-radar-plot-max-x');
         $plotMaxY = (float) $plot->getAttribute('data-radar-plot-max-y');
+        $verticalLabelGap = 8.0;
+        $svgEdgeInset = 4.0;
+        $svgSize = 360.0;
 
         foreach ($boxes as $box) {
             $x = (float) $box->getAttribute('x');
@@ -112,6 +115,34 @@ class DashboardCvRadarTest extends TestCase
                 && $y < $plotMaxY && ($y + $height) > $plotMinY;
 
             $this->assertFalse($overlapsPlot, 'Radar etiketi grafik güvenli alanına girmemeli: '.$box->textContent);
+
+            match ($box->getAttribute('data-radar-label-side')) {
+                'top' => $this->assertEqualsWithDelta(
+                    $verticalLabelGap,
+                    $plotMinY - ($y + $height),
+                    0.01,
+                    'Üst radar etiketi grafiğe yakın durmalı: '.$box->textContent,
+                ),
+                'bottom' => $this->assertEqualsWithDelta(
+                    $verticalLabelGap,
+                    $y - $plotMaxY,
+                    0.01,
+                    'Alt radar etiketi grafiğe yakın durmalı: '.$box->textContent,
+                ),
+                'left' => $this->assertEqualsWithDelta(
+                    $svgEdgeInset,
+                    $x,
+                    0.01,
+                    'Sol radar etiketi sabit kalmalı: '.$box->textContent,
+                ),
+                'right' => $this->assertEqualsWithDelta(
+                    $svgEdgeInset,
+                    $svgSize - ($x + $width),
+                    0.01,
+                    'Sağ radar etiketi sabit kalmalı: '.$box->textContent,
+                ),
+                default => $this->fail('Bilinmeyen radar etiket yönü: '.$box->textContent),
+            };
         }
     }
 }
