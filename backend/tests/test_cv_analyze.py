@@ -171,6 +171,44 @@ def test_cv_analyze_accepts_pdf_and_tracks_current_upload(client, monkeypatch, t
     assert reanalysis.json()["status"] == "queued"
 
 
+def test_reset_all_keeps_uploaded_cv_in_history_without_current_badge(client, monkeypatch, tmp_path):
+    client.post(
+        "/api/v1/auth/register",
+        json={"full_name": "Reset Owner", "email": "reset@example.com", "password": "GucluParola123!"},
+    )
+    token = client.post(
+        "/api/v1/auth/login",
+        data={"username": "reset@example.com", "password": "GucluParola123!"},
+    ).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    monkeypatch.setattr(
+        "app.api.v1.cv.extract_text_from_pdf",
+        lambda _data: "SQL Python Excel Pandas ile veri analizi deneyimi",
+    )
+    monkeypatch.setattr("app.api.v1.cv.analyze_cv_task.delay", lambda _analysis_id: None)
+    monkeypatch.setattr("app.api.v1.cv.settings.UPLOAD_DIR", str(tmp_path))
+
+    queued = client.post(
+        "/api/v1/cv/analyze",
+        files={"file": ("history.pdf", BytesIO(_MINIMAL_PDF), "application/pdf")},
+        headers=headers,
+    )
+    document = client.get("/api/v1/cv/documents", headers=headers).json()[0]
+    stored_path = tmp_path / "1" / "cv" / f"{document['id']}.pdf"
+
+    reset = client.post("/api/v1/career/reset", json={"scope": "all"}, headers=headers)
+
+    assert reset.status_code == 200
+    assert reset.json()["deleted"]["current_cvs"] == 1
+    assert client.get(f"/api/v1/career/analysis/{queued.json()['analysis_id']}", headers=headers).status_code == 404
+    documents = client.get("/api/v1/cv/documents", headers=headers).json()
+    assert len(documents) == 1
+    assert documents[0]["id"] == document["id"]
+    assert documents[0]["is_current"] is False
+    assert stored_path.exists()
+    assert client.get("/api/v1/career/profile", headers=headers).json()["uploaded_cv"] is None
+
+
 def test_deleting_last_cv_clears_career_flow(client, monkeypatch, tmp_path):
     client.post("/api/v1/auth/register", json={"full_name": "Delete Owner", "email": "delete@example.com", "password": "GucluParola123!"})
     token = client.post("/api/v1/auth/login", data={"username": "delete@example.com", "password": "GucluParola123!"}).json()["access_token"]

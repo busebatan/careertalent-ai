@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence
-from app.models.engagement import PersonalTask
+from app.models.engagement import CvDocument, PersonalTask
 from app.models.user import User
 from app.schemas.career import (
     CareerAnalysisAI,
@@ -688,6 +688,12 @@ def reset_career_state(db: Session, user_id: int, scope: str, *, commit: bool = 
         deleted.update(_delete_target_plan(db, user_id))
     if scope in {"analysis", "all"}:
         deleted["analyses"] = db.execute(delete(CareerAnalysis).where(CareerAnalysis.user_id == user_id)).rowcount
+    if scope == "all":
+        deleted["current_cvs"] = db.execute(
+            update(CvDocument)
+            .where(CvDocument.user_id == user_id, CvDocument.is_current.is_(True))
+            .values(is_current=False)
+        ).rowcount
     if commit:
         db.commit()
         remove_career_evidence_files(user_id, evidence_files)

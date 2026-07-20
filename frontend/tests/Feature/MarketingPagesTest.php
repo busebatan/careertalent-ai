@@ -253,7 +253,7 @@ class MarketingPagesTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Profil bilgileri');
         $response->assertSee('Giriş bilgileri');
-        $response->assertSee('CV yükle');
+        $response->assertSee('CV geçmişi');
         $response->assertSee('Şifre değiştir');
         $response->assertDontSee('AI ile düzenle');
     }

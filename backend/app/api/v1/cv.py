@@ -119,11 +119,6 @@ async def analyze_cv(db: DB, user: CurrentUser, file: UploadFile = File(...)):
     file_path = _store_pdf(user.id, document_id, data)
     try:
         reset_career_state(db, user.id, "all", commit=False)
-        db.execute(
-            update(CvDocument)
-            .where(CvDocument.user_id == user.id, CvDocument.kind == "uploaded", CvDocument.is_current.is_(True))
-            .values(is_current=False)
-        )
         db.add(CvDocument(id=document_id, user_id=user.id, kind="uploaded", display_name=display_name, original_name=display_name, file_path=file_path, file_size=len(data), language=None, builder_data=None, is_current=True))
         db.commit()
     except Exception:
