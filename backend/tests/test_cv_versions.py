@@ -135,8 +135,9 @@ def test_apply_job_creates_snapshot(client, monkeypatch):
             id="pos-test",
             organization_id="org-test",
             title="Backend Developer",
+            slug="backend-developer",
             department="IT",
-            status="open",
+            status="published",
             description="Test description",
         )
         db.add(pos)
@@ -231,4 +232,3 @@ def test_apply_job_creates_snapshot(client, monkeypatch):
     )
     assert snapshot_response.status_code == 200
     assert snapshot_response.json() == {"skills": ["Python", "FastAPI"]}
-

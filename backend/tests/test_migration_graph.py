@@ -18,8 +18,6 @@ def test_migration_graph_has_one_unambiguous_head() -> None:
 
     assert script.get_heads() == ["400e5d7dfba4"]
 
-    assert script.get_heads() == ["20260720_15"]
-
 
 def test_company_permission_migration_backfills_existing_role_behavior() -> None:
     backend_dir = Path(__file__).resolve().parents[1]

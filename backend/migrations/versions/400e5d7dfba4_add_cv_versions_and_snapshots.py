@@ -1,7 +1,7 @@
 """Add cv versions and snapshots
 
 Revision ID: 400e5d7dfba4
-Revises: 20260720_13
+Revises: 20260720_15
 Create Date: 2026-07-20 23:19:19.725642
 """
 from typing import Sequence, Union
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 revision: str = '400e5d7dfba4'
-down_revision: Union[str, None] = '20260720_13'
+down_revision: Union[str, None] = '20260720_15'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -52,4 +52,3 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("recruiting_application_snapshots")
     op.drop_table("candidate_cv_versions")
-
