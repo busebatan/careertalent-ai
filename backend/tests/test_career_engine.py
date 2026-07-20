@@ -277,7 +277,9 @@ def test_target_closes_previous_and_evidence_review_is_confidence_gated(client, 
     first = client.post("/api/v1/career/targets", json={"title": "Data Analyst"}, headers=auth)
     second = client.post("/api/v1/career/targets", json={"title": "BI Analyst"}, headers=auth)
     assert first.status_code == 202 and second.status_code == 202
-    targets = client.get("/api/v1/career/targets", headers=auth).json()
+    targets_response = client.get("/api/v1/career/targets", headers=auth)
+    assert targets_response.status_code == 200, targets_response.text
+    targets = targets_response.json()
     assert {item["status"] for item in targets} == {"queued", "closed"}
 
     override = __import__("app.main", fromlist=["app"]).app.dependency_overrides

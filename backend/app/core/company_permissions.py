@@ -5,6 +5,15 @@ from collections.abc import Iterable
 
 COMPANY_PERMISSION_KEYS = (
     "dashboard.view",
+    "positions.view",
+    "positions.write",
+    "positions.delete",
+    "applications.view",
+    "applications.write",
+    "assessments.view",
+    "assessments.write",
+    "scorecards.view",
+    "scorecards.submit",
     "organization.update",
     "members.view",
     "members.invite",
@@ -14,9 +23,19 @@ COMPANY_PERMISSION_KEYS = (
 LEGACY_COMPANY_ROLE_PERMISSIONS = {
     "owner": COMPANY_PERMISSION_KEYS,
     "admin": COMPANY_PERMISSION_KEYS,
-    "recruiter": ("dashboard.view", "members.view"),
-    "hiring_manager": ("dashboard.view", "members.view"),
-    "viewer": ("dashboard.view", "members.view"),
+    "recruiter": (
+        "dashboard.view", "positions.view", "positions.write", "positions.delete",
+        "applications.view", "applications.write", "assessments.view", "assessments.write",
+        "scorecards.view", "members.view",
+    ),
+    "hiring_manager": (
+        "dashboard.view", "positions.view", "applications.view", "applications.write",
+        "assessments.view", "scorecards.view", "scorecards.submit", "members.view",
+    ),
+    "viewer": (
+        "dashboard.view", "positions.view", "applications.view", "assessments.view",
+        "scorecards.view", "members.view",
+    ),
 }
 
 

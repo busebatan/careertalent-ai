@@ -237,9 +237,46 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/company/organizations/'.rawurlencode($slug), 10);
     }
 
-    public function companyDashboard(string $organizationId): array
+    public function companyDashboard(string $organizationId, string $period = '30d'): array
     {
-        return $this->getJson('/api/v1/company/dashboard', 10, ['X-Organization-ID' => $organizationId]);
+        return $this->getJson('/api/v1/company/dashboard?'.http_build_query(['period' => $period]), 10, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function companyPositions(string $organizationId, ?string $status = null): array
+    {
+        $query = $status !== null ? '?'.http_build_query(['status' => $status]) : '';
+
+        return $this->getJson('/api/v1/company/positions'.$query, 10, ['X-Organization-ID' => $organizationId]);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createCompanyPosition(string $organizationId, array $payload): array
+    {
+        return $this->postJson('/api/v1/company/positions', $payload, 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateCompanyPosition(string $organizationId, string $positionId, array $payload): array
+    {
+        return $this->patchJson('/api/v1/company/positions/'.rawurlencode($positionId), $payload, 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function deleteCompanyPosition(string $organizationId, string $positionId): array
+    {
+        return $this->deleteJson('/api/v1/company/positions/'.rawurlencode($positionId), 15, ['X-Organization-ID' => $organizationId]);
+    }
+
+    /** @param array<string, string> $filters */
+    public function companyApplications(string $organizationId, array $filters = []): array
+    {
+        $query = $filters !== [] ? '?'.http_build_query($filters) : '';
+
+        return $this->getJson('/api/v1/company/applications'.$query, 10, ['X-Organization-ID' => $organizationId]);
+    }
+
+    public function companyAssessments(string $organizationId): array
+    {
+        return $this->getJson('/api/v1/company/assessments', 10, ['X-Organization-ID' => $organizationId]);
     }
 
     public function companyMembers(string $organizationId): array
@@ -711,10 +748,10 @@ class CareerTalentApiClient
         }
     }
 
-    private function deleteJson(string $path, int $timeout): array
+    private function deleteJson(string $path, int $timeout, array $headers = []): array
     {
         try {
-            return $this->normalizeResponse($this->request($timeout)->delete($this->baseUrl().$path));
+            return $this->normalizeResponse($this->request($timeout, $headers)->delete($this->baseUrl().$path));
         } catch (ConnectionException $exception) {
             return $this->connectionError($exception);
         }

@@ -527,6 +527,73 @@ html:not(.dark) { color-scheme: light; }
         color: var(--company-accent-ink-dark);
     }
 
+    .company-shell .company-dashboard-icon {
+        display: inline-flex;
+        height: 2.5rem;
+        width: 2.5rem;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.75rem;
+        background: var(--company-accent-soft);
+        color: var(--company-accent-ink);
+    }
+
+    :is(.dark) .company-shell .company-dashboard-icon {
+        background: var(--company-accent-soft-strong);
+        color: var(--company-accent-ink-dark);
+    }
+
+    .company-shell .company-task-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border: 1px solid var(--company-accent-border-soft);
+        border-radius: 0.875rem;
+        padding: 0.875rem 1rem;
+        transition: border-color 150ms, background-color 150ms, transform 150ms;
+    }
+
+    .company-shell .company-task-row:hover {
+        border-color: var(--company-accent-border);
+        background: var(--company-accent-soft);
+        transform: translateY(-1px);
+    }
+
+    .company-shell .company-task-dot {
+        height: 0.5rem;
+        width: 0.5rem;
+        flex: 0 0 auto;
+        border-radius: 9999px;
+        background: var(--company-accent);
+    }
+
+    .company-shell .company-summary-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        border-bottom: 1px solid var(--company-accent-border-soft);
+        padding-bottom: 1rem;
+        color: rgb(100 116 139);
+        font-size: 0.875rem;
+    }
+
+    .company-shell .company-summary-row:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .company-shell .company-summary-row dd {
+        color: var(--company-accent-ink);
+        font-weight: 700;
+        text-align: right;
+    }
+
+    :is(.dark) .company-shell .company-summary-row dd {
+        color: var(--company-accent-ink-dark);
+    }
+
     .company-shell .company-lang-active {
         background: var(--company-accent);
         color: #fff;

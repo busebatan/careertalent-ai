@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -15,9 +15,12 @@ from app.core.company_permissions import (
 from app.core.database import get_db
 from app.core.security import get_current_user, hash_password, verify_password
 from app.models.recruiting import Organization, OrganizationInvitation, OrganizationMembership
+from app.models.company_recruiting import RecruitingApplication, RecruitingPosition
 from app.models.user import User
 from app.schemas.company import (
     CompanyContextResponse,
+    CompanyApplicationsResponse,
+    CompanyAssessmentsResponse,
     CompanyDashboardResponse,
     CompanyInviteAccept,
     CompanyInviteCreate,
@@ -29,8 +32,15 @@ from app.schemas.company import (
     CompanyOrganizationUpdate,
     CompanyOrganizationProfile,
     CompanyPendingInviteResponse,
+    CompanyPositionCreate,
+    CompanyPositionResponse,
+    CompanyPositionsResponse,
+    CompanyPositionUpdate,
 )
 from app.services.company import CompanyInvitationConflict, create_company_invitation, invitation_hash
+from app.services.company_recruiting import applications as recruiting_applications
+from app.services.company_recruiting import assessments as recruiting_assessments
+from app.services.company_recruiting import dashboard as recruiting_dashboard
 
 
 router = APIRouter()
@@ -135,12 +145,134 @@ def context(db: DB, current_user: User = Depends(require_company_user)) -> Compa
 
 
 @router.get("/dashboard", response_model=CompanyDashboardResponse)
-def dashboard(db: DB, context=Depends(_context)) -> CompanyDashboardResponse:
+def dashboard(
+    db: DB,
+    period: Literal["7d", "30d", "90d"] = "30d",
+    context=Depends(_context),
+) -> CompanyDashboardResponse:
     _, organization, membership = _require_permission(context, "dashboard.view")
-    members_total = db.scalar(select(func.count()).select_from(OrganizationMembership).where(OrganizationMembership.organization_id == organization.id)) or 0
-    members_active = db.scalar(select(func.count()).select_from(OrganizationMembership).where(OrganizationMembership.organization_id == organization.id, OrganizationMembership.status == "active")) or 0
-    invitations_pending = db.scalar(select(func.count()).select_from(OrganizationInvitation).where(OrganizationInvitation.organization_id == organization.id, OrganizationInvitation.accepted_at.is_(None), OrganizationInvitation.expires_at > datetime.now(UTC))) or 0
-    return CompanyDashboardResponse(organization=_summary(organization, membership), members_total=members_total, members_active=members_active, invitations_pending=invitations_pending)
+    return recruiting_dashboard(db, organization, _summary(organization, membership), period)
+
+
+def _position_response(db: Session, position: RecruitingPosition) -> CompanyPositionResponse:
+    application_count = db.scalar(select(func.count()).select_from(RecruitingApplication).where(
+        RecruitingApplication.organization_id == position.organization_id,
+        RecruitingApplication.position_id == position.id,
+    )) or 0
+    return CompanyPositionResponse(
+        id=position.id,
+        title=position.title,
+        department=position.department,
+        employment_type=position.employment_type,
+        workplace_type=position.workplace_type,
+        description=position.description,
+        status=position.status,
+        application_deadline=position.application_deadline,
+        opened_at=position.opened_at,
+        closed_at=position.closed_at,
+        application_count=application_count,
+        created_at=position.created_at,
+        updated_at=position.updated_at,
+    )
+
+
+@router.get("/positions", response_model=CompanyPositionsResponse)
+def positions(
+    db: DB,
+    status_filter: Annotated[Literal["draft", "open", "paused", "closed", "archived"] | None, Query(alias="status")] = None,
+    context=Depends(_context),
+) -> CompanyPositionsResponse:
+    _, organization, _ = _require_permission(context, "positions.view")
+    statement = select(RecruitingPosition).where(RecruitingPosition.organization_id == organization.id)
+    if status_filter is None:
+        statement = statement.where(RecruitingPosition.status != "archived")
+    else:
+        statement = statement.where(RecruitingPosition.status == status_filter)
+    rows = db.scalars(statement.order_by(RecruitingPosition.created_at.desc())).all()
+    return CompanyPositionsResponse(items=[_position_response(db, row) for row in rows])
+
+
+@router.post("/positions", response_model=CompanyPositionResponse, status_code=status.HTTP_201_CREATED)
+def create_position(
+    payload: CompanyPositionCreate,
+    db: DB,
+    context=Depends(_context),
+) -> CompanyPositionResponse:
+    _, organization, membership = _require_permission(context, "positions.write")
+    now = datetime.now(UTC)
+    position = RecruitingPosition(
+        id=str(uuid4()),
+        organization_id=organization.id,
+        created_by_membership_id=membership.id,
+        opened_at=now if payload.status == "open" else None,
+        **payload.model_dump(),
+    )
+    db.add(position)
+    db.commit()
+    db.refresh(position)
+    return _position_response(db, position)
+
+
+@router.patch("/positions/{position_id}", response_model=CompanyPositionResponse)
+def update_position(
+    position_id: str,
+    payload: CompanyPositionUpdate,
+    db: DB,
+    context=Depends(_context),
+) -> CompanyPositionResponse:
+    _, organization, _ = _require_permission(context, "positions.write")
+    position = db.scalar(select(RecruitingPosition).where(
+        RecruitingPosition.id == position_id,
+        RecruitingPosition.organization_id == organization.id,
+    ))
+    if position is None:
+        raise HTTPException(status_code=404, detail="Company position not found")
+    changes = payload.model_dump(exclude_unset=True)
+    next_status = changes.get("status")
+    now = datetime.now(UTC)
+    if next_status == "open" and position.opened_at is None:
+        position.opened_at = now
+        position.closed_at = None
+    elif next_status in {"closed", "archived"}:
+        position.closed_at = now
+    for key, value in changes.items():
+        setattr(position, key, value)
+    db.commit()
+    db.refresh(position)
+    return _position_response(db, position)
+
+
+@router.delete("/positions/{position_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_position(position_id: str, db: DB, context=Depends(_context)) -> Response:
+    _, organization, _ = _require_permission(context, "positions.delete")
+    position = db.scalar(select(RecruitingPosition).where(
+        RecruitingPosition.id == position_id,
+        RecruitingPosition.organization_id == organization.id,
+    ))
+    if position is None:
+        raise HTTPException(status_code=404, detail="Company position not found")
+    position.status = "archived"
+    position.closed_at = datetime.now(UTC)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/applications", response_model=CompanyApplicationsResponse)
+def applications(
+    db: DB,
+    queue: Literal["new", "assessment_pending", "technical_review", "scorecard_missing", "retention_due"] | None = None,
+    stage: str | None = None,
+    position_id: str | None = None,
+    context=Depends(_context),
+) -> CompanyApplicationsResponse:
+    _, organization, _ = _require_permission(context, "applications.view")
+    return recruiting_applications(db, organization, queue, stage, position_id)
+
+
+@router.get("/assessments", response_model=CompanyAssessmentsResponse)
+def assessments(db: DB, context=Depends(_context)) -> CompanyAssessmentsResponse:
+    _, organization, _ = _require_permission(context, "assessments.view")
+    return recruiting_assessments(db, organization)
 
 
 @router.get("/members", response_model=CompanyMembersResponse)

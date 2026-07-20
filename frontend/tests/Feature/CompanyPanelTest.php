@@ -34,8 +34,39 @@ class CompanyPanelTest extends TestCase
             'organization_id' => 'org-1', 'organization_name' => 'Acme Teknoloji', 'organization_slug' => 'acme',
             'organization_type' => 'employer', 'organization_status' => 'active', 'plan_code' => 'pilot',
             'billing_email' => 'billing@acme.example.com', 'website' => 'https://acme.example.com',
-            'role' => 'owner', 'permissions' => ['dashboard.view', 'organization.update', 'members.view', 'members.invite', 'members.manage'],
+            'role' => 'owner', 'permissions' => [
+                'dashboard.view', 'positions.view', 'positions.write', 'positions.delete',
+                'applications.view', 'applications.write', 'assessments.view', 'assessments.write',
+                'scorecards.view', 'scorecards.submit', 'organization.update', 'members.view',
+                'members.invite', 'members.manage',
+            ],
         ], $overrides);
+    }
+
+    private function dashboardPayload(): array
+    {
+        return [
+            'organization' => $this->membership(),
+            'as_of' => '2026-07-20T16:00:00Z',
+            'period' => ['key' => '30d', 'from' => '2026-06-20T16:00:00Z', 'to' => '2026-07-20T16:00:00Z'],
+            'indicators' => [
+                'active_positions' => 3, 'new_applications' => 12, 'assessment_pending' => 8,
+                'technical_review_pending' => 4, 'shortlisted' => 5,
+                'assessment_usage' => ['used' => 42, 'quota' => null],
+            ],
+            'tasks' => [[
+                'type' => 'new_applications', 'priority' => 60, 'count' => 12,
+                'position' => ['id' => 'position-1', 'title' => 'Backend Developer'],
+                'target' => '/acme/pozisyonlar/position-1/adaylar?queue=new',
+            ]],
+            'summary' => [
+                'application_to_assessment_rate' => 0.64,
+                'assessment_to_interview_rate' => 0.31,
+                'average_shortlist_hours' => 52.5,
+                'largest_loss_stage' => ['stage' => 'technical_review', 'count' => 7],
+            ],
+            'members_total' => 2, 'members_active' => 1, 'invitations_pending' => 1,
+        ];
     }
 
     public function test_company_login_accepts_only_company_account_with_membership(): void
@@ -97,6 +128,70 @@ class CompanyPanelTest extends TestCase
             ->assertOk()
             ->assertSee('billing@acme.example.com')
             ->assertSee('action="'.route('company.logout').'"', false);
+    }
+
+    public function test_recruiting_dashboard_renders_operational_metrics_tasks_and_target_links(): void
+    {
+        Http::fake([
+            '*/api/v1/auth/me' => Http::response($this->user()),
+            '*/api/v1/company/context' => Http::response(['memberships' => [$this->membership()]]),
+            '*/api/v1/company/dashboard*' => Http::response($this->dashboardPayload()),
+        ]);
+
+        $this->withSession(['company_auth.access_token' => 'company-token'])
+            ->get('/acme?period=30d')
+            ->assertOk()
+            ->assertSee('Aktif pozisyon')
+            ->assertSee('Yeni başvuru')
+            ->assertSee('Teknik ekip incelemesi bekleyen aday')
+            ->assertSee('Bu ay kullanılan değerlendirme hakkı')
+            ->assertSee('Backend Developer ilanında 12 yeni aday incelenmeyi bekliyor.')
+            ->assertSee('/acme/pozisyonlar/position-1/adaylar?queue=new', false)
+            ->assertSee('%64')
+            ->assertSee('2,2 gün');
+
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), '/api/v1/company/dashboard?period=30d')
+            && $request->hasHeader('X-Organization-ID', 'org-1'));
+    }
+
+    public function test_company_position_crud_and_candidate_lists_forward_tenant_contract(): void
+    {
+        Http::fake(function (Request $request) {
+            if (str_ends_with($request->url(), '/api/v1/auth/me')) {
+                return Http::response($this->user());
+            }
+            if (str_ends_with($request->url(), '/api/v1/company/context')) {
+                return Http::response(['memberships' => [$this->membership()]]);
+            }
+            if (str_contains($request->url(), '/api/v1/company/positions')) {
+                return Http::response($request->method() === 'GET' ? ['items' => []] : ['id' => 'position-1'], $request->method() === 'POST' ? 201 : 200);
+            }
+            if (str_contains($request->url(), '/api/v1/company/applications')) {
+                return Http::response(['items' => []]);
+            }
+            if (str_contains($request->url(), '/api/v1/company/assessments')) {
+                return Http::response(['usage' => ['used' => 0, 'quota' => null], 'items' => []]);
+            }
+
+            return Http::response(['status' => 'ok']);
+        });
+        $session = ['company_auth.access_token' => 'company-token'];
+
+        $this->withSession($session)->get('/acme/pozisyonlar')->assertOk()->assertSee('Yeni pozisyon oluştur');
+        $this->withSession($session)->post('/acme/pozisyonlar', [
+            'title' => 'Backend Developer', 'status' => 'open',
+        ])->assertRedirect('/acme/pozisyonlar');
+        $this->withSession($session)->patch('/acme/pozisyonlar/position-1', [
+            'title' => 'Senior Backend Developer', 'status' => 'paused',
+        ])->assertRedirect('/acme/pozisyonlar');
+        $this->withSession($session)->delete('/acme/pozisyonlar/position-1')->assertRedirect('/acme/pozisyonlar');
+        $this->withSession($session)->get('/acme/adaylar?queue=new')->assertOk()->assertSee('Henüz aday bulunmuyor');
+        $this->withSession($session)->get('/acme/degerlendirmeler')->assertOk()->assertSee('Bu ay kullanılan hak');
+
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), '/api/v1/company/positions')
+            && $request->hasHeader('X-Organization-ID', 'org-1'));
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), '/api/v1/company/applications?queue=new')
+            && $request->hasHeader('X-Organization-ID', 'org-1'));
     }
 
     public function test_company_panel_uses_shared_admin_shell_without_changing_its_visual_identity(): void
@@ -333,7 +428,7 @@ class CompanyPanelTest extends TestCase
         $this->get('/acme')->assertOk()->assertSee('data-workspace-shell="company"', false);
         $this->get('/admin')->assertOk()->assertSee('data-workspace-shell="admin"', false);
 
-        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/api/v1/company/dashboard')
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/api/v1/company/dashboard?period=30d')
             && $request->hasHeader('Authorization', 'Bearer company-token'));
         Http::assertSent(fn ($request) => str_ends_with($request->url(), '/api/v1/admin/dashboard')
             && $request->hasHeader('Authorization', 'Bearer admin-token'));

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
 use App\Services\CareerTalentApiClient;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,6 +14,15 @@ class CompanyController extends Controller
 {
     private const PERMISSION_KEYS = [
         'dashboard.view',
+        'positions.view',
+        'positions.write',
+        'positions.delete',
+        'applications.view',
+        'applications.write',
+        'assessments.view',
+        'assessments.write',
+        'scorecards.view',
+        'scorecards.submit',
         'organization.update',
         'members.view',
         'members.invite',
@@ -21,10 +31,76 @@ class CompanyController extends Controller
 
     public function dashboard(Request $request, CareerTalentApiClient $api): View
     {
-        $result = $api->companyDashboard($this->organizationId($request));
+        $period = in_array($request->query('period'), ['7d', '30d', '90d'], true)
+            ? $request->query('period')
+            : '30d';
+        $result = $api->companyDashboard($this->organizationId($request), $period);
 
         return $this->view('company.dashboard', $request, [
             'dashboard' => $result['ok'] ? $result['body'] : null,
+            'companyError' => $result['ok'] ? null : $result['error'],
+            'dashboardPeriod' => $period,
+        ]);
+    }
+
+    public function positions(Request $request, CareerTalentApiClient $api): View
+    {
+        $status = in_array($request->query('status'), ['draft', 'open', 'paused', 'closed', 'archived'], true)
+            ? $request->query('status')
+            : null;
+        $result = $api->companyPositions($this->organizationId($request), $status);
+
+        return $this->view('company.positions', $request, [
+            'positions' => $result['ok'] ? ($result['body']['items'] ?? []) : [],
+            'companyError' => $result['ok'] ? null : $result['error'],
+            'positionStatus' => $status,
+        ]);
+    }
+
+    public function createPosition(Request $request, CareerTalentApiClient $api): RedirectResponse
+    {
+        $result = $api->createCompanyPosition($this->organizationId($request), $this->positionPayload($request, true));
+
+        return $result['ok']
+            ? redirect()->route('company.positions')->with('status', __('company.positions.created'))
+            : back()->withInput()->withErrors(['company' => $result['error']]);
+    }
+
+    public function updatePosition(Request $request, string $position, CareerTalentApiClient $api): RedirectResponse
+    {
+        $result = $api->updateCompanyPosition($this->organizationId($request), $position, $this->positionPayload($request, false));
+
+        return $result['ok']
+            ? redirect()->route('company.positions')->with('status', __('company.positions.updated'))
+            : back()->withInput()->withErrors(['company' => $result['error']]);
+    }
+
+    public function deletePosition(Request $request, string $position, CareerTalentApiClient $api): RedirectResponse
+    {
+        $result = $api->deleteCompanyPosition($this->organizationId($request), $position);
+
+        return $result['ok']
+            ? redirect()->route('company.positions')->with('status', __('company.positions.archived'))
+            : back()->withErrors(['company' => $result['error']]);
+    }
+
+    public function applications(Request $request, CareerTalentApiClient $api): View
+    {
+        return $this->applicationsView($request, $api);
+    }
+
+    public function positionApplications(Request $request, string $position, CareerTalentApiClient $api): View
+    {
+        return $this->applicationsView($request, $api, $position);
+    }
+
+    public function assessments(Request $request, CareerTalentApiClient $api): View
+    {
+        $result = $api->companyAssessments($this->organizationId($request));
+
+        return $this->view('company.assessments', $request, [
+            'assessments' => $result['ok'] ? ($result['body']['items'] ?? []) : [],
+            'assessmentUsage' => $result['ok'] ? ($result['body']['usage'] ?? ['used' => 0, 'quota' => null]) : ['used' => 0, 'quota' => null],
             'companyError' => $result['ok'] ? null : $result['error'],
         ]);
     }
@@ -109,6 +185,46 @@ class CompanyController extends Controller
         return (string) $request->attributes->get('company.membership')['organization_id'];
     }
 
+    /** @return array<string, mixed> */
+    private function positionPayload(Request $request, bool $creating): array
+    {
+        $payload = $request->validate([
+            'title' => [$creating ? 'required' : 'sometimes', 'string', 'min:2', 'max:160'],
+            'department' => ['nullable', 'string', 'max:120'],
+            'employment_type' => ['nullable', Rule::in(['full_time', 'part_time', 'contract', 'internship'])],
+            'workplace_type' => ['nullable', Rule::in(['onsite', 'hybrid', 'remote'])],
+            'description' => ['nullable', 'string', 'max:10000'],
+            'application_deadline' => ['nullable', 'date'],
+            'status' => [$creating ? 'required' : 'sometimes', Rule::in(['draft', 'open', 'paused', 'closed'])],
+        ]);
+        foreach (['department', 'employment_type', 'workplace_type', 'description', 'application_deadline'] as $field) {
+            if (array_key_exists($field, $payload) && $payload[$field] === '') {
+                $payload[$field] = null;
+            }
+        }
+        if (! empty($payload['application_deadline'])) {
+            $payload['application_deadline'] = Carbon::parse($payload['application_deadline'])->toIso8601String();
+        }
+
+        return $payload;
+    }
+
+    private function applicationsView(Request $request, CareerTalentApiClient $api, ?string $position = null): View
+    {
+        $filters = array_filter([
+            'queue' => in_array($request->query('queue'), ['new', 'assessment_pending', 'technical_review', 'scorecard_missing', 'retention_due'], true) ? $request->query('queue') : null,
+            'stage' => is_string($request->query('stage')) ? $request->query('stage') : null,
+            'position_id' => $position,
+        ], fn ($value): bool => is_string($value) && $value !== '');
+        $result = $api->companyApplications($this->organizationId($request), $filters);
+
+        return $this->view('company.applications', $request, [
+            'applications' => $result['ok'] ? ($result['body']['items'] ?? []) : [],
+            'applicationFilters' => $filters,
+            'companyError' => $result['ok'] ? null : $result['error'],
+        ]);
+    }
+
     private function view(string $name, Request $request, array $data = []): View
     {
         return view($name, [
@@ -134,6 +250,14 @@ class CompanyController extends Controller
                 'label' => __('company.nav.general'),
                 'items' => array_filter([
                     $item('company.dashboard', __('company.nav.dashboard'), 'dashboard', 'dashboard.view'),
+                ]),
+            ],
+            [
+                'label' => __('company.nav.recruiting'),
+                'items' => array_filter([
+                    $item('company.positions', __('company.nav.positions'), 'jobs', 'positions.view'),
+                    $item('company.applications', __('company.nav.applications'), 'applications', 'applications.view'),
+                    $item('company.assessments', __('company.nav.assessments'), 'tasks', 'assessments.view'),
                 ]),
             ],
             [

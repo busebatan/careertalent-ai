@@ -176,6 +176,13 @@ Route::prefix('{organizationSlug}')
     ->group(function () {
         Route::get('/', [CompanyController::class, 'dashboard'])->name('dashboard');
         Route::get('/locale/{locale}', [PanelLocaleController::class, 'switch'])->name('locale');
+        Route::get('/pozisyonlar', [CompanyController::class, 'positions'])->name('positions');
+        Route::post('/pozisyonlar', [CompanyController::class, 'createPosition'])->name('positions.create');
+        Route::patch('/pozisyonlar/{position}', [CompanyController::class, 'updatePosition'])->name('positions.update');
+        Route::delete('/pozisyonlar/{position}', [CompanyController::class, 'deletePosition'])->name('positions.delete');
+        Route::get('/pozisyonlar/{position}/adaylar', [CompanyController::class, 'positionApplications'])->name('positions.applications');
+        Route::get('/adaylar', [CompanyController::class, 'applications'])->name('applications');
+        Route::get('/degerlendirmeler', [CompanyController::class, 'assessments'])->name('assessments');
         Route::get('/profil', [CompanyController::class, 'profile'])->name('profile');
         Route::patch('/profil', [CompanyController::class, 'updateProfile'])->name('profile.update');
         Route::get('/ekip', [CompanyController::class, 'team'])->name('team');

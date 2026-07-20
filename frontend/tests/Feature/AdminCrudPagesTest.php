@@ -60,7 +60,8 @@ class AdminCrudPagesTest extends TestCase
         $studentPage->assertOk()->assertSee('Aday Kullanıcı')
             ->assertSee('action="'.route('admin.students.store').'"', false)
             ->assertSee('admin-data-table', false)
-            ->assertSee('admin/ogrenciler/__ID__', false)
+            ->assertSee('detailUrlTemplate', false)
+            ->assertSee('__ID__', false)
             ->assertSee(__('admin.students.edit'), false)
             ->assertSee(__('admin.students.delete'), false)
             ->assertDontSee('action="'.route('admin.students.update', 42).'"', false);

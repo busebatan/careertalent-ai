@@ -1,6 +1,7 @@
 from sqlalchemy import event, select
 from sqlalchemy.orm import Session
 
+from app.core.company_permissions import COMPANY_PERMISSION_KEYS
 from app.core.database import get_db
 from app.core.security import hash_password
 from app.main import app
@@ -51,13 +52,7 @@ def test_owner_invitation_creates_separate_company_account_and_is_single_use(cli
         json={"email": "owner@acme.example.com", "role": "owner"},
     )
     assert invited.status_code == 201
-    assert invited.json()["permissions"] == [
-        "dashboard.view",
-        "organization.update",
-        "members.view",
-        "members.invite",
-        "members.manage",
-    ]
+    assert invited.json()["permissions"] == list(COMPANY_PERMISSION_KEYS)
     first_token = invited.json()["token"]
 
     replacement = client.post(

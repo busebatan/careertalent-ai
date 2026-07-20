@@ -61,7 +61,8 @@ class AdminOrganizationsTest extends TestCase
             ->assertSee('billing@acme.example.com')
             ->assertSee('admin-data-table', false)
             ->assertSee('openDrawer(organization)', false)
-            ->assertSee('admin/kurumlar/__ID__', false)
+            ->assertSee('detailUrlTemplate', false)
+            ->assertSee('__ID__', false)
             ->assertSee('action="'.route('admin.organizations.store').'"', false)
             ->assertDontSee('data-admin-organization=', false);
     }

@@ -111,7 +111,7 @@ class OrganizationVanityLoginTest extends TestCase
             ->assertSee('data-workspace-shell="company"', false)
             ->assertSessionHas('company.organization_id', 'org-buse');
 
-        Http::assertSent(fn (Request $request): bool => str_ends_with($request->url(), '/api/v1/company/dashboard')
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), '/api/v1/company/dashboard?period=30d')
             && $request->hasHeader('X-Organization-ID', 'org-buse'));
     }
 
