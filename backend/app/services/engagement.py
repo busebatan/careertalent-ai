@@ -70,10 +70,18 @@ def career_context(db: Session, user_id: int) -> dict:
     }
 
 
-def answer_chat(db: Session, user_id: int, message: str) -> CareerChatMessage:
+def answer_chat(db: Session, user_id: int, message: str, mode: str | None = None,) -> CareerChatMessage:
     history = db.scalars(select(CareerChatMessage).where(CareerChatMessage.user_id == user_id).order_by(CareerChatMessage.created_at.desc()).limit(12)).all()
+    purpose = {
+        "cv": "Kullanıcının CV'sini analiz et, güçlü ve zayıf yönlerini değerlendir, geliştirme önerileri sun.",
+        "interview": "Kullanıcıya mülakat koçluğu yap, mülakat soruları sor ve cevaplarını değerlendir.",
+        "career": "Kullanıcı için kariyer planı oluştur, hedefler belirle ve uygulanabilir öneriler sun."
+    }.get(
+        mode,
+        "Kullanıcıya yalnız kendi kariyer verisine dayanan uygulanabilir kariyer desteği ver"
+    )
     output = _invoke(json.dumps({
-        "purpose": "Kullanıcıya yalnız kendi kariyer verisine dayanan uygulanabilir kariyer desteği ver",
+        "purpose": purpose,
         "rules": ["CV'de veya kanıtlarda olmayan başarı uydurma", "Belirsiz bilgiyi belirt", "Yanıtı kısa ve eyleme dönük tut"],
         "career_context": career_context(db, user_id),
         "recent_messages": [{"role": row.role, "content": row.content} for row in reversed(history)],

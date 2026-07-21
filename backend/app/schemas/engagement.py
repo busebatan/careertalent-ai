@@ -24,6 +24,7 @@ class ProfileUpdate(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=2, max_length=4000)
+    mode: str | None = Field(default=None)
 
 
 class ChatReplyAI(BaseModel):

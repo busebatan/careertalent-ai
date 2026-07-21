@@ -76,7 +76,14 @@ def chat_history(db: DB, user: CurrentUser):
 @router.post("/chat", status_code=201)
 def send_chat(body: ChatRequest, db: DB, user: CurrentUser):
     try:
-        return serialize_chat(answer_chat(db, user.id, body.message))
+        return serialize_chat(
+            answer_chat(
+                db,
+                user.id,
+                body.message,
+                body.mode,
+            )
+        )
     except (AIUnavailableError, AIOutputError, AIProviderError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
