@@ -86,7 +86,7 @@
                     <h2 class="text-lg font-bold text-slate-900 dark:text-white">
                         {{ app()->getLocale() === 'en' ? 'Position Application' : 'Pozisyona Başvur' }}
                     </h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400" x-show="activeJobForApply" x-text="activeJobForApply.title + ' - ' + activeJobForApply.company"></p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400" x-show="activeJobForApply" x-text="activeJobForApply ? activeJobForApply.title + ' - ' + activeJobForApply.company : ''"></p>
                 </div>
             </div>
 

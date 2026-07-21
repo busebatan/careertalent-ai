@@ -291,6 +291,11 @@ class MarketingPagesTest extends TestCase
         $response->assertSee('İlan analizi tamamlanamadı');
         $this->assertStringContainsString("'), JSON.parse('", $response->getContent());
         $this->assertStringNotContainsString("')), JSON.parse('", $response->getContent());
+        $this->assertStringContainsString("activeJobForApply ? activeJobForApply.title", $response->getContent());
+
+        $icons = file_get_contents(resource_path('js/marketing-motion.js'));
+        $this->assertStringContainsString('Search,', $icons);
+        $this->assertStringContainsString('Send,', $icons);
     }
 
     public function test_panel_ilan_eslestirme_analiz_endpoint(): void
