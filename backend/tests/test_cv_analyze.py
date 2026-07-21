@@ -3,7 +3,7 @@
 from io import BytesIO
 
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.main import app
 from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence
@@ -293,6 +293,7 @@ def test_builder_save_atomically_replaces_active_cv_and_career_state(client, mon
 
     override = app.dependency_overrides
     db = next(override[__import__("app.core.database", fromlist=["get_db"]).get_db]())
+    db.execute(text("PRAGMA foreign_keys=ON"))
     target = CareerTarget(id="builder-old-target", user_id=1, title="Eski Rota", source="ladder", status="active")
     task = CareerTask(id="builder-old-task", user_id=1, target_id=target.id, title="Eski Görev", hint="", status="pending", evidence_types=["file"], skill_impacts=["SQL"])
     db.add_all([

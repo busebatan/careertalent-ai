@@ -227,6 +227,7 @@ async def archive_and_analyze_generated_cv(
             is_current=True,
         )
         db.add(document)
+        db.flush()
         analysis = create_analysis(
             db,
             user.id,
