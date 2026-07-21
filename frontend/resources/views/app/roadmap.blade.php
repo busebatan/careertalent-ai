@@ -44,7 +44,7 @@
                         <p class="panel-muted text-xs">{{ __('panel.roadmap.cv_analyzed_at', ['date' => $analysisCv['analyzed_at']]) }}</p>
                     @endif
                     <button type="button" data-roadmap-clear @click.stop="resetOpen = true"
-                        class="font-medium text-sky-700 hover:underline dark:text-sky-300">
+                        class="panel-sky-card-link">
                         {{ __('panel.skill_radar.clear_cv') }}
                     </button>
                 </div>
