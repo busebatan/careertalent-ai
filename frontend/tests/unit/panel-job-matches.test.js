@@ -3,6 +3,81 @@ import { describe, it } from 'node:test';
 import { panelJobMatches } from '../../resources/js/panel-job-matches.js';
 
 describe('panelJobMatches', () => {
+    it('queues pasted listing text and keeps the completed result in the same page state', async () => {
+        const listing = 'SQL, Python ve Power BI bilen bir veri analisti arıyoruz. Raporlama deneyimi zorunludur.';
+        const state = panelJobMatches([], {
+            analyzeUrl: '/analyze',
+            errors: { generic: 'error' },
+        }, { id: 'cv-1', status: 'ready', skills: [], radar: [] });
+        state.jobText = listing;
+
+        const requests = [];
+        state.request = async (url, options) => {
+            requests.push({ url, body: JSON.parse(options.body) });
+            return { id: 'job-1', status: 'queued' };
+        };
+        state.poll = async (job) => {
+            Object.assign(job, {
+                status: 'ready',
+                title: 'Veri Analisti',
+                match_score: 72,
+                matched_skills: ['SQL'],
+                missing_skills: ['Power BI'],
+            });
+        };
+
+        await state.addJob();
+
+        assert.deepEqual(requests, [{
+            url: '/analyze',
+            body: { source_url: null, job_text: listing },
+        }]);
+        assert.equal(state.jobs[0].status, 'ready');
+        assert.equal(state.jobs[0].title, 'Veri Analisti');
+        assert.equal(state.jobs[0].match_score, 72);
+        assert.equal(state.jobText, '');
+        assert.equal(state.loading, false);
+    });
+
+    it('blocks job analysis until the latest CV analysis is ready', async () => {
+        const listing = 'SQL, Python ve Power BI bilen bir veri analisti arıyoruz. Raporlama deneyimi zorunludur.';
+        const state = panelJobMatches([], {
+            analyzeUrl: '/analyze',
+            errors: { generic: 'error' },
+        }, { id: 'cv-1', status: 'running', skills: [], radar: [] });
+        state.jobText = listing;
+        let requested = false;
+        state.request = async () => { requested = true; };
+
+        await state.addJob();
+
+        assert.equal(state.cvReady, false);
+        assert.equal(requested, false);
+    });
+
+    it('polls a pending CV and enables job analysis when the CV becomes ready', async () => {
+        const state = panelJobMatches([], {
+            cvStatusUrl: '/cv/__ANALYSIS__',
+            errors: { generic: 'error', timeout: 'timeout' },
+        }, { id: 'cv-1', status: 'running', skills: [], radar: [] });
+        state.wait = async () => {};
+        state.request = async (url) => {
+            assert.equal(url, '/cv/cv-1');
+            return {
+                id: 'cv-1',
+                status: 'ready',
+                skills: [{ name: 'SQL', score: 80 }],
+                radar: [{ label: 'SQL', score: 80, target: 90 }],
+            };
+        };
+
+        await state.pollCv();
+
+        assert.equal(state.cvReady, true);
+        assert.deepEqual(state.cv.skills, [{ name: 'SQL', score: 80 }]);
+        assert.equal(state.cv.readiness, 80);
+    });
+
     it('resumes queued analysis and apply polling after a page reload', () => {
         const state = panelJobMatches([
             { id: 'analysis-job', status: 'queued' },
@@ -75,4 +150,3 @@ describe('panelJobMatches', () => {
         });
     });
 });
-

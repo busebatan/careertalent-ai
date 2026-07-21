@@ -1,12 +1,16 @@
-export function panelJobListings(initialItems, labels) {
+export function panelJobListings(initialItems, labels, initialCvDocuments = []) {
     return {
         items: Array.isArray(initialItems) ? initialItems : [],
+        cvDocuments: Array.isArray(initialCvDocuments) ? initialCvDocuments : [],
         labels: labels || {},
         query: '',
         workplace: '',
         employment: '',
         activeJob: null,
-        demoNotice: false,
+        demoApplicationOpen: false,
+        selectedCvId: '',
+        demoConsent: false,
+        demoSubmitted: false,
 
         get filteredItems() {
             const query = this.query.trim().toLocaleLowerCase();
@@ -25,16 +29,34 @@ export function panelJobListings(initialItems, labels) {
 
         openDetails(job) {
             this.activeJob = job;
-            this.demoNotice = false;
         },
 
         closeDetails() {
             this.activeJob = null;
         },
 
-        applicationPath(job) {
-            this.demoNotice = Boolean(job?.is_demo);
-            return job?.is_demo ? null : (job?.position?.public_path || null);
+        beginApplication(job) {
+            if (!job?.is_demo) {
+                this.demoApplicationOpen = false;
+                return job?.position?.public_path || null;
+            }
+            this.demoSubmitted = false;
+            this.demoConsent = false;
+            this.selectedCvId = this.cvDocuments.find((document) => document?.is_current)?.id
+                || this.cvDocuments[0]?.id
+                || '';
+            this.demoApplicationOpen = true;
+            return null;
+        },
+
+        closeDemoApplication() {
+            this.demoApplicationOpen = false;
+        },
+
+        completeDemoApplication() {
+            if (!this.selectedCvId || !this.demoConsent) return false;
+            this.demoSubmitted = true;
+            return true;
         },
 
         workplaceLabel(value) {

@@ -25,7 +25,7 @@
             'senior' => __('panel.job_listings.level_senior'),
             'lead' => __('panel.job_listings.level_lead'),
         ],
-    ]) }})">
+    ]) }}, {{ Js::from($demoCvDocuments) }})">
     <header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <p class="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">{{ __('panel.job_listings.eyebrow') }}</p>
@@ -43,11 +43,6 @@
             {{ __('panel.job_listings.load_error') }} {{ __('panel.job_listings.demo_available') }}
         </div>
     @endif
-
-    <div x-show="demoNotice" x-cloak class="mb-5 flex items-start justify-between gap-3 rounded-xl border border-sky-300 bg-sky-50 px-4 py-3 text-sm text-sky-900 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-200" role="status">
-        <span>{{ __('panel.job_listings.demo_notice') }}</span>
-        <button type="button" class="font-semibold hover:underline" @click="demoNotice = false">{{ __('panel.job_listings.close') }}</button>
-    </div>
 
     <section class="panel-card mb-6 p-4 sm:p-5" aria-label="{{ __('panel.job_listings.filters') }}">
         <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px_220px]">
@@ -117,7 +112,7 @@
                             <a :href="job.position.public_path" class="inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500">{{ __('panel.job_listings.apply') }}</a>
                         </template>
                         <template x-if="job.is_demo">
-                            <button type="button" class="inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500" @click="applicationPath(job)">{{ __('panel.job_listings.apply') }}</button>
+                            <button type="button" class="inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500" @click="beginApplication(job)">{{ __('panel.job_listings.apply') }}</button>
                         </template>
                     </div>
                 </div>
@@ -174,11 +169,63 @@
                             <a :href="activeJob.position.public_path" class="inline-flex rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500">{{ __('panel.job_listings.apply_now') }}</a>
                         </template>
                         <template x-if="activeJob.is_demo">
-                            <button type="button" class="inline-flex rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500" @click="applicationPath(activeJob); closeDetails()">{{ __('panel.job_listings.apply_now') }}</button>
+                            <button type="button" class="inline-flex rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500" @click="beginApplication(activeJob); closeDetails()">{{ __('panel.job_listings.apply_now') }}</button>
                         </template>
                     </div>
                 </div>
             </template>
+        </div>
+    </div>
+
+    <div data-demo-application x-show="demoApplicationOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" @keydown.escape.window="closeDemoApplication()" role="dialog" aria-modal="true" aria-labelledby="demo-application-title">
+        <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900" @click.outside="closeDemoApplication()">
+            <div class="mb-5 flex items-start justify-between gap-4">
+                <div>
+                    <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">{{ __('panel.job_listings.demo_application_eyebrow') }}</p>
+                    <h2 id="demo-application-title" class="text-xl font-bold text-slate-950 dark:text-white">{{ __('panel.job_listings.demo_application_title') }}</h2>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ __('panel.job_listings.demo_application_subtitle') }}</p>
+                </div>
+                <button type="button" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" @click="closeDemoApplication()" aria-label="{{ __('panel.job_listings.close') }}">
+                    <i data-lucide="x" class="h-5 w-5" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div x-show="!demoSubmitted">
+                <template x-if="cvDocuments.length > 0">
+                    <div class="space-y-4">
+                        <label class="block">
+                            <span class="mb-1.5 block text-sm font-medium text-slate-800 dark:text-slate-200">{{ __('panel.job_listings.select_cv') }}</span>
+                            <select x-model="selectedCvId" class="panel-input-block w-full">
+                                <template x-for="document in cvDocuments" :key="document.id">
+                                    <option :value="document.id" x-text="document.display_name || document.original_name || document.id"></option>
+                                </template>
+                            </select>
+                        </label>
+                        <label class="flex items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
+                            <input type="checkbox" x-model="demoConsent" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <span>{{ __('panel.job_listings.demo_consent') }}</span>
+                        </label>
+                        <button type="button" class="w-full rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50" :disabled="!selectedCvId || !demoConsent" @click="completeDemoApplication()">
+                            {{ __('panel.job_listings.complete_demo') }}
+                        </button>
+                    </div>
+                </template>
+                <template x-if="cvDocuments.length === 0">
+                    <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                        <p>{{ __('panel.job_listings.cv_required') }}</p>
+                        <a href="{{ route('panel.cv-builder') }}" class="mt-3 inline-flex font-semibold text-emerald-700 hover:underline dark:text-emerald-300">{{ __('panel.job_listings.go_to_cv') }}</a>
+                    </div>
+                </template>
+            </div>
+
+            <div x-show="demoSubmitted" x-cloak class="text-center">
+                <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/50">
+                    <i data-lucide="check" class="h-6 w-6 text-emerald-700 dark:text-emerald-300" aria-hidden="true"></i>
+                </div>
+                <h3 class="font-semibold text-slate-950 dark:text-white">{{ __('panel.job_listings.demo_completed') }}</h3>
+                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ __('panel.job_listings.demo_not_persisted') }}</p>
+                <button type="button" class="panel-btn-secondary mt-5 text-sm" @click="closeDemoApplication()">{{ __('panel.job_listings.close') }}</button>
+            </div>
         </div>
     </div>
 </div>

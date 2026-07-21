@@ -16,10 +16,12 @@ class JobListingsController extends PanelController
                 ->values()
                 ->all()
             : [];
+        $documents = $api->cvDocuments();
 
         return $this->panelView('app.job-listings', [
             'jobListings' => array_merge([$this->demoListing()], $realItems),
             'listingsError' => $result['ok'] ? null : ($result['error'] ?? __('panel.job_listings.load_error')),
+            'demoCvDocuments' => $documents['ok'] && is_array($documents['body']) ? $documents['body'] : [],
         ]);
     }
 

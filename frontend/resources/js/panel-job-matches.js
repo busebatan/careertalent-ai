@@ -10,11 +10,33 @@ function normalizeJob(job) {
     };
 }
 
-export function panelJobMatches(seedJobs, config) {
+function normalizeCvAnalysis(analysis) {
+    const radar = Array.isArray(analysis?.radar) ? analysis.radar : [];
+    const scores = radar.map((item) => Number(item?.score)).filter(Number.isFinite);
+
+    return {
+        id: analysis?.id || null,
+        status: analysis?.status || 'missing',
+        skills: Array.isArray(analysis?.skills) ? analysis.skills : [],
+        radar,
+        readiness: scores.length ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length) : 0,
+        error_message: analysis?.error_message || '',
+    };
+}
+
+export function panelJobMatches(seedJobs, config, seedAnalysis = null) {
     return {
         jobs: seedJobs.map(normalizeJob), jobUrl: '', jobText: '', loading: false, error: '', config,
+        cv: normalizeCvAnalysis(seedAnalysis),
         showApplyModal: false, cvVersions: [], selectedCvVersionId: '', activeJobForApply: null, loadingVersions: false,
+        wait(milliseconds) { return new Promise((resolve) => setTimeout(resolve, milliseconds)); },
         init() {
+            if (this.cv.status === 'queued' || this.cv.status === 'running') {
+                this.pollCv().catch(error => {
+                    this.cv.status = 'failed';
+                    this.cv.error_message = error.message;
+                });
+            }
             this.jobs.forEach(job => {
                 if (job.status === 'queued' || job.status === 'running') {
                     this.poll(job, false).catch(err => { this.error = err.message; });
@@ -24,6 +46,7 @@ export function panelJobMatches(seedJobs, config) {
                 }
             });
         },
+        get cvReady() { return this.cv.status === 'ready'; },
         get sortedJobs() { return [...this.jobs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); },
         scoreClass(score) { return score >= 70 ? 'text-emerald-600 dark:text-emerald-400' : score >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'; },
         formatDate(iso) { try { return new Intl.DateTimeFormat(this.config.locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)); } catch { return iso; } },
@@ -36,7 +59,7 @@ export function panelJobMatches(seedJobs, config) {
             return payload;
         },
         async addJob() {
-            if (this.loading || (!this.jobUrl.trim() && this.jobText.trim().length < 40)) return;
+            if (this.loading || !this.cvReady || (!this.jobUrl.trim() && this.jobText.trim().length < 40)) return;
             this.loading = true; this.error = '';
             try {
                 let job = normalizeJob(await this.request(this.config.analyzeUrl, { method: 'POST', body: JSON.stringify({ source_url: this.jobUrl.trim() || null, job_text: this.jobText.trim() || null }) }));
@@ -46,13 +69,24 @@ export function panelJobMatches(seedJobs, config) {
         },
         async poll(job, applying) {
             for (let attempt = 0; attempt < 150; attempt += 1) {
-                await new Promise((resolve) => setTimeout(resolve, 2000));
+                await this.wait(2000);
                 const fresh = normalizeJob(await this.request(this.endpoint(this.config.statusUrl, job)));
                 fresh.selected = job.selected || [];
+                fresh.application_created = job.application_created || fresh.application_created;
                 Object.assign(job, fresh);
                 const state = applying ? job.apply_status : job.status;
                 if (state === 'ready') return;
                 if (state === 'failed') throw new Error(job.error_message || this.config.errors.generic);
+            }
+            throw new Error(this.config.errors.timeout);
+        },
+        async pollCv() {
+            if (!this.cv.id || !this.config.cvStatusUrl) return;
+            for (let attempt = 0; attempt < 150; attempt += 1) {
+                await this.wait(2000);
+                const url = this.config.cvStatusUrl.replace('__ANALYSIS__', encodeURIComponent(this.cv.id));
+                this.cv = normalizeCvAnalysis(await this.request(url));
+                if (this.cv.status === 'ready' || this.cv.status === 'failed') return;
             }
             throw new Error(this.config.errors.timeout);
         },
@@ -97,4 +131,3 @@ export function panelJobMatches(seedJobs, config) {
         async removeJob(job) { try { await this.request(this.endpoint(this.config.deleteUrl, job), { method: 'DELETE' }); this.jobs = this.jobs.filter((item) => item.id !== job.id); } catch (error) { this.error = error.message; } },
     };
 }
-

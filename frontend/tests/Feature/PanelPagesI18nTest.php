@@ -225,7 +225,9 @@ class PanelPagesI18nTest extends TestCase
       ->assertSee('Junior Veri Analisti', false)
       ->assertSee('Backend Developer', false)
       ->assertSee('backend-developer-ABC123', false)
-      ->assertSee('Bu bir demo ilandır', false);
+      ->assertSee('data-demo-application', false)
+      ->assertSee('Demo başvuruyu tamamla', false)
+      ->assertSee('DB kaydı oluşturulmadı', false);
   }
 
   public function test_student_panel_loads_the_livewire_alpine_runtime(): void

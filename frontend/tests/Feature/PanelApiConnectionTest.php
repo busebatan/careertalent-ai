@@ -120,6 +120,27 @@ class PanelApiConnectionTest extends TestCase
             && $request->url() === 'http://localhost:8000/api/v1/career/jobs/analyze');
     }
 
+    public function test_job_match_page_exposes_latest_pending_cv_for_live_status(): void
+    {
+        Http::fake([
+            'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
+            'http://localhost:8000/api/v1/career/jobs' => Http::response([], 200),
+            'http://localhost:8000/api/v1/career/analysis/latest' => Http::response([
+                'id' => 'cv-analysis-pending',
+                'status' => 'running',
+                'skills' => [],
+                'radar' => [],
+            ], 200),
+        ]);
+
+        $response = $this->get('/panel/ilan-analizi');
+
+        $response->assertOk();
+        $response->assertSee('cv-analysis-pending', false);
+        $response->assertSee('CV analizin tamamlanıyor', false);
+        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/career/analysis/latest');
+    }
+
     public function test_job_match_status_save_apply_and_delete_proxy_to_career_api(): void
     {
         $job = ['id' => 'job-1', 'status' => 'ready', 'saved' => true, 'cv_suggestions' => []];

@@ -589,6 +589,11 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/career/analysis/current', 10);
     }
 
+    public function latestCareerAnalysis(): array
+    {
+        return $this->getJson('/api/v1/career/analysis/latest', 10);
+    }
+
     public function resetCareer(string $scope): array
     {
         return $this->postJson('/api/v1/career/reset', ['scope' => $scope], 15);

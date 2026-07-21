@@ -25,12 +25,17 @@ describe('panelJobListings', () => {
         assert.deepEqual(state.filteredItems.map((item) => item.position.title), ['Backend Developer']);
     });
 
-    it('keeps demo application non-persistent and returns real public application path', () => {
-        const state = panelJobListings(jobs, {});
+    it('previews the demo CV and consent flow without persistence and returns the real public path', () => {
+        const state = panelJobListings(jobs, {}, [{ id: 'cv-1', display_name: 'Ana CV.pdf' }]);
 
-        assert.equal(state.applicationPath(jobs[0]), null);
-        assert.equal(state.demoNotice, true);
-        assert.equal(state.applicationPath(jobs[1]), '/apply/acme/backend-ABC');
-        assert.equal(state.demoNotice, false);
+        assert.equal(state.beginApplication(jobs[0]), null);
+        assert.equal(state.demoApplicationOpen, true);
+        state.selectedCvId = 'cv-1';
+        state.demoConsent = true;
+        assert.equal(state.completeDemoApplication(), true);
+        assert.equal(state.demoSubmitted, true);
+
+        assert.equal(state.beginApplication(jobs[1]), '/apply/acme/backend-ABC');
+        assert.equal(state.demoApplicationOpen, false);
     });
 });

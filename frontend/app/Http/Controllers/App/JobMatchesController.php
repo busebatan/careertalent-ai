@@ -11,14 +11,14 @@ class JobMatchesController extends PanelController
     public function show(CareerTalentApiClient $api)
     {
         $jobs = $api->careerJobs();
-        $analysis = $api->currentCareerAnalysis();
-        $skills = collect($analysis['body']['skills'] ?? [])->pluck('name')->filter()->values()->all();
-        $radar = collect($analysis['body']['radar'] ?? []);
+        $analysis = $api->latestCareerAnalysis();
+        $latestAnalysis = ($analysis['ok'] ?? false) && is_array($analysis['body'] ?? null)
+            ? $analysis['body']
+            : null;
 
         return $this->panelView('app.job-matches', [
             'seedJobs' => $jobs['ok'] && is_array($jobs['body']) ? $jobs['body'] : [],
-            'userSkills' => $skills,
-            'readiness' => (int) round((float) ($radar->avg('score') ?? 0)),
+            'latestAnalysis' => $latestAnalysis,
         ]);
     }
 
