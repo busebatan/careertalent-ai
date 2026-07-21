@@ -74,16 +74,6 @@
             </div>
         </div>
     </div>
-
-
-    <div class="sticky bottom-4 z-20 mb-6 flex justify-center lg:hidden">
-        <button type="button" @click="saveCv()"
-            class="rounded-full bg-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-lg hover:bg-sky-500 disabled:opacity-60"
-            :disabled="saveStatus === 'saving'"
-            x-text="saveStatus === 'saved' ? uiLabels[panelLocale].saved : uiLabels[panelLocale].save">
-        </button>
-    </div>
-
     <section id="cv-analiz-yukle"
         class="panel-card mb-8 overflow-hidden p-6 lg:p-8"
         data-cv-analysis-upload

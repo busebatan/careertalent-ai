@@ -5,7 +5,7 @@
         <p class="panel-muted text-sm" x-text="uiLabels[panelLocale].save_hint"></p>
         <div data-cv-preview-actions class="flex flex-nowrap gap-2">
             <button type="button" @click="saveCv()"
-                class="hidden rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-60 lg:inline-flex"
+                class="inline-flex rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-60"
                 :disabled="saveStatus === 'saving'"
                 x-text="saveStatus === 'saving' ? uiLabels[panelLocale].analyzing : (saveStatus === 'saved' ? uiLabels[panelLocale].saved : uiLabels[panelLocale].save)">
             </button>
