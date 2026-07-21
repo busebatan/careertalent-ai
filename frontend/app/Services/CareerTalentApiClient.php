@@ -326,6 +326,14 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/public/apply/'.rawurlencode($organizationSlug).'/'.rawurlencode($positionPath), 10);
     }
 
+    /** @param array<string, int|string> $filters */
+    public function publicPositions(array $filters = []): array
+    {
+        $query = $filters !== [] ? '?'.http_build_query($filters) : '';
+
+        return $this->getJson('/api/v1/public/positions'.$query, 10);
+    }
+
     public function resolvePublicJobShareLink(string $shortCode): array
     {
         return $this->getJson('/api/v1/public/a/'.rawurlencode($shortCode), 10);

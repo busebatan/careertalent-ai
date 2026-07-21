@@ -1,5 +1,6 @@
 import { PanelCvStore, panelCvRadar, profileCvUpload, pollCvAnalysis, waitForCvAnalysis } from './panel-cv-store';
 import { panelJobMatches } from './panel-job-matches';
+import { panelJobListings } from './panel-job-listings';
 import { WeeklyTasksStore, dashboardWeeklyPlan } from './panel-weekly-tasks';
 import { downloadPdfBlob, exportHarvardCvPdf, renderHarvardCvPdf } from './cv-pdf-export';
 import {
@@ -48,6 +49,7 @@ window.companyAssessments = companyAssessments;
 window.companyPositions = companyPositions;
 window.companyShareLinks = companyShareLinks;
 window.panelJobMatches = panelJobMatches;
+window.panelJobListings = panelJobListings;
 window.exportHarvardCvPdf = exportHarvardCvPdf;
 window.renderHarvardCvPdf = renderHarvardCvPdf;
 window.downloadPdfBlob = downloadPdfBlob;

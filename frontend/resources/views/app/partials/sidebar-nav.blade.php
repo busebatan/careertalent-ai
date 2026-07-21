@@ -11,7 +11,8 @@
             ['route' => 'panel.skill-passport', 'match' => 'panel.skill-passport', 'label' => 'panel.nav.skill_passport', 'icon' => 'passport'],
         ]],
         ['label' => 'panel.nav_groups.opportunities', 'items' => [
-            ['route' => 'panel.job-matches', 'match' => 'panel.job-matches', 'label' => 'panel.nav.job_matches', 'icon' => 'jobs'],
+            ['route' => 'panel.job-listings', 'match' => 'panel.job-listings', 'label' => 'panel.nav.job_listings', 'icon' => 'jobs'],
+            ['route' => 'panel.job-matches', 'match' => 'panel.job-matches', 'label' => 'panel.nav.job_matches', 'icon' => 'job-analysis'],
             ['route' => 'panel.applications', 'match' => 'panel.applications', 'label' => 'panel.nav.applications', 'icon' => 'applications'],
         ]],
         ['label' => 'panel.nav_groups.support', 'items' => [

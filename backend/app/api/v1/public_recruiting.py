@@ -1,9 +1,9 @@
 """Public position pages, tracked short links and candidate application."""
 from datetime import UTC, datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import uuid4
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import func, select, update
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -13,7 +13,7 @@ from app.models.company_recruiting import RecruitingApplication, RecruitingPosit
 from app.models.engagement import CvDocument
 from app.models.recruiting import Organization
 from app.models.user import User
-from app.schemas.company import CandidatePositionApplicationCreate, CandidatePositionApplicationResponse, PublicOrganizationResponse, PublicPositionPageResponse, PublicPositionResponse
+from app.schemas.company import CandidatePositionApplicationCreate, CandidatePositionApplicationResponse, PublicOrganizationResponse, PublicPositionListResponse, PublicPositionPageResponse, PublicPositionResponse
 from app.services.company_outbox import CANDIDATE_ANALYSIS_TASK, enqueue_company_task
 from app.services.company_positions import add_activity, effective_ats_config
 
@@ -49,6 +49,39 @@ def _source(db,position,code,lock=False):
         count=db.scalar(select(func.count()).select_from(RecruitingApplication).where(RecruitingApplication.organization_id==position.organization_id,RecruitingApplication.original_share_link_id==row.id)) or 0
         if count>=row.application_limit: raise HTTPException(410,"Share link application limit reached")
     return row
+
+@router.get("/positions",response_model=PublicPositionListResponse)
+def positions(
+    db:DB,
+    q:Annotated[str|None,Query(max_length=160)]=None,
+    workplace_type:Annotated[Literal["onsite","hybrid","remote"]|None,Query()]=None,
+    employment_type:Annotated[Literal["full_time","part_time","contract","internship"]|None,Query()]=None,
+    limit:Annotated[int,Query(ge=1,le=100)]=24,
+    offset:Annotated[int,Query(ge=0)]=0,
+):
+    now=datetime.now(UTC)
+    filters=[
+        Organization.status=="active",
+        RecruitingPosition.status=="published",
+        or_(RecruitingPosition.application_deadline.is_(None),RecruitingPosition.application_deadline>now),
+    ]
+    if q and (term:=q.strip()):
+        pattern=f"%{term}%"
+        filters.append(or_(
+            RecruitingPosition.title.ilike(pattern),
+            RecruitingPosition.department.ilike(pattern),
+            RecruitingPosition.location.ilike(pattern),
+            Organization.name.ilike(pattern),
+        ))
+    if workplace_type: filters.append(RecruitingPosition.workplace_type==workplace_type)
+    if employment_type: filters.append(RecruitingPosition.employment_type==employment_type)
+
+    joined=select(Organization,RecruitingPosition).join(RecruitingPosition,RecruitingPosition.organization_id==Organization.id).where(*filters)
+    total=db.scalar(select(func.count()).select_from(joined.subquery())) or 0
+    published_at=func.coalesce(RecruitingPosition.opened_at,RecruitingPosition.created_at)
+    rows=db.execute(joined.order_by(published_at.desc(),RecruitingPosition.id.desc()).offset(offset).limit(limit)).all()
+    items=[_page(org,position) for org,position in rows]
+    return PublicPositionListResponse(items=items,total=total,limit=limit,offset=offset,has_more=offset+len(items)<total)
 
 @router.get("/apply/{organization_slug}/{position_path}",response_model=PublicPositionPageResponse)
 def page(organization_slug:str,position_path:str,db:DB):

@@ -16,6 +16,23 @@ class PanelPagesI18nTest extends TestCase
     Http::fake([
       'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
       'http://localhost:8000/api/v1/auth/me' => Http::response(['preferred_locale' => 'en'], 200),
+      'http://localhost:8000/api/v1/public/positions?limit=100&offset=0' => Http::response([
+        'items' => [[
+          'organization' => ['name' => 'ACME Teknoloji', 'slug' => 'acme', 'website' => null, 'logo_url' => null],
+          'position' => [
+            'id' => 'position-1', 'public_id' => 'ABC123', 'public_path' => '/apply/acme/backend-developer-ABC123',
+            'title' => 'Backend Developer', 'department' => 'Engineering', 'level' => 'mid',
+            'employment_type' => 'full_time', 'workplace_type' => 'remote', 'location' => 'İstanbul',
+            'description' => 'Backend servislerini geliştir.', 'responsibilities' => 'API geliştirme',
+            'must_have_skills' => ['Laravel', 'SQL'], 'preferred_skills' => ['Redis'],
+            'application_deadline' => '2026-08-31T23:59:59Z', 'status' => 'published',
+            'application_open' => true, 'estimated_application_minutes' => 8,
+            'estimated_assessment_minutes' => null,
+          ],
+          'source' => null,
+        ]],
+        'total' => 1, 'limit' => 100, 'offset' => 0, 'has_more' => false,
+      ], 200),
       'http://localhost:8000/*' => Http::response([], 200),
     ]);
   }
@@ -37,8 +54,10 @@ class PanelPagesI18nTest extends TestCase
       'roadmap-en' => ['/panel/kariyer-rotam', 'en', ['Career Route', 'Career ladder', 'Learning Resources']],
       'tasks-tr' => ['/panel/kariyer-rotam/gorevler', 'tr', ['Görevlerim', 'Görev ekle', 'Kişisel not']],
       'tasks-en' => ['/panel/kariyer-rotam/gorevler', 'en', ['My Tasks', 'Add task', 'Personal note']],
-      'job-analysis-tr' => ['/panel/ilan-analizi', 'tr', ['İş Fırsatları', 'Analiz et']],
-      'job-analysis-en' => ['/panel/ilan-analizi', 'en', ['Job Opportunities', 'Analyze']],
+      'job-listings-tr' => ['/panel/is-ilanlari', 'tr', ['İş İlanları', 'Demo ilan', 'Junior Veri Analisti']],
+      'job-listings-en' => ['/panel/is-ilanlari', 'en', ['Job Listings', 'Demo listing', 'Junior Data Analyst']],
+      'job-analysis-tr' => ['/panel/ilan-analizi', 'tr', ['İlan Analizi', 'Analiz et']],
+      'job-analysis-en' => ['/panel/ilan-analizi', 'en', ['Job Analysis', 'Analyze']],
       'applications-tr' => ['/panel/basvurularim', 'tr', ['Başvurularım', 'Aktif başvuru']],
       'applications-en' => ['/panel/basvurularim', 'en', ['Applications', 'Active applications']],
       'interview-tr' => ['/panel/mulakat-hazirligi', 'tr', ['Mülakat Hazırlığı', 'AI mülakatı başlat', 'Önceki soru', 'Mülakat geçmişi']],
@@ -182,10 +201,10 @@ class PanelPagesI18nTest extends TestCase
     $response = $this->withSession(['panel_locale' => 'tr'])->get('/panel');
 
     $response->assertOk();
-    foreach (['Ana Sayfa', 'KARİYERİM', 'CV Merkezi', 'Kariyer Rotam', 'Görevlerim', 'Yetenek Pasaportu', 'FIRSATLAR', 'İş Fırsatları', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'] as $label) {
+    foreach (['Ana Sayfa', 'KARİYERİM', 'CV Merkezi', 'Kariyer Rotam', 'Görevlerim', 'Yetenek Pasaportu', 'FIRSATLAR', 'İş İlanları', 'İlan Analizi', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'] as $label) {
       $response->assertSee($label, false);
     }
-    $response->assertSeeInOrder(['Ana Sayfa', 'Kariyer Asistanı', 'KARİYERİM', 'CV Merkezi', 'Kariyer Rotam', 'Görevlerim', 'Yetenek Pasaportu', 'FIRSATLAR', 'İş Fırsatları', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'], false);
+    $response->assertSeeInOrder(['Ana Sayfa', 'Kariyer Asistanı', 'KARİYERİM', 'CV Merkezi', 'Kariyer Rotam', 'Görevlerim', 'Yetenek Pasaportu', 'FIRSATLAR', 'İş İlanları', 'İlan Analizi', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'], false);
     $response->assertDontSee('Kariyer Profilim', false);
     $this->assertStringNotContainsString('Hesap, Paket ve Gizlilik', $response->getContent());
     $this->assertStringContainsString('notifications: []', $response->getContent());
@@ -194,6 +213,19 @@ class PanelPagesI18nTest extends TestCase
     foreach (['İş Radarı', 'Mentor Değerlendirme'] as $removedLabel) {
       $response->assertDontSee($removedLabel, false);
     }
+  }
+
+  public function test_job_listings_page_combines_demo_preview_with_real_application_path(): void
+  {
+    $response = $this->withSession(['panel_locale' => 'tr'])->get('/panel/is-ilanlari');
+
+    $response->assertOk()
+      ->assertSee('data-job-listings', false)
+      ->assertSee('data-job-listing-demo', false)
+      ->assertSee('Junior Veri Analisti', false)
+      ->assertSee('Backend Developer', false)
+      ->assertSee('backend-developer-ABC123', false)
+      ->assertSee('Bu bir demo ilandır', false);
   }
 
   public function test_student_panel_loads_the_livewire_alpine_runtime(): void

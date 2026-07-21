@@ -7,6 +7,7 @@ use App\Http\Controllers\App\CvBuilderController;
 use App\Http\Controllers\App\CvUploadController;
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\JobMatchesController;
+use App\Http\Controllers\App\JobListingsController;
 use App\Http\Controllers\App\LocaleController as PanelLocaleController;
 use App\Http\Controllers\App\ProfileController;
 use App\Http\Controllers\App\RoadmapController;
@@ -135,6 +136,7 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::post('/kariyer-rotam/hedef', [CareerLadderController::class, 'select'])->name('career-ladder.select');
     Route::get('/kariyer-rotam/plan-durumu/{targetId}', [RoadmapController::class, 'planStatus'])->name('roadmap.plan-status');
     Route::get('/kariyer-rotam/analiz-durumu', [RoadmapController::class, 'analysisStatus'])->name('roadmap.analysis-status');
+    Route::get('/is-ilanlari', [JobListingsController::class, 'index'])->name('job-listings');
     Route::get('/ilan-analizi', [JobMatchesController::class, 'show'])->name('job-matches');
     Route::post('/ilan-analizi/analiz', [JobMatchesController::class, 'analyze'])->name('job-matches.analyze');
     Route::get('/ilan-analizi/{jobId}/durum', [JobMatchesController::class, 'status'])->name('job-matches.status');

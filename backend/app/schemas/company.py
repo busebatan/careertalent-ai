@@ -439,6 +439,14 @@ class PublicPositionPageResponse(BaseModel):
     source: dict[str, Any] | None = None
 
 
+class PublicPositionListResponse(BaseModel):
+    items: list[PublicPositionPageResponse]
+    total: int
+    limit: int
+    offset: int
+    has_more: bool
+
+
 class CandidatePositionApplicationCreate(BaseModel):
     cv_document_id: str
     share_link_code: str | None = Field(default=None, max_length=16)
