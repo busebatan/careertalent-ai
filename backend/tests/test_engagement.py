@@ -1,13 +1,16 @@
 import json
 
+import pytest
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from app.core.database import get_db
 from app.main import app
 from app.models.career_engine import CareerAnalysis, JobOpportunity
-from app.models.engagement import JobApplication
+from app.models.engagement import CareerInterview, CareerInterviewAnswer, CvDocument, JobApplication
 from app.models.user import User
 from app.schemas.engagement import ChatReplyAI, InterviewEvaluationAI, InterviewQuestionAI, InterviewQuestionsAI
+from app.services.engagement import evaluate_interview_answer, start_interview
 
 
 def register_and_headers(client, email="engagement@example.com"):
@@ -166,15 +169,55 @@ def test_interview_questions_and_scoring_are_ai_backed(client, monkeypatch):
     interview = client.post("/api/v1/career/interviews", headers=auth)
     assert interview.status_code == 201
     assert len(interview.json()["questions"]) == 3
-    answer = client.post(f"/api/v1/career/interviews/{interview.json()['id']}/answers", headers=auth, json={"question_id": "q1", "answer": "Yavaş sorguyu execution plan ile inceledim, indeks ekleyip süreyi düşürdüm."})
+    interview_id = interview.json()["id"]
+    assert interview.json()["source_type"] == "general"
+    assert interview.json()["question_count"] == 3
+    assert interview.json()["answered_count"] == 0
+    answer = client.post(f"/api/v1/career/interviews/{interview_id}/answers", headers=auth, json={"question_id": "q1", "answer": "Yavaş sorguyu execution plan ile inceledim, indeks ekleyip süreyi düşürdüm."})
     assert answer.status_code == 201
     assert answer.json()["score"] == 82
     assert answer.json()["improvements"] == ["Etki metriği ekle"]
+    assert answer.json()["interview_status"] == "active"
+    assert answer.json()["answered_count"] == 1
+    assert answer.json()["question_count"] == 3
+    assert answer.json()["completed"] is False
+    answer_id = answer.json()["id"]
+
+    rescored = client.post(f"/api/v1/career/interviews/{interview_id}/answers", headers=auth, json={"question_id": "q1", "answer": "Sorguyu planla inceledim, doğru bileşik indeksi ekledim ve p95 süreyi yüzde 60 düşürdüm."})
+    assert rescored.status_code == 201
+    assert rescored.json()["id"] == answer_id
+    assert rescored.json()["answered_count"] == 1
     assert len(client.get("/api/v1/career/interviews/current", headers=auth).json()["answers"]) == 1
+
+    for question_id in ("q2", "q3"):
+        completed = client.post(
+            f"/api/v1/career/interviews/{interview_id}/answers",
+            headers=auth,
+            json={"question_id": question_id, "answer": "Durumu netleştirip seçenekleri ölçtüm, paydaşlarla kararı uyguladım ve sonucu metrikle izledim."},
+        )
+    assert completed.status_code == 201
+    assert completed.json()["interview_status"] == "completed"
+    assert completed.json()["answered_count"] == 3
+    assert completed.json()["completed"] is True
+    assert client.get("/api/v1/career/interviews/current", headers=auth).json() is None
+
+    history = client.get("/api/v1/career/interviews/history?limit=20&offset=0", headers=auth)
+    assert history.status_code == 200
+    assert history.json()["has_more"] is False
+    assert history.json()["limit"] == 20
+    assert history.json()["offset"] == 0
+    assert history.json()["items"][0]["id"] == interview_id
+    assert history.json()["items"][0]["average_score"] == 82.0
+    detail = client.get(f"/api/v1/career/interviews/{interview_id}", headers=auth)
+    assert detail.status_code == 200
+    assert len(detail.json()["answers"]) == 3
+    assert detail.json()["context_snapshot"]
+    rejected = client.post(f"/api/v1/career/interviews/{interview_id}/answers", headers=auth, json={"question_id": "q1", "answer": "Bu tamamlanan mülakat cevabı artık değiştirilememeli ve puanlanmamalıdır."})
+    assert rejected.status_code == 409
     assert prompts[0]["system_constraint"].startswith("[SISTEM KISITI]")
     assert "Türkçe" in " ".join(prompts[0]["rules"])
     assert "Mentör" in " ".join(prompts[1]["rules"])
-    assert languages == ["tr", "tr"]
+    assert languages == ["tr", "tr", "tr", "tr", "tr"]
 
 
 def test_interview_uses_saved_panel_language_without_request_body(client, monkeypatch):
@@ -205,6 +248,262 @@ def test_interview_uses_saved_panel_language_without_request_body(client, monkey
     assert prompts[0]["system_constraint"].startswith("[SYSTEM CONSTRAINT]")
     assert "English" in " ".join(prompts[0]["rules"])
     assert languages == ["en"]
+
+
+def test_interview_explicit_language_overrides_saved_panel_language(client, monkeypatch):
+    auth = register_and_headers(client, "explicit-language@example.com")
+    db = db_session()
+    user = db.scalar(select(User).where(User.email == "explicit-language@example.com"))
+    assert user is not None
+    user.preferred_locale = "tr"
+    db.commit()
+    db.close()
+    languages = []
+
+    def fake_invoke(_prompt, _schema, language="tr"):
+        languages.append(language)
+        return InterviewQuestionsAI(questions=[
+            InterviewQuestionAI(id="q1", question="Describe a production incident.", competency="Operations", guidance="Use STAR"),
+            InterviewQuestionAI(id="q2", question="Explain a design tradeoff.", competency="Architecture", guidance="Be specific"),
+            InterviewQuestionAI(id="q3", question="How do you test a migration?", competency="Quality", guidance="Cover failure paths"),
+        ])
+
+    monkeypatch.setattr("app.services.engagement._invoke", fake_invoke)
+
+    response = client.post("/api/v1/career/interviews", headers=auth, json={"language": "en"})
+
+    assert response.status_code == 201
+    assert response.json()["language"] == "en"
+    assert languages == ["en"]
+
+
+def test_interview_question_ids_must_be_distinct_non_blank_strings():
+    with pytest.raises(ValueError, match="must be distinct"):
+        InterviewQuestionsAI(questions=[
+            InterviewQuestionAI(id="q1", question="Bir üretim sorununu anlat.", competency="Operasyon"),
+            InterviewQuestionAI(id=" q1 ", question="Bir tasarım kararını anlat.", competency="Mimari"),
+            InterviewQuestionAI(id="q2", question="Bir migration nasıl test edilir?", competency="Kalite"),
+        ])
+    with pytest.raises(ValueError, match="cannot be blank"):
+        InterviewQuestionAI(id="   ", question="Bir üretim sorununu anlat.", competency="Operasyon")
+
+
+def test_interview_answer_unique_race_reloads_and_updates_competing_answer(client, monkeypatch):
+    auth = register_and_headers(client, "interview-race@example.com")
+
+    def fake_invoke(_prompt, schema, language="tr"):
+        if schema is InterviewQuestionsAI:
+            return InterviewQuestionsAI(questions=[
+                InterviewQuestionAI(id="q1", question="Bir üretim sorununu anlat.", competency="Operasyon"),
+                InterviewQuestionAI(id="q2", question="Bir tasarım kararını anlat.", competency="Mimari"),
+                InterviewQuestionAI(id="q3", question="Bir migration nasıl test edilir?", competency="Kalite"),
+            ])
+        return InterviewEvaluationAI(
+            score=91,
+            feedback="Güncel değerlendirme",
+            strengths=["Somutluk"],
+            improvements=["Etkiyi ölç"],
+        )
+
+    monkeypatch.setattr("app.services.engagement._invoke", fake_invoke)
+    interview_id = client.post("/api/v1/career/interviews", headers=auth).json()["id"]
+    db = db_session()
+    interview = db.get(CareerInterview, interview_id)
+    assert interview is not None
+    user_id = interview.user_id
+    original_flush = db.flush
+    race_injected = False
+
+    def inject_competing_commit(*args, **kwargs):
+        nonlocal race_injected
+        pending = next((item for item in db.new if isinstance(item, CareerInterviewAnswer)), None)
+        if pending is not None and not race_injected:
+            race_injected = True
+            db.expunge(pending)
+            db.rollback()
+            db.add(CareerInterviewAnswer(
+                id="competing-answer",
+                interview_id=interview_id,
+                user_id=user_id,
+                question_id="q1",
+                answer="Eşzamanlı eski cevap",
+                score=40,
+                feedback="Eski değerlendirme",
+                strengths=[],
+                improvements=[],
+            ))
+            db.commit()
+            raise IntegrityError("INSERT career_interview_answers", {}, Exception("unique"))
+        return original_flush(*args, **kwargs)
+
+    db.flush = inject_competing_commit
+    answer = evaluate_interview_answer(
+        db,
+        user_id,
+        interview,
+        "q1",
+        "Üretim sorununu log ve metriklerle ayırdım, düzeltmeyi kademeli yayınlayıp sonucu izledim.",
+    )
+
+    assert race_injected is True
+    assert answer.id == "competing-answer"
+    assert answer.score == 91
+    assert answer.feedback == "Güncel değerlendirme"
+    assert db.scalar(select(CareerInterviewAnswer).where(
+        CareerInterviewAnswer.interview_id == interview_id,
+        CareerInterviewAnswer.question_id == "q1",
+    )).answer.startswith("Üretim sorununu")
+    db.close()
+
+
+def test_concurrent_interview_start_returns_the_winning_active_session(client, monkeypatch):
+    register_and_headers(client, "interview-start-race@example.com")
+    monkeypatch.setattr(
+        "app.services.engagement._invoke",
+        lambda _prompt, _schema, language="tr": InterviewQuestionsAI(questions=[
+            InterviewQuestionAI(id="q1", question="Bir üretim sorununu anlat.", competency="Operasyon"),
+            InterviewQuestionAI(id="q2", question="Bir tasarım kararını anlat.", competency="Mimari"),
+            InterviewQuestionAI(id="q3", question="Bir migration nasıl test edilir?", competency="Kalite"),
+        ]),
+    )
+    db = db_session()
+    user = db.scalar(select(User).where(User.email == "interview-start-race@example.com"))
+    assert user is not None
+    original_commit = db.commit
+    race_injected = False
+
+    def inject_competing_commit():
+        nonlocal race_injected
+        pending = next((item for item in db.new if isinstance(item, CareerInterview)), None)
+        if pending is not None and not race_injected:
+            race_injected = True
+            db.expunge(pending)
+            db.rollback()
+            db.add(CareerInterview(
+                id="winning-interview",
+                user_id=user.id,
+                target_role="Genel kariyer görüşmesi",
+                status="active",
+                language="tr",
+                questions=[{"id": "winner", "question": "Kazanan soru", "competency": "Kalite"}],
+                context_snapshot={},
+            ))
+            original_commit()
+            raise IntegrityError("INSERT career_interviews", {}, Exception("unique"))
+        return original_commit()
+
+    db.commit = inject_competing_commit
+    interview = start_interview(db, user.id)
+
+    assert race_injected is True
+    assert interview.id == "winning-interview"
+    assert db.scalars(select(CareerInterview).where(CareerInterview.status == "active")).all() == [interview]
+    db.close()
+
+
+def test_interview_snapshots_cv_archives_previous_and_retries_original_context(client, monkeypatch):
+    auth = register_and_headers(client, "interview-owner@example.com")
+    other = register_and_headers(client, "interview-other@example.com")
+    db = db_session()
+    owner = db.scalar(select(User).where(User.email == "interview-owner@example.com"))
+    assert owner is not None
+    document = CvDocument(
+        id="interview-cv-1", user_id=owner.id, kind="uploaded", display_name="ilk-cv.pdf",
+        original_name="ilk-cv.pdf", file_path="/tmp/ilk-cv.pdf", file_size=123, is_current=True,
+    )
+    analysis = CareerAnalysis(
+        id="interview-analysis-1", user_id=owner.id, cv_document_id=document.id,
+        status="ready", source="upload", file_name="ilk-cv.pdf", cv_text="SQL deneyimi",
+        current_role="Data Analyst", profile={"summary": "İlk bağlam"},
+        skills=[{"name": "SQL", "score": 80}], radar=[], career_ladder=[],
+    )
+    db.add_all([document, analysis])
+    db.commit()
+    db.close()
+    invoke_count = 0
+
+    def fake_invoke(_prompt, _schema, language="tr"):
+        nonlocal invoke_count
+        invoke_count += 1
+        return InterviewQuestionsAI(questions=[
+            InterviewQuestionAI(id="q1", question="SQL performansını nasıl iyileştirirsin?", competency="SQL", guidance="Örnek ver"),
+            InterviewQuestionAI(id="q2", question="Bir öncelik çatışmasını nasıl çözersin?", competency="İletişim", guidance="STAR kullan"),
+            InterviewQuestionAI(id="q3", question="Başarıyı nasıl ölçersin?", competency="Analiz", guidance="Metrik ver"),
+        ])
+
+    monkeypatch.setattr("app.services.engagement._invoke", fake_invoke)
+    first = client.post("/api/v1/career/interviews", headers=auth, json={"language": "tr"})
+    assert first.status_code == 201
+    first_body = first.json()
+    assert first_body["analysis_id"] == "interview-analysis-1"
+    assert first_body["cv_document_id"] == "interview-cv-1"
+    assert first_body["cv_name_snapshot"] == "ilk-cv.pdf"
+    assert first_body["source_type"] == "cv"
+    original_context = first_body["context_snapshot"]
+
+    db = db_session()
+    stored_analysis = db.get(CareerAnalysis, "interview-analysis-1")
+    stored_analysis.profile = {"summary": "Sonradan değişen bağlam"}
+    db.commit()
+    db.close()
+
+    second = client.post("/api/v1/career/interviews", headers=auth, json={"language": "tr"})
+    assert second.status_code == 201
+    assert second.json()["id"] != first_body["id"]
+    assert client.get("/api/v1/career/interviews/current", headers=auth).json()["id"] == second.json()["id"]
+    history = client.get("/api/v1/career/interviews/history", headers=auth).json()
+    assert [item["id"] for item in history["items"]] == [first_body["id"]]
+    assert history["items"][0]["status"] == "archived"
+
+    assert client.get(f"/api/v1/career/interviews/{first_body['id']}", headers=other).status_code == 404
+    assert client.post(f"/api/v1/career/interviews/{first_body['id']}/retry", headers=other).status_code == 404
+    assert client.post(
+        f"/api/v1/career/interviews/{first_body['id']}/answers",
+        headers=other,
+        json={"question_id": "q1", "answer": "Başka kullanıcı bu mülakat cevabını değiştirememeli veya puanlayamamalıdır."},
+    ).status_code == 404
+    assert client.post(f"/api/v1/career/interviews/{second.json()['id']}/retry", headers=auth).status_code == 409
+
+    retried = client.post(f"/api/v1/career/interviews/{first_body['id']}/retry", headers=auth)
+    assert retried.status_code == 201
+    retry_body = retried.json()
+    assert retry_body["retry_of_id"] == first_body["id"]
+    assert retry_body["questions"] == first_body["questions"]
+    assert retry_body["context_snapshot"] == original_context
+    assert retry_body["answers"] == []
+    assert retry_body["status"] == "active"
+    assert retry_body["cv_name_snapshot"] == "ilk-cv.pdf"
+    assert invoke_count == 2
+
+    history = client.get("/api/v1/career/interviews/history?limit=1&offset=0", headers=auth).json()
+    assert history["has_more"] is True
+    assert history["items"][0]["id"] == second.json()["id"]
+
+
+def test_analysis_and_all_reset_archive_active_interviews_but_keep_history(client, monkeypatch):
+    auth = register_and_headers(client, "interview-reset@example.com")
+
+    monkeypatch.setattr(
+        "app.services.engagement._invoke",
+        lambda _prompt, _schema, language="tr": InterviewQuestionsAI(questions=[
+            InterviewQuestionAI(id="q1", question="Bir problemi nasıl çözersin?", competency="Problem çözme", guidance="Örnek ver"),
+            InterviewQuestionAI(id="q2", question="Bir çatışmayı nasıl yönetirsin?", competency="İletişim", guidance="STAR kullan"),
+            InterviewQuestionAI(id="q3", question="Sonucu nasıl ölçersin?", competency="Analiz", guidance="Metrik ver"),
+        ]),
+    )
+
+    first = client.post("/api/v1/career/interviews", headers=auth).json()
+    analysis_reset = client.post("/api/v1/career/reset", headers=auth, json={"scope": "analysis"})
+    assert analysis_reset.status_code == 200
+    assert client.get("/api/v1/career/interviews/current", headers=auth).json() is None
+    assert client.get("/api/v1/career/interviews/history", headers=auth).json()["items"][0]["id"] == first["id"]
+
+    retried = client.post(f"/api/v1/career/interviews/{first['id']}/retry", headers=auth).json()
+    all_reset = client.post("/api/v1/career/reset", headers=auth, json={"scope": "all"})
+    assert all_reset.status_code == 200
+    assert client.get("/api/v1/career/interviews/current", headers=auth).json() is None
+    history_ids = [item["id"] for item in client.get("/api/v1/career/interviews/history", headers=auth).json()["items"]]
+    assert history_ids == [retried["id"], first["id"]]
 
 
 def test_personal_tasks_persist_and_are_user_scoped(client):

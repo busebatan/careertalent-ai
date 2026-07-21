@@ -12,6 +12,9 @@ class PanelApiConnectionTest extends TestCase
         Http::fake([
             'http://localhost:8000/api/v1/career/chat' => Http::response(['id' => 'a1', 'role' => 'assistant', 'content' => 'AI cevap', 'meta' => []], 201),
             'http://localhost:8000/api/v1/career/interviews' => Http::response(['id' => 'i1', 'questions' => []], 201),
+            'http://localhost:8000/api/v1/career/interviews/history*' => Http::response(['items' => [['id' => 'i1', 'status' => 'completed']]], 200),
+            'http://localhost:8000/api/v1/career/interviews/i1' => Http::response(['id' => 'i1', 'status' => 'completed', 'questions' => [], 'answers' => []], 200),
+            'http://localhost:8000/api/v1/career/interviews/i1/retry' => Http::response(['id' => 'i2', 'status' => 'active', 'questions' => []], 201),
             'http://localhost:8000/api/v1/career/interviews/i1/answers' => Http::response(['score' => 80, 'feedback' => 'İyi'], 201),
             'http://localhost:8000/api/v1/career/applications' => Http::response(['id' => 'app1', 'stage' => 'applied'], 201),
             'http://localhost:8000/api/v1/career/profile' => Http::response(['full_name' => 'Gerçek Kullanıcı', 'email' => 'user@example.com', 'social_links' => []], 200),
@@ -20,11 +23,16 @@ class PanelApiConnectionTest extends TestCase
         $this->postJson('/panel/ai-yardimcisi', ['message' => 'Kariyer planım nedir?'])->assertCreated()->assertJsonPath('content', 'AI cevap');
         $this->postJson('/panel/mulakat-hazirligi', ['language' => 'en'])->assertCreated()->assertJsonPath('id', 'i1');
         $this->postJson('/panel/mulakat-hazirligi/i1/cevap', ['question_id' => 'q1', 'answer' => 'Somut bir projede sorguyu optimize ederek süreyi düşürdüm.'])->assertCreated()->assertJsonPath('score', 80);
+        $this->getJson('/panel/mulakat-hazirligi/gecmis?limit=20&offset=0')->assertOk()->assertJsonPath('items.0.id', 'i1');
+        $this->getJson('/panel/mulakat-hazirligi/gecmis/i1')->assertOk()->assertJsonPath('id', 'i1');
+        $this->postJson('/panel/mulakat-hazirligi/i1/tekrar')->assertCreated()->assertJsonPath('id', 'i2');
         $this->postJson('/panel/basvurularim', ['company' => 'Acme', 'role' => 'Analyst'])->assertCreated()->assertJsonPath('stage', 'applied');
         $this->putJson('/panel/hesap/profil', ['full_name' => 'Gerçek Kullanıcı', 'phone' => null, 'location' => null, 'headline' => null, 'linkedin' => null, 'social_links' => []])->assertOk()->assertJsonPath('full_name', 'Gerçek Kullanıcı');
 
         Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/career/chat' && $request['message'] === 'Kariyer planım nedir?');
         Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/career/interviews' && $request['language'] === 'en');
+        Http::assertSent(fn ($request) => str_starts_with($request->url(), 'http://localhost:8000/api/v1/career/interviews/history?limit=20&offset=0'));
+        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/career/interviews/i1/retry');
         Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/career/applications' && $request['company'] === 'Acme');
     }
 

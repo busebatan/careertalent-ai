@@ -737,6 +737,19 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/career/interviews/current', 15);
     }
 
+    public function interviewHistory(int $limit = 20, int $offset = 0): array
+    {
+        return $this->getJson('/api/v1/career/interviews/history?'.http_build_query([
+            'limit' => $limit,
+            'offset' => $offset,
+        ]), 15);
+    }
+
+    public function interviewDetail(string $interviewId): array
+    {
+        return $this->getJson('/api/v1/career/interviews/'.rawurlencode($interviewId), 15);
+    }
+
     public function startInterview(string $language = 'tr'): array
     {
         return $this->postJson('/api/v1/career/interviews', ['language' => $language], 90);
@@ -745,6 +758,11 @@ class CareerTalentApiClient
     public function scoreInterviewAnswer(string $interviewId, array $payload): array
     {
         return $this->postJson('/api/v1/career/interviews/'.rawurlencode($interviewId).'/answers', $payload, 90);
+    }
+
+    public function retryInterview(string $interviewId): array
+    {
+        return $this->postJson('/api/v1/career/interviews/'.rawurlencode($interviewId).'/retry', [], 15);
     }
 
     public function personalTasks(?string $targetId = null): array

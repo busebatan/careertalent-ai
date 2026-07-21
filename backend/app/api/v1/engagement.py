@@ -13,10 +13,10 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.career_engine import CareerTarget, CareerTask, Evidence, JobOpportunity
-from app.models.engagement import CareerChatMessage, CareerInterview, CareerInterviewAnswer, CvDocument, JobApplication, PersonalTask, UserProfile
+from app.models.engagement import CareerChatMessage, CareerInterview, CvDocument, JobApplication, PersonalTask, UserProfile
 from app.models.user import User
-from app.schemas.engagement import ApplicationCreate, ApplicationUpdate, CareerTaskStatusUpdate, ChatRequest, InterviewAnswerRequest, PersonalTaskCreate, PersonalTaskUpdate, ProfileUpdate, SkillEvidenceLinkRequest, TaskNoteUpdate
-from app.services.engagement import answer_chat, current_chat_messages, evaluate_interview_answer, get_chat_thread, list_chat_threads, serialize_answer, serialize_chat, serialize_chat_thread, serialize_interview, start_interview, start_new_chat_thread
+from app.schemas.engagement import ApplicationCreate, ApplicationUpdate, CareerTaskStatusUpdate, ChatRequest, InterviewAnswerRequest, InterviewStartRequest, PersonalTaskCreate, PersonalTaskUpdate, ProfileUpdate, SkillEvidenceLinkRequest, TaskNoteUpdate
+from app.services.engagement import InterviewStateError, answer_chat, current_chat_messages, evaluate_interview_answer, get_chat_thread, interview_answers, list_chat_threads, list_interview_history, retry_interview, serialize_chat, serialize_chat_thread, serialize_interview, serialize_scored_answer, start_interview, start_new_chat_thread
 from app.services.career_engine import (
     CareerLocalizationError,
     clear_skill_evidence,
@@ -116,19 +116,64 @@ def chat_thread_detail(thread_id: str, db: DB, user: CurrentUser):
 
 @router.get("/interviews/current")
 def current_interview(db: DB, user: CurrentUser):
-    row = db.scalar(select(CareerInterview).where(CareerInterview.user_id == user.id).order_by(CareerInterview.created_at.desc()))
+    row = db.scalar(
+        select(CareerInterview).where(
+            CareerInterview.user_id == user.id,
+            CareerInterview.status == "active",
+        ).order_by(CareerInterview.created_at.desc(), CareerInterview.id.desc()).limit(1)
+    )
     if row is None:
         return None
-    answers = db.scalars(select(CareerInterviewAnswer).where(CareerInterviewAnswer.interview_id == row.id, CareerInterviewAnswer.user_id == user.id).order_by(CareerInterviewAnswer.created_at)).all()
-    return serialize_interview(row, list(answers))
+    return serialize_interview(row, interview_answers(db, user.id, row.id))
+
+
+@router.get("/interviews/history")
+def interview_history(
+    db: DB,
+    user: CurrentUser,
+    limit: int = Query(20, ge=1, le=50),
+    offset: int = Query(0, ge=0),
+):
+    return list_interview_history(db, user.id, limit, offset)
 
 
 @router.post("/interviews", status_code=201)
-def create_interview(db: DB, user: CurrentUser):
+def create_interview(db: DB, user: CurrentUser, body: InterviewStartRequest | None = None):
     try:
-        return serialize_interview(start_interview(db, user.id, language=user.preferred_locale))
+        language = body.language if body and body.language else user.preferred_locale
+        return serialize_interview(start_interview(db, user.id, language=language))
     except (AIUnavailableError, AIOutputError, AIProviderError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/interviews/{interview_id}")
+def interview_detail(interview_id: str, db: DB, user: CurrentUser):
+    row = db.scalar(
+        select(CareerInterview).where(
+            CareerInterview.id == interview_id,
+            CareerInterview.user_id == user.id,
+            CareerInterview.status != "active",
+        )
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Mülakat bulunamadı")
+    return serialize_interview(row, interview_answers(db, user.id, row.id))
+
+
+@router.post("/interviews/{interview_id}/retry", status_code=201)
+def retry_past_interview(interview_id: str, db: DB, user: CurrentUser):
+    source = db.scalar(
+        select(CareerInterview).where(
+            CareerInterview.id == interview_id,
+            CareerInterview.user_id == user.id,
+        )
+    )
+    if source is None:
+        raise HTTPException(status_code=404, detail="Mülakat bulunamadı")
+    try:
+        return serialize_interview(retry_interview(db, user.id, source))
+    except InterviewStateError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.post("/interviews/{interview_id}/answers", status_code=201)
@@ -137,9 +182,12 @@ def score_interview_answer(interview_id: str, body: InterviewAnswerRequest, db: 
     if interview is None:
         raise HTTPException(status_code=404, detail="Mülakat bulunamadı")
     try:
-        return serialize_answer(evaluate_interview_answer(db, user.id, interview, body.question_id, body.answer))
+        answer = evaluate_interview_answer(db, user.id, interview, body.question_id, body.answer)
+        return serialize_scored_answer(answer, interview, interview_answers(db, user.id, interview.id))
     except (AIUnavailableError, AIOutputError, AIProviderError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except InterviewStateError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

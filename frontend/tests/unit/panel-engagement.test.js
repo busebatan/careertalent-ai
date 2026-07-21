@@ -97,18 +97,115 @@ describe('account-backed engagement panels', () => {
 
     it('interview starts from AI questions and submits the exact answer', async () => {
         const requests = [];
-        globalThis.fetch = async (url, options) => { requests.push([url, options]); return { ok: true, json: async () => url === '/start' ? ({ id: 'i1', questions: [{ id: 'q1', question: 'Örnek?', competency: 'SQL' }] }) : ({ score: 88, feedback: 'Güçlü', improvements: [] }) }; };
-        const state = careerInterview(null, '/start', '/interviews/__INTERVIEW_ID__/answer', { failed: 'failed' }); await state.start(); state.answer = 'Execution plan ile sorguyu ölçüp indeks ekledim.'; await state.score();
+        globalThis.fetch = async (url, options) => {
+            requests.push([url, options]);
+            return { ok: true, json: async () => url === '/start'
+                ? ({ id: 'i1', questions: [{ id: 'q1', question: 'Örnek?', competency: 'SQL' }] })
+                : (url.startsWith('/history') ? ({ items: [] }) : ({ score: 88, feedback: 'Güçlü', improvements: [] })) };
+        };
+        const state = careerInterview({ initial: null, history: [], startUrl: '/start', scoreUrlTemplate: '/interviews/__INTERVIEW_ID__/answer', historyUrl: '/history', detailUrlTemplate: '/history/__INTERVIEW_ID__', retryUrlTemplate: '/interviews/__INTERVIEW_ID__/retry', labels: { failed: 'failed' } });
+        await state.start(); state.answer = 'Execution plan ile sorguyu ölçüp indeks ekledim.'; await state.score();
         assert.deepEqual(JSON.parse(requests[0][1].body), { language: 'tr' }); assert.equal(state.selectedLanguage, 'tr');
-        assert.equal(state.result.score, 88); assert.equal(requests[1][0], '/interviews/i1/answer'); assert.equal(JSON.parse(requests[1][1].body).question_id, 'q1');
+        assert.equal(state.result.score, 88); assert.equal(requests[2][0], '/interviews/i1/answer'); assert.equal(JSON.parse(requests[2][1].body).question_id, 'q1');
     });
 
     it('interview sends the language selected in modal state', async () => {
         let sent;
-        globalThis.fetch = async (_url, options) => { sent = JSON.parse(options.body); return { ok: true, json: async () => ({ id: 'i-en', questions: [] }) }; };
-        const state = careerInterview(null, '/start', '/interviews/__INTERVIEW_ID__/answer', { failed: 'failed' });
+        globalThis.fetch = async (url, options) => {
+            if (url === '/start') sent = JSON.parse(options.body);
+            return { ok: true, json: async () => url === '/start' ? ({ id: 'i-en', questions: [{ id: 'q1' }] }) : ({ items: [] }) };
+        };
+        const state = careerInterview({ initial: null, history: [], startUrl: '/start', scoreUrlTemplate: '/interviews/__INTERVIEW_ID__/answer', historyUrl: '/history', detailUrlTemplate: '/history/__INTERVIEW_ID__', retryUrlTemplate: '/interviews/__INTERVIEW_ID__/retry', labels: { failed: 'failed' } });
         state.selectedLanguage = 'en'; state.showLangModal = true; await state.start();
         assert.deepEqual(sent, { language: 'en' }); assert.equal(state.selectedLanguage, 'en'); assert.equal(state.showLangModal, false);
+    });
+
+    it('rejects malformed or duplicate interview questions instead of opening a blank session', async () => {
+        globalThis.fetch = async () => ({ ok: true, json: async () => ({ id: 'i-bad', questions: [{ id: 'q1' }, { id: 'q1' }] }) });
+        const state = careerInterview({ initial: null, history: [], startUrl: '/start', labels: { failed: 'failed' } });
+        await state.start('tr');
+        assert.equal(state.interview, null); assert.equal(state.error, 'failed');
+    });
+
+    it('keeps a newly started interview usable when archived-history refresh fails', async () => {
+        globalThis.fetch = async (url) => url === '/start'
+            ? { ok: true, json: async () => ({ id: 'i2', questions: [{ id: 'q2' }] }) }
+            : { ok: false, json: async () => ({ message: 'History unavailable' }) };
+        const state = careerInterview({
+            initial: { id: 'i1', questions: [{ id: 'q1' }] }, history: [], startUrl: '/start', historyUrl: '/history', labels: { failed: 'failed' },
+        });
+        state.init(); await state.start('tr');
+        assert.equal(state.interview.id, 'i2'); assert.equal(state.error, 'History unavailable');
+    });
+
+    it('refreshes history after a first visible start so a hidden previous session appears', async () => {
+        globalThis.fetch = async (url) => ({ ok: true, json: async () => url === '/start'
+            ? ({ id: 'i2', questions: [{ id: 'q2' }] })
+            : ({ items: [{ id: 'i1', status: 'archived' }] }) });
+        const state = careerInterview({ initial: null, history: [], startUrl: '/start', historyUrl: '/history', labels: { failed: 'failed' } });
+        await state.start('tr');
+        assert.equal(state.interview.id, 'i2'); assert.equal(state.history[0].id, 'i1');
+    });
+
+    it('blocks a duplicate start while the first AI request is in progress', async () => {
+        let releaseStart;
+        let startRequests = 0;
+        const startGate = new Promise((resolve) => { releaseStart = resolve; });
+        globalThis.fetch = async (url) => {
+            if (url === '/start') {
+                startRequests += 1;
+                await startGate;
+                return { ok: true, json: async () => ({ id: 'i1', questions: [{ id: 'q1' }] }) };
+            }
+            return { ok: true, json: async () => ({ items: [] }) };
+        };
+        const state = careerInterview({ initial: null, history: [], startUrl: '/start', historyUrl: '/history', labels: { failed: 'failed' } });
+        const first = state.start('tr'); const duplicate = state.start('tr');
+        releaseStart(); await Promise.all([first, duplicate]);
+        assert.equal(startRequests, 1); assert.equal(state.interview.id, 'i1');
+    });
+
+    it('interview navigation has boundaries and restores per-question drafts and scores', () => {
+        const state = careerInterview({
+            initial: { id: 'i1', questions: [{ id: 'q1' }, { id: 'q2' }, { id: 'q3' }], answers: [] },
+            history: [], labels: { progress: 'Question __CURRENT__ / __TOTAL__' },
+        });
+        state.init();
+        state.answer = 'First answer draft'; state.result = { score: 70 }; state.next();
+        assert.equal(state.idx, 1); assert.equal(state.progressLabel(), 'Question 2 / 3');
+        state.answer = 'Second answer draft'; state.next(); state.next();
+        assert.equal(state.idx, 2);
+        state.previous(); state.previous();
+        assert.equal(state.idx, 0); assert.equal(state.answer, 'First answer draft'); assert.equal(state.result.score, 70);
+    });
+
+    it('moves a completed interview to history and loads answer details', async () => {
+        const requests = [];
+        const summary = { id: 'i1', target_role: 'Analyst', status: 'completed', question_count: 1, answered_count: 1, average_score: 88 };
+        const detail = { ...summary, questions: [{ id: 'q1', question: 'Örnek?' }], answers: [{ question_id: 'q1', answer: 'Somut cevap', score: 88, feedback: 'Güçlü' }] };
+        globalThis.fetch = async (url, options = {}) => {
+            requests.push([url, options]);
+            if (url === '/interviews/i1/answer') return { ok: true, json: async () => ({ score: 88, feedback: 'Güçlü', completed: true, interview_status: 'completed' }) };
+            if (url === '/history?limit=20&offset=0') return { ok: true, json: async () => ({ items: [summary] }) };
+            return { ok: true, json: async () => detail };
+        };
+        const state = careerInterview({
+            initial: { id: 'i1', questions: [{ id: 'q1', question: 'Örnek?' }], answers: [] },
+            history: [], startUrl: '/start', scoreUrlTemplate: '/interviews/__INTERVIEW_ID__/answer', historyUrl: '/history', detailUrlTemplate: '/history/__INTERVIEW_ID__', retryUrlTemplate: '/interviews/__INTERVIEW_ID__/retry', labels: { failed: 'failed', completed: 'done' },
+        });
+        state.init(); state.answer = 'Execution plan ile sorguyu ölçüp indeks ekledim.'; await state.score();
+        assert.equal(state.interview, null); assert.equal(state.notice, 'done'); assert.equal(state.openHistoryId, 'i1');
+        assert.equal(state.answerFor(state.details.i1, 'q1').score, 88);
+        assert.deepEqual(requests.map(([url]) => url), ['/interviews/i1/answer', '/history?limit=20&offset=0', '/history/i1']);
+    });
+
+    it('retries the same historical interview as a clean active session', async () => {
+        globalThis.fetch = async (url) => ({ ok: true, json: async () => url.includes('/retry')
+            ? { id: 'i2', retry_of_id: 'i1', questions: [{ id: 'q1', question: 'Aynı soru' }], answers: [] }
+            : { items: [{ id: 'i1', status: 'completed' }] } });
+        const state = careerInterview({ initial: null, history: [{ id: 'i1' }], historyUrl: '/history', retryUrlTemplate: '/interviews/__INTERVIEW_ID__/retry', labels: { failed: 'failed' } });
+        await state.retry({ id: 'i1' });
+        assert.equal(state.interview.id, 'i2'); assert.equal(state.question.question, 'Aynı soru'); assert.equal(state.answer, '');
     });
 
     it('application is server-created and moves between persisted stages', async () => {

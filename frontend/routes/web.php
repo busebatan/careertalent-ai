@@ -147,6 +147,9 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::patch('/basvurularim/{applicationId}', [StudentFeaturesController::class, 'updateApplication'])->name('applications.update');
     Route::get('/mulakat-hazirligi', [StudentFeaturesController::class, 'interview'])->name('interview');
     Route::post('/mulakat-hazirligi', [StudentFeaturesController::class, 'startInterview'])->name('interview.start');
+    Route::get('/mulakat-hazirligi/gecmis', [StudentFeaturesController::class, 'interviewHistory'])->name('interview.history');
+    Route::get('/mulakat-hazirligi/gecmis/{interviewId}', [StudentFeaturesController::class, 'interviewDetail'])->name('interview.detail');
+    Route::post('/mulakat-hazirligi/{interviewId}/tekrar', [StudentFeaturesController::class, 'retryInterview'])->name('interview.retry');
     Route::post('/mulakat-hazirligi/{interviewId}/cevap', [StudentFeaturesController::class, 'scoreInterview'])->name('interview.score');
     Route::get('/uzmanlardan-destek', [StudentFeaturesController::class, 'mentors'])->name('mentors');
     Route::get('/hesap', [ProfileController::class, 'account'])->name('account');

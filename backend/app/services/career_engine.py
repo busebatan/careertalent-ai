@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence
-from app.models.engagement import CvDocument, PersonalTask
+from app.models.engagement import CareerInterview, CvDocument, PersonalTask
 from app.models.user import User
 from app.schemas.career import (
     CareerAnalysisAI,
@@ -689,6 +689,13 @@ def submit_evidence(db: Session, user_id: int, task: CareerTask, kind: str, url:
 def reset_career_state(db: Session, user_id: int, scope: str, *, commit: bool = True) -> dict[str, int]:
     evidence_files = career_evidence_file_paths(db, user_id) if scope in {"plan", "all"} else []
     deleted = {"analyses": 0, "targets": 0, "tasks": 0, "evidence": 0}
+    if scope in {"analysis", "all"}:
+        ended_at = datetime.now(timezone.utc)
+        db.execute(
+            update(CareerInterview)
+            .where(CareerInterview.user_id == user_id, CareerInterview.status == "active")
+            .values(status="archived", ended_at=ended_at, updated_at=ended_at)
+        )
     if scope in {"plan", "all"}:
         deleted.update(_delete_target_plan(db, user_id))
     if scope in {"analysis", "all"}:

@@ -57,19 +57,48 @@ class CareerChatMessage(Base):
 
 class CareerInterview(Base):
     __tablename__ = "career_interviews"
+    __table_args__ = (
+        Index(
+            "uq_career_interviews_active_user",
+            "user_id",
+            unique=True,
+            postgresql_where=text("status = 'active'"),
+            sqlite_where=text("status = 'active'"),
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    analysis_id: Mapped[str | None] = mapped_column(
+        ForeignKey("career_analyses.id", ondelete="SET NULL"), index=True, nullable=True
+    )
+    cv_document_id: Mapped[str | None] = mapped_column(
+        ForeignKey("cv_documents.id", ondelete="SET NULL"), index=True, nullable=True
+    )
+    retry_of_id: Mapped[str | None] = mapped_column(
+        ForeignKey("career_interviews.id", ondelete="SET NULL"), index=True, nullable=True
+    )
     target_role: Mapped[str] = mapped_column(String(160), nullable=False)
     status: Mapped[str] = mapped_column(String(24), nullable=False, default="active")
     language: Mapped[str] = mapped_column(String(8), nullable=False, default="tr")
     questions: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    cv_name_snapshot: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    context_snapshot: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
 class CareerInterviewAnswer(Base):
     __tablename__ = "career_interview_answers"
+    __table_args__ = (
+        Index(
+            "uq_career_interview_answers_interview_question",
+            "interview_id",
+            "question_id",
+            unique=True,
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     interview_id: Mapped[str] = mapped_column(ForeignKey("career_interviews.id"), index=True, nullable=False)

@@ -40,10 +40,30 @@ class InterviewQuestionAI(BaseModel):
     competency: str = Field(min_length=2, max_length=160)
     guidance: str = Field(default="", max_length=800)
 
+    @field_validator("id")
+    @classmethod
+    def normalize_question_id(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("question id cannot be blank")
+        return normalized
+
 
 class InterviewQuestionsAI(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     questions: list[InterviewQuestionAI] = Field(min_length=3, max_length=8)
+
+    @field_validator("questions")
+    @classmethod
+    def require_distinct_question_ids(cls, value: list[InterviewQuestionAI]) -> list[InterviewQuestionAI]:
+        ids = [item.id for item in value]
+        if len(ids) != len(set(ids)):
+            raise ValueError("interview question ids must be distinct")
+        return value
+
+
+class InterviewStartRequest(BaseModel):
+    language: Literal["tr", "en"] | None = None
 
 
 class InterviewAnswerRequest(BaseModel):

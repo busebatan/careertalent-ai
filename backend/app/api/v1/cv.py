@@ -24,6 +24,7 @@ from app.schemas.cv import AnalyzeTextRequest, CandidateCvVersionCreate, Candida
 from app.services.career_engine import career_evidence_file_paths, create_analysis, remove_career_evidence_files, reset_career_state
 from app.services.cv_content import has_meaningful_cv_content
 from app.services.cv_parser import extract_text_from_pdf
+from app.services.engagement import archive_active_interviews
 from app.tasks.career import analyze_cv_task
 
 router = APIRouter()
@@ -77,6 +78,7 @@ def _serialize_document(row: CvDocument, include_builder: bool = False) -> dict:
 
 
 def _queue(db: DB, user: CurrentUser, cv_text: str, source: str, file_name: str, cv_document_id: str | None = None) -> CVQueueResponse:
+    archive_active_interviews(db, user.id)
     row = create_analysis(db, user.id, cv_text, source, file_name, cv_document_id)
     analyze_cv_task.delay(row.id)
     return {"analysis_id": row.id, "status": "queued"}

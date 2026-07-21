@@ -1,14 +1,16 @@
 """Kullanıcı bağlamını kullanan sohbet ve mülakat AI servisleri."""
 
 import json
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from sqlalchemy import func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask
-from app.models.engagement import CareerChatMessage, CareerChatThread, CareerInterview, CareerInterviewAnswer
+from app.models.engagement import CareerChatMessage, CareerChatThread, CareerInterview, CareerInterviewAnswer, CvDocument
 from app.schemas.engagement import ChatReplyAI, InterviewEvaluationAI, InterviewQuestionsAI
 from app.services.career_engine import _invoke
 
@@ -241,11 +243,84 @@ def answer_chat(db: Session, user_id: int, message: str) -> CareerChatMessage:
     return assistant_row
 
 
+
+class InterviewStateError(RuntimeError):
+    """Raised when an interview operation conflicts with its lifecycle state."""
+
+
+def _question_ids(interview: CareerInterview) -> list[str]:
+    return list(dict.fromkeys(
+        str(item.get("id"))
+        for item in (interview.questions or [])
+        if isinstance(item, dict) and item.get("id")
+    ))
+
+
+def interview_answers(db: Session, user_id: int, interview_id: str) -> list[CareerInterviewAnswer]:
+    return list(db.scalars(
+        select(CareerInterviewAnswer)
+        .where(
+            CareerInterviewAnswer.interview_id == interview_id,
+            CareerInterviewAnswer.user_id == user_id,
+        )
+        .order_by(CareerInterviewAnswer.created_at, CareerInterviewAnswer.id)
+    ).all())
+
+
+def archive_active_interviews(db: Session, user_id: int) -> int:
+    ended_at = datetime.now(timezone.utc)
+    return db.execute(
+        update(CareerInterview)
+        .where(CareerInterview.user_id == user_id, CareerInterview.status == "active")
+        .values(status="archived", ended_at=ended_at, updated_at=ended_at)
+    ).rowcount
+
+
+def _interview_source(db: Session, user_id: int) -> tuple[CareerAnalysis | None, CvDocument | None]:
+    analysis = db.scalar(
+        select(CareerAnalysis)
+        .where(CareerAnalysis.user_id == user_id, CareerAnalysis.status == "ready")
+        .order_by(CareerAnalysis.created_at.desc(), CareerAnalysis.id.desc())
+    )
+    document = None
+    if analysis is not None and analysis.cv_document_id:
+        document = db.scalar(
+            select(CvDocument).where(
+                CvDocument.id == analysis.cv_document_id,
+                CvDocument.user_id == user_id,
+            )
+        )
+    return analysis, document
+
+
+def _commit_active_interview(db: Session, row: CareerInterview) -> CareerInterview:
+    db.add(row)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        constraint_name = getattr(getattr(exc, "orig", None), "diag", None)
+        constraint_name = getattr(constraint_name, "constraint_name", None)
+        if constraint_name not in {None, "uq_career_interviews_active_user"}:
+            raise
+        winner = db.scalar(
+            select(CareerInterview)
+            .where(CareerInterview.user_id == row.user_id, CareerInterview.status == "active")
+            .order_by(CareerInterview.created_at.desc(), CareerInterview.id.desc())
+            .limit(1)
+        )
+        if winner is None:
+            raise
+        return winner
+    db.refresh(row)
+    return row
+
+
 def start_interview(db: Session, user_id: int, language: str = INTERVIEW_LANG_TR) -> CareerInterview:
     lang = _normalize_interview_lang(language)
     context = career_context(db, user_id)
+    analysis, document = _interview_source(db, user_id)
 
-    # target_role: DB'den gelen başlığı al, yoksa lang'a göre lokalize edilmiş fallback kullan
     raw_target = (
         (context.get("selected_target") or {}).get("title")
         or context.get("current_role")
@@ -253,7 +328,6 @@ def start_interview(db: Session, user_id: int, language: str = INTERVIEW_LANG_TR
     if lang == INTERVIEW_LANG_EN:
         target_role = raw_target or "General career interview"
     else:
-        # Hedef başlığı İngilizce bile olsa Prompt'a çevirisini yap
         target_role = raw_target or "Genel kariyer görüşmesi"
 
     if lang == INTERVIEW_LANG_EN:
@@ -272,18 +346,17 @@ def start_interview(db: Session, user_id: int, language: str = INTERVIEW_LANG_TR
     else:
         rules = [
             "Davranışsal ve teknik soruları dengeli dağıt",
-            "Her soru farklı yetkinliği ölsün",
+            "Her soru farklı yetkinliği ölçsün",
             (
                 "'guidance' alanı MÜLAKATA GİREN ADAYA (yanıtlayan kişiye) kısa ve "
                 "teşvik edici bir ipucu olmalıdır. "
-                "'Düşün...', 'Göz önünde bulundur...' gibi ikinci tekil şahsla yaz. "
-                "HİÇBİR ZAMAN İK'ya/mülakatcıya yönelik iç yönerge yazma "
-                "(rn. 'Adayın iş birliği becerilerini ölçmek için...' gibi ifadeler kullanamazsın). "
+                "'Düşün...', 'Göz önünde bulundur...' gibi ikinci tekil şahısla yaz. "
+                "HİÇBİR ZAMAN İK'ya/mülakatçıya yönelik iç yönerge yazma "
+                "(örn. 'Adayın iş birliği becerilerini ölçmek için...' gibi ifadeler kullanma). "
                 "80 kelimeyi geçme."
             ),
         ]
 
-    # Dil kilidi: purpose ve rules seçilen mülakat diline göre yazılıyor
     prompt = _build_prompt_with_lang({
         "language_lock": f"INTERVIEW_LANGUAGE={lang.upper()} — Every field in your JSON output MUST be written in {'English' if lang == INTERVIEW_LANG_EN else 'Turkish'}. No exceptions.",
         "purpose": (
@@ -295,28 +368,64 @@ def start_interview(db: Session, user_id: int, language: str = INTERVIEW_LANG_TR
         "career_context": context,
         "rules": rules,
     }, lang)
-
     output = _invoke(prompt, InterviewQuestionsAI, language=lang)
 
+    archive_active_interviews(db, user_id)
     row = CareerInterview(
         id=str(uuid4()),
         user_id=user_id,
+        analysis_id=analysis.id if analysis else None,
+        cv_document_id=document.id if document else None,
+        cv_name_snapshot=(document.display_name if document else analysis.file_name if analysis else None),
+        context_snapshot=deepcopy(context),
         target_role=target_role,
         status="active",
         language=lang,
         questions=output.model_dump(mode="json")["questions"],
     )
-    db.add(row); db.commit(); db.refresh(row)
-    return row
+    return _commit_active_interview(db, row)
 
 
-def evaluate_interview_answer(db: Session, user_id: int, interview: CareerInterview, question_id: str, answer: str) -> CareerInterviewAnswer:
+def retry_interview(db: Session, user_id: int, source: CareerInterview) -> CareerInterview:
+    if source.user_id != user_id:
+        raise ValueError("Mülakat bulunamadı")
+    if source.status == "active":
+        raise InterviewStateError("Aktif mülakat geçmişten yeniden başlatılamaz")
+
+    archive_active_interviews(db, user_id)
+    row = CareerInterview(
+        id=str(uuid4()),
+        user_id=user_id,
+        analysis_id=source.analysis_id,
+        cv_document_id=source.cv_document_id,
+        cv_name_snapshot=source.cv_name_snapshot,
+        context_snapshot=deepcopy(source.context_snapshot or {}),
+        retry_of_id=source.id,
+        target_role=source.target_role,
+        status="active",
+        language=_normalize_interview_lang(source.language),
+        questions=deepcopy(source.questions or []),
+    )
+    return _commit_active_interview(db, row)
+
+
+def evaluate_interview_answer(
+    db: Session,
+    user_id: int,
+    interview: CareerInterview,
+    question_id: str,
+    answer: str,
+) -> CareerInterviewAnswer:
+    if interview.user_id != user_id:
+        raise ValueError("Mülakat bulunamadı")
+    if interview.status != "active":
+        raise InterviewStateError("Yalnız aktif mülakat cevapları değerlendirilebilir")
+
     question = next((item for item in interview.questions if item.get("id") == question_id), None)
     if question is None:
         raise ValueError("Mülakat sorusu bulunamadı")
 
     lang = _normalize_interview_lang(getattr(interview, "language", INTERVIEW_LANG_TR))
-
     if lang == INTERVIEW_LANG_EN:
         rules = [
             "Score based on content quality and problem-solving logic, not answer length.",
@@ -345,11 +454,11 @@ def evaluate_interview_answer(db: Session, user_id: int, interview: CareerInterv
     prompt = _build_prompt_with_lang({
         "language_lock": f"INTERVIEW_LANGUAGE={lang.upper()} — Every field in your JSON output MUST be written in {'English' if lang == INTERVIEW_LANG_EN else 'Turkish'}. No exceptions.",
         "purpose": (
-            "Evaluate the interview answer against the target role and the candidate's real CV context."
+            "Evaluate the interview answer against the target role and the candidate's original CV context."
             if lang == INTERVIEW_LANG_EN
-            else "Mülakat cevabını hedef rol ve adayın gerçek CV bağlamına göre değerlendir"
+            else "Mülakat cevabını hedef rol ve adayın özgün CV bağlamına göre değerlendir"
         ),
-        "career_context": career_context(db, user_id),
+        "career_context": deepcopy(interview.context_snapshot or {}),
         "target_role": interview.target_role,
         "question": question,
         "answer": answer,
@@ -357,33 +466,207 @@ def evaluate_interview_answer(db: Session, user_id: int, interview: CareerInterv
     }, lang)
 
     output = _invoke(prompt, InterviewEvaluationAI, language=lang)
-    row = CareerInterviewAnswer(
-        id=str(uuid4()),
-        interview_id=interview.id,
-        user_id=user_id,
-        question_id=question_id,
-        answer=answer,
-        **output.model_dump(mode="json"),
+    locked_interview = db.scalar(
+        select(CareerInterview)
+        .where(
+            CareerInterview.id == interview.id,
+            CareerInterview.user_id == user_id,
+        )
+        .with_for_update()
     )
-    db.add(row); db.commit(); db.refresh(row)
+    if locked_interview is None:
+        raise ValueError("Mülakat bulunamadı")
+    if locked_interview.status != "active":
+        raise InterviewStateError("Yalnız aktif mülakat cevapları değerlendirilebilir")
+    interview = locked_interview
+    row = db.scalar(
+        select(CareerInterviewAnswer).where(
+            CareerInterviewAnswer.interview_id == interview.id,
+            CareerInterviewAnswer.user_id == user_id,
+            CareerInterviewAnswer.question_id == question_id,
+        )
+    )
+    values = output.model_dump(mode="json")
+
+    def persist_answer(current: CareerInterviewAnswer | None) -> CareerInterviewAnswer:
+        if current is None:
+            current = CareerInterviewAnswer(
+                id=str(uuid4()),
+                interview_id=interview.id,
+                user_id=user_id,
+                question_id=question_id,
+                answer=answer,
+                **values,
+            )
+            db.add(current)
+        else:
+            current.answer = answer
+            for field, value in values.items():
+                setattr(current, field, value)
+        return current
+
+    row = persist_answer(row)
+    try:
+        db.flush()
+    except IntegrityError as exc:
+        db.rollback()
+        interview = db.scalar(
+            select(CareerInterview)
+            .where(
+                CareerInterview.id == interview.id,
+                CareerInterview.user_id == user_id,
+            )
+            .with_for_update()
+        )
+        if interview is None:
+            raise ValueError("Mülakat bulunamadı") from exc
+        if interview.status != "active":
+            raise InterviewStateError("Yalnız aktif mülakat cevapları değerlendirilebilir") from exc
+        concurrent_answer = db.scalar(
+            select(CareerInterviewAnswer).where(
+                CareerInterviewAnswer.interview_id == interview.id,
+                CareerInterviewAnswer.user_id == user_id,
+                CareerInterviewAnswer.question_id == question_id,
+            )
+        )
+        if concurrent_answer is None:
+            raise
+        row = persist_answer(concurrent_answer)
+        db.flush()
+
+    answered_ids = set(db.scalars(
+        select(CareerInterviewAnswer.question_id).where(
+            CareerInterviewAnswer.interview_id == interview.id,
+            CareerInterviewAnswer.user_id == user_id,
+        )
+    ).all())
+    question_ids = set(_question_ids(interview))
+    if question_ids and question_ids.issubset(answered_ids):
+        now = datetime.now(timezone.utc)
+        interview.status = "completed"
+        interview.ended_at = now
+        interview.updated_at = now
+
+    db.commit()
+    db.refresh(row)
+    db.refresh(interview)
     return row
 
 
+def list_interview_history(db: Session, user_id: int, limit: int, offset: int) -> dict:
+    rows = list(db.scalars(
+        select(CareerInterview)
+        .where(CareerInterview.user_id == user_id, CareerInterview.status != "active")
+        .order_by(CareerInterview.ended_at.desc(), CareerInterview.created_at.desc(), CareerInterview.id.desc())
+        .offset(offset)
+        .limit(limit + 1)
+    ).all())
+    page = rows[:limit]
+    answers_by_interview: dict[str, list[CareerInterviewAnswer]] = {row.id: [] for row in page}
+    if page:
+        answer_rows = db.scalars(
+            select(CareerInterviewAnswer)
+            .where(
+                CareerInterviewAnswer.user_id == user_id,
+                CareerInterviewAnswer.interview_id.in_([row.id for row in page]),
+            )
+            .order_by(CareerInterviewAnswer.created_at, CareerInterviewAnswer.id)
+        ).all()
+        for answer in answer_rows:
+            answers_by_interview[answer.interview_id].append(answer)
+    return {
+        "items": [serialize_interview_summary(row, answers_by_interview[row.id]) for row in page],
+        "limit": limit,
+        "offset": offset,
+        "has_more": len(rows) > limit,
+    }
+
+
 def serialize_chat(row: CareerChatMessage) -> dict:
-    return {"id": row.id, "role": row.role, "content": row.content, "meta": row.meta, "created_at": row.created_at.isoformat() if row.created_at else None}
+    return {
+        "id": row.id,
+        "role": row.role,
+        "content": row.content,
+        "meta": row.meta,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
 
 
 def serialize_answer(row: CareerInterviewAnswer) -> dict:
-    return {"id": row.id, "question_id": row.question_id, "answer": row.answer, "score": row.score, "feedback": row.feedback, "strengths": row.strengths, "improvements": row.improvements}
+    return {
+        "id": row.id,
+        "question_id": row.question_id,
+        "answer": row.answer,
+        "score": row.score,
+        "feedback": row.feedback,
+        "strengths": row.strengths,
+        "improvements": row.improvements,
+    }
 
 
-def serialize_interview(row: CareerInterview, answers: list[CareerInterviewAnswer] | None = None) -> dict:
+def _interview_metrics(row: CareerInterview, answers: list[CareerInterviewAnswer]) -> dict:
+    valid_question_ids = set(_question_ids(row))
+    answers_by_question = {
+        item.question_id: item for item in answers if item.question_id in valid_question_ids
+    }
+    scored_answers = list(answers_by_question.values())
+    return {
+        "question_count": len(valid_question_ids),
+        "answered_count": len(scored_answers),
+        "average_score": round(sum(item.score for item in scored_answers) / len(scored_answers), 1)
+        if scored_answers else None,
+        "completed": row.status == "completed",
+    }
+
+
+def _interview_metadata(row: CareerInterview, answers: list[CareerInterviewAnswer]) -> dict:
     return {
         "id": row.id,
         "target_role": row.target_role,
         "status": row.status,
         "language": getattr(row, "language", INTERVIEW_LANG_TR),
-        "questions": row.questions,
-        "answers": [serialize_answer(item) for item in (answers or [])],
+        "analysis_id": row.analysis_id,
+        "cv_document_id": row.cv_document_id,
+        "cv_name_snapshot": row.cv_name_snapshot,
+        "source_type": "cv" if row.analysis_id or row.cv_document_id or row.cv_name_snapshot else "general",
+        "retry_of_id": row.retry_of_id,
+        "ended_at": row.ended_at.isoformat() if row.ended_at else None,
         "created_at": row.created_at.isoformat() if row.created_at else None,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        **_interview_metrics(row, answers),
+    }
+
+
+def serialize_interview_summary(
+    row: CareerInterview,
+    answers: list[CareerInterviewAnswer] | None = None,
+) -> dict:
+    return _interview_metadata(row, answers or [])
+
+
+def serialize_interview(
+    row: CareerInterview,
+    answers: list[CareerInterviewAnswer] | None = None,
+) -> dict:
+    answer_rows = answers or []
+    return {
+        **_interview_metadata(row, answer_rows),
+        "questions": deepcopy(row.questions or []),
+        "answers": [serialize_answer(item) for item in answer_rows],
+        "context_snapshot": deepcopy(row.context_snapshot or {}),
+    }
+
+
+def serialize_scored_answer(
+    row: CareerInterviewAnswer,
+    interview: CareerInterview,
+    answers: list[CareerInterviewAnswer],
+) -> dict:
+    metrics = _interview_metrics(interview, answers)
+    return {
+        **serialize_answer(row),
+        "interview_status": interview.status,
+        "answered_count": metrics["answered_count"],
+        "question_count": metrics["question_count"],
+        "completed": metrics["completed"],
     }

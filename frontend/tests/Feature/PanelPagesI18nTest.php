@@ -41,8 +41,8 @@ class PanelPagesI18nTest extends TestCase
       'job-analysis-en' => ['/panel/ilan-analizi', 'en', ['Job Opportunities', 'Analyze']],
       'applications-tr' => ['/panel/basvurularim', 'tr', ['Başvurularım', 'Aktif başvuru']],
       'applications-en' => ['/panel/basvurularim', 'en', ['Applications', 'Active applications']],
-      'interview-tr' => ['/panel/mulakat-hazirligi', 'tr', ['Mülakat Hazırlığı', 'AI mülakatı başlat']],
-      'interview-en' => ['/panel/mulakat-hazirligi', 'en', ['Interview Preparation', 'Start AI interview']],
+      'interview-tr' => ['/panel/mulakat-hazirligi', 'tr', ['Mülakat Hazırlığı', 'AI mülakatı başlat', 'Önceki soru', 'Mülakat geçmişi']],
+      'interview-en' => ['/panel/mulakat-hazirligi', 'en', ['Interview Preparation', 'Start AI interview', 'Previous question', 'Interview history']],
       'chat-tr' => ['/panel/ai-yardimcisi', 'tr', ['Kariyer Asistanı', 'kişisel AI kariyer desteği']],
     ];
   }
@@ -58,6 +58,38 @@ class PanelPagesI18nTest extends TestCase
     foreach ($mustSee as $text) {
       $response->assertSee($text, false);
     }
+  }
+
+  public function test_interview_page_hides_questions_until_an_active_session_exists_and_lists_history(): void
+  {
+    $response = $this->withSession(['panel_locale' => 'tr'])->view('app.interview', [
+      'interview' => null,
+      'interviewError' => null,
+      'interviewHistory' => [[
+        'id' => 'history-1', 'target_role' => 'Veri Analisti', 'status' => 'completed',
+        'question_count' => 3, 'answered_count' => 3, 'average_score' => 84,
+      ]],
+    ]);
+
+    $response
+      ->assertSee('initial: null', false)
+      ->assertSee('data-interview-active', false)
+      ->assertSee('x-show="!interview"', false)
+      ->assertSee('data-interview-progress', false)
+      ->assertSee('data-interview-previous', false)
+      ->assertSee('data-interview-next', false)
+      ->assertSee('data-interview-history', false)
+      ->assertSee('data-interview-retry', false)
+      ->assertSee('Veri Analisti', false);
+  }
+
+  public function test_interview_page_does_not_resume_questions_before_new_interview_click(): void
+  {
+    $this->get(route('panel.interview'))
+      ->assertOk()
+      ->assertSee('initial: null', false);
+
+    Http::assertNotSent(fn ($request): bool => $request->url() === 'http://localhost:8000/api/v1/career/interviews/current');
   }
 
   public function test_cv_builder_bilingual_draft_json(): void
