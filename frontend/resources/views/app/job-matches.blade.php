@@ -17,7 +17,7 @@
         'readiness' => __('panel.job_matches.readiness_note', ['score' => '__SCORE__']),
         'cvFailed' => __('panel.job_matches.cv_failed'),
     ],
-]) }}), {{ Js::from($latestAnalysis) }})">
+]) }}, {{ Js::from($latestAnalysis) }})">
     <header class="mb-8">
         <h1 class="mb-1 text-2xl font-bold">{{ __('panel.job_matches.title') }}</h1>
         <p class="text-slate-600 dark:text-slate-400">{{ __('panel.job_matches.subtitle') }}</p>

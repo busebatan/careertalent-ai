@@ -28,6 +28,12 @@ class MarketingPagesTest extends TestCase
                     'recommendation' => 'prepare',
                     'analyzed_at' => '2026-07-07T00:00:00+00:00',
             ], 200),
+            'http://localhost:8000/api/v1/career/analysis/latest' => Http::response([
+                'id' => 'latest-ready-analysis',
+                'status' => 'ready',
+                'skills' => [['name' => 'SQL', 'score' => 80]],
+                'radar' => [['label' => 'SQL', 'score' => 80, 'target' => 90]],
+            ], 200),
             'http://localhost:8000/*' => Http::response([], 200),
         ]);
     }
@@ -283,6 +289,8 @@ class MarketingPagesTest extends TestCase
         $response->assertSee('Analiz et');
         $response->assertSee('Analiz CV’si');
         $response->assertSee('İlan analizi tamamlanamadı');
+        $this->assertStringContainsString("'), JSON.parse('", $response->getContent());
+        $this->assertStringNotContainsString("')), JSON.parse('", $response->getContent());
     }
 
     public function test_panel_ilan_eslestirme_analiz_endpoint(): void
