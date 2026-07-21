@@ -1,5 +1,7 @@
 <div :class="mode === 'preview' ? 'lg:col-span-2' : ''">
-    <div data-cv-preview-toolbar class="panel-card mb-4 flex min-h-[98px] flex-col gap-3 p-4">
+    <div data-cv-preview-toolbar
+        :class="mode === 'preview' ? 'lg:ml-auto lg:w-[calc(50%-1rem)]' : ''"
+        class="panel-card mb-4 flex min-h-[98px] flex-col gap-3 p-4">
         <p class="panel-muted text-sm" x-text="uiLabels[panelLocale].save_hint"></p>
         <div data-cv-preview-actions class="flex flex-nowrap gap-2">
             <button type="button" @click="saveCv()"
