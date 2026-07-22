@@ -109,6 +109,10 @@ class ApplicationCreate(BaseModel):
     company: str = Field(min_length=2, max_length=160)
     role: str = Field(min_length=2, max_length=200)
     next_action: str | None = Field(default=None, max_length=300)
+    # Platform başvurusu için opsiyonel alanlar
+    position_id: str | None = Field(default=None, max_length=80)
+    cv_version_id: str | None = Field(default=None, max_length=36)
+    is_platform_apply: bool = False
 
 
 class ApplicationUpdate(BaseModel):
