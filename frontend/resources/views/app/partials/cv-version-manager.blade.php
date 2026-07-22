@@ -26,18 +26,33 @@
     <template x-if="cvVersions.length > 0">
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <template x-for="version in cvVersions" :key="version.id">
-                <div class="relative flex flex-col justify-between rounded-xl border p-4 transition-all hover:shadow-md"
-                    :class="version.is_main ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/50'">
+                <div class="relative flex flex-col justify-between rounded-xl border-2 p-4 transition-all hover:shadow-md"
+                    :class="
+                        (version.is_main && version.id === activeLoadedVersionId)
+                            ? 'border-violet-500 bg-gradient-to-br from-emerald-50/30 to-violet-50/30 dark:from-emerald-950/10 dark:to-violet-950/10 shadow-md'
+                            : version.id === activeLoadedVersionId
+                                ? 'border-violet-500 bg-violet-50/20 dark:bg-violet-950/10 shadow-md'
+                                : version.is_main
+                                    ? 'border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10'
+                                    : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/50'
+                    ">
                     <div>
                         <div class="flex items-start justify-between gap-2">
                             <h3 class="font-semibold text-slate-900 dark:text-white" x-text="version.version_name"></h3>
-                            <div class="flex gap-1.5">
+                            <div class="flex gap-1.5 flex-wrap justify-end">
                                 <span class="rounded px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wider"
                                     :class="version.language === 'tr' ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'"
                                     x-text="version.language"></span>
                                 <template x-if="version.is_main">
-                                    <span class="rounded bg-emerald-600 px-1.5 py-0.5 text-xs font-semibold text-white tracking-wider">
+                                    <span class="inline-flex items-center gap-0.5 rounded bg-emerald-600 px-1.5 py-0.5 text-xs font-semibold text-white tracking-wider">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                                         {{ app()->getLocale() === 'en' ? 'Main' : 'Ana' }}
+                                    </span>
+                                </template>
+                                <template x-if="version.id === activeLoadedVersionId">
+                                    <span class="inline-flex items-center gap-0.5 rounded bg-gradient-to-r from-violet-600 to-blue-600 px-1.5 py-0.5 text-xs font-semibold text-white tracking-wider shadow-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                        {{ app()->getLocale() === 'en' ? 'In Editor' : 'Editörde' }}
                                     </span>
                                 </template>
                             </div>
