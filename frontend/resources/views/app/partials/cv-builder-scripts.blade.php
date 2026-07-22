@@ -32,6 +32,7 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         cvFileLabel: @js(__('panel.skill_radar.cv_file', ['name' => ':name'])),
         optionalSectionPick: '',
         cvVersions: [],
+        activeLoadedVersionId: null,
         showVersionCreateModal: false,
         newVersionName: '',
         newVersionLang: 'tr',
@@ -44,18 +45,15 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         previewVersionModalOpen: false,
         previewVersionData: null,
         _skipLocalesSync: false,
+        _versionsInitialized: false,
 
         init() {
-            const saved = window.PanelCvStore?.get();
-
             if (serverHasCv) {
                 this.cvFileName = serverFileName || this.cvFileName;
             }
 
-            if (!this.restoredFromHistory && saved?.source === 'builder' && saved.locales) {
-                this.locales = JSON.parse(JSON.stringify(saved.locales));
-            }
-
+            // F5 / sayfa yükleme: localStorage taslak verisini yoksay;
+            // Ana CV sürümü fetchVersions() tamamlandığında editöre otomatik yüklenecek.
             this.normalizeAllLocales();
             window.addEventListener('panel-cv-updated', () => this.syncFromStore());
             this.fetchVersions();
@@ -411,6 +409,19 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
                 const response = await fetch(this.listVersionsUrl);
                 if (response.ok) {
                     this.cvVersions = await response.json();
+
+                    // İlk yükleme: is_main === true olan sürümü editöre otomatik yükle
+                    if (!this._versionsInitialized) {
+                        this._versionsInitialized = true;
+                        const mainVersion = this.cvVersions.find(v => v.is_main === true);
+                        if (mainVersion) {
+                            this.locales[mainVersion.language] = JSON.parse(JSON.stringify(mainVersion.payload));
+                            this.normalizeAllLocales();
+                            this.editLang = mainVersion.language;
+                            this.previewLang = mainVersion.language;
+                            this.activeLoadedVersionId = mainVersion.id;
+                        }
+                    }
                 }
             } catch (err) {
                 // handle error
@@ -466,6 +477,8 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
             this.normalizeAllLocales();
             this.editLang = version.language;
             this.previewLang = version.language;
+            // Aktif yüklenen sürümü sadece manuel "Editöre Yükle" ile güncelle
+            this.activeLoadedVersionId = version.id;
             if (window.PanelCvStore) {
                 window.PanelCvStore.saveBuilder(this.locales, this.panelLocale);
             }
