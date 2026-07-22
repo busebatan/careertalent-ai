@@ -1,7 +1,29 @@
 <div :class="mode === 'preview' ? 'lg:col-span-2' : ''">
+    <div data-cv-preview-toolbar
+        :class="mode === 'preview' ? 'lg:ml-auto lg:w-[calc(50%-1rem)]' : ''"
+        class="panel-card mb-4 flex min-h-[98px] flex-col gap-3 p-4">
+        <p class="panel-muted text-sm" x-text="uiLabels[panelLocale].save_hint"></p>
+        <div data-cv-preview-actions class="flex flex-nowrap gap-2">
+            <button type="button" @click="saveCv()"
+                class="inline-flex rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-60"
+                :disabled="saveStatus === 'saving'"
+                x-text="saveStatus === 'saving' ? uiLabels[panelLocale].analyzing : (saveStatus === 'saved' ? uiLabels[panelLocale].saved : uiLabels[panelLocale].save)">
+            </button>
+            <button type="button" @click="mode = mode === 'edit' ? 'preview' : 'edit'"
+                class="rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                x-text="mode === 'edit' ? uiLabels[panelLocale].preview : uiLabels[panelLocale].edit">
+            </button>
+            <button type="button" @click="openPdfModal()"
+                class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="pdfExportStatus === 'exporting'"
+                x-text="uiLabels[panelLocale].download_pdf">
+            </button>
+        </div>
+    </div>
+
     <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-xs text-slate-500" x-text="uiLabels[panelLocale].preview_note"></p>
-        <div class="flex items-center gap-2">
+        <div data-preview-language-selector x-show="mode === 'preview'" x-cloak class="flex items-center gap-2">
             <span class="text-xs text-slate-500" x-text="uiLabels[panelLocale].preview_lang + ':'"></span>
             <button type="button" @click="previewLang = 'tr'"
                 :class="previewLang === 'tr' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"

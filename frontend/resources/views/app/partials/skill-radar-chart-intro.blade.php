@@ -10,7 +10,6 @@
             </span>
         @endif
     </div>
-    <p class="panel-muted text-sm">{{ __('panel.skill_radar.subtitle', ['role' => $skillRadar['target_role']]) }}</p>
     <p class="panel-muted mt-1 text-xs">
         {{ __('panel.skill_radar.analysis_cv', ['name' => $skillRadar['file_name'] ?? $cvFileName ?? 'cv']) }}
         · {{ __('panel.skill_radar.analysis_source', ['source' => $sourceLabel]) }}

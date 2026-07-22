@@ -66,11 +66,14 @@ class StudentFeaturesController extends PanelController
 
     public function interview(CareerTalentApiClient $api)
     {
-        $result = $api->currentInterview();
+        $historyResult = $api->interviewHistory();
+        $historyBody = $historyResult['body'] ?? [];
 
         return $this->panelView('app.interview', [
-            'interview' => ($result['ok'] ?? false) && is_array($result['body'] ?? null) ? $result['body'] : null,
-            'interviewError' => ($result['ok'] ?? false) ? null : $result['error'],
+            'interviewHistory' => ($historyResult['ok'] ?? false) && is_array($historyBody)
+                ? ($historyBody['items'] ?? [])
+                : [],
+            'interviewError' => ($historyResult['ok'] ?? false) ? null : $historyResult['error'],
         ]);
     }
 
@@ -116,6 +119,29 @@ class StudentFeaturesController extends PanelController
     {
         $validated = $request->validate(['question_id' => ['required', 'string', 'max:80'], 'answer' => ['required', 'string', 'min:20', 'max:8000']]);
         return $this->apiJson($api->scoreInterviewAnswer($interviewId, $validated));
+    }
+
+    public function interviewHistory(Request $request, CareerTalentApiClient $api): JsonResponse
+    {
+        $validated = $request->validate([
+            'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'offset' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        return $this->apiJson($api->interviewHistory(
+            (int) ($validated['limit'] ?? 20),
+            (int) ($validated['offset'] ?? 0),
+        ));
+    }
+
+    public function interviewDetail(string $interviewId, CareerTalentApiClient $api): JsonResponse
+    {
+        return $this->apiJson($api->interviewDetail($interviewId));
+    }
+
+    public function retryInterview(string $interviewId, CareerTalentApiClient $api): JsonResponse
+    {
+        return $this->apiJson($api->retryInterview($interviewId));
     }
 
     private function apiJson(array $result): JsonResponse

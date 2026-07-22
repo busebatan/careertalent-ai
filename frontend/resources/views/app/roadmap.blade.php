@@ -24,10 +24,32 @@
         x-init="start()"
     @endif
 >
-    <header class="mb-8">
-        <h1 class="mb-1 text-2xl font-bold">{{ __('panel.roadmap.title') }}</h1>
-        <p class="text-slate-600 dark:text-slate-400">{{ __('panel.roadmap.subtitle') }}</p>
-    </header>
+    <div x-data="careerDataReset({{ Js::from([
+        'clearUrl' => route('panel.cv.clear'),
+        'errorMessage' => __('panel.skill_radar.reset_failed'),
+    ]) }})">
+        <header class="mb-8">
+            <div>
+                <h1 class="mb-1 text-2xl font-bold">{{ __('panel.roadmap.title') }}</h1>
+                <p class="text-slate-600 dark:text-slate-400">{{ __('panel.roadmap.subtitle') }}</p>
+            </div>
+        </header>
+
+        @if (! empty($analysisCv))
+            <div data-roadmap-analysis-cv class="panel-card mb-4 border-sky-500/30 bg-sky-500/10 p-4">
+                <p class="text-xs font-medium uppercase tracking-wide text-sky-700 dark:text-sky-300">{{ __('panel.roadmap.cv_source_title') }}</p>
+                <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ __('panel.roadmap.cv_source', ['name' => $analysisCv['name']]) }}</p>
+                <div data-roadmap-analysis-actions class="mt-1 flex flex-wrap items-center justify-between gap-2">
+                    @if (! empty($analysisCv['analyzed_at']))
+                        <p class="panel-muted text-xs">{{ __('panel.roadmap.cv_analyzed_at', ['date' => $analysisCv['analyzed_at']]) }}</p>
+                    @endif
+                    <button type="button" data-roadmap-clear @click.stop="resetOpen = true"
+                        class="panel-sky-card-link">
+                        {{ __('panel.skill_radar.clear_cv') }}
+                    </button>
+                </div>
+            </div>
+        @endif
 
     @if (! empty($careerEngineError))
         <div class="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-200" role="status">{{ $careerEngineError }}</div>
@@ -104,5 +126,7 @@
         @endif
         @include('app.partials.panel-learning-resources', ['mode' => 'compact'])
     </section>
+        @include('app.partials.career-reset-modal', ['resetAction' => 'clearCareerData()'])
+    </div>
 </div>
 @endsection

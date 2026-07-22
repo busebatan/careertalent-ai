@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { careerAnalysisWatcher, careerPlanWatcher } from '../../resources/js/panel-career-plan.js';
+import { careerAnalysisWatcher, careerDataReset, careerPlanWatcher } from '../../resources/js/panel-career-plan.js';
 
 describe('careerPlanWatcher', () => {
     it('polls queued AI plan and reloads when target-specific tasks become active', async () => {
@@ -56,5 +56,49 @@ describe('careerAnalysisWatcher', () => {
         assert.equal(watcher.status, 'ready');
         assert.equal(reloaded, 1);
         assert.equal(watcher.error, '');
+    });
+});
+
+describe('careerDataReset', () => {
+    it('posts the selected scope, clears local analysis state and reloads', async () => {
+        const requests = [];
+        let cleared = 0;
+        let reloaded = 0;
+        const state = careerDataReset(
+            { clearUrl: '/career/reset', errorMessage: 'Temizlenemedi' },
+            {
+                csrfToken: () => 'csrf-token',
+                fetch: async (url, options) => {
+                    requests.push({ url, options });
+                    return { ok: true, json: async () => ({ status: 'cleared' }) };
+                },
+                clearLocalCv: () => { cleared += 1; },
+                reload: () => { reloaded += 1; },
+            },
+        );
+        state.resetScope = 'all';
+
+        await state.clearCareerData();
+
+        assert.equal(requests[0].url, '/career/reset');
+        assert.equal(requests[0].options.method, 'POST');
+        assert.deepEqual(JSON.parse(requests[0].options.body), { scope: 'all' });
+        assert.equal(requests[0].options.headers['X-CSRF-TOKEN'], 'csrf-token');
+        assert.equal(cleared, 1);
+        assert.equal(reloaded, 1);
+    });
+
+    it('keeps the modal open and shows the API error when reset fails', async () => {
+        const state = careerDataReset(
+            { clearUrl: '/career/reset', errorMessage: 'Temizlenemedi' },
+            { fetch: async () => ({ ok: false, json: async () => ({ message: 'Reset reddedildi' }) }) },
+        );
+        state.resetOpen = true;
+
+        await state.clearCareerData();
+
+        assert.equal(state.resetOpen, true);
+        assert.equal(state.resetWorking, false);
+        assert.equal(state.resetError, 'Reset reddedildi');
     });
 });

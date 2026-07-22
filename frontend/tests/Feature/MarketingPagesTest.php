@@ -28,6 +28,12 @@ class MarketingPagesTest extends TestCase
                     'recommendation' => 'prepare',
                     'analyzed_at' => '2026-07-07T00:00:00+00:00',
             ], 200),
+            'http://localhost:8000/api/v1/career/analysis/latest' => Http::response([
+                'id' => 'latest-ready-analysis',
+                'status' => 'ready',
+                'skills' => [['name' => 'SQL', 'score' => 80]],
+                'radar' => [['label' => 'SQL', 'score' => 80, 'target' => 90]],
+            ], 200),
             'http://localhost:8000/*' => Http::response([], 200),
         ]);
     }
@@ -253,7 +259,7 @@ class MarketingPagesTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Profil bilgileri');
         $response->assertSee('Giriş bilgileri');
-        $response->assertSee('CV yükle');
+        $response->assertSee('CV geçmişi');
         $response->assertSee('Şifre değiştir');
         $response->assertDontSee('AI ile düzenle');
     }
@@ -266,9 +272,9 @@ class MarketingPagesTest extends TestCase
         $response->assertSee('CV Merkezi');
         $response->assertSee('CV içerik dili');
         $response->assertSee('PDF hangi dilde indirilsin?');
-        $response->assertDontSee('İstanbul Üniversitesi');
-        $response->assertDontSee('Istanbul University');
-        $response->assertDontSee('Ayşe Yılmaz');
+        $response->assertSee('İstanbul Üniversitesi');
+        $response->assertSee('Istanbul University');
+        $response->assertSee('Ayşe Yılmaz');
         $response->assertSee('enabledOptional', false);
     }
 
@@ -277,10 +283,19 @@ class MarketingPagesTest extends TestCase
         $response = $this->get('/panel/ilan-analizi');
 
         $response->assertStatus(200);
-        $response->assertSee('İş Fırsatları');
+        $response->assertSee('İlan Analizi');
         $response->assertSee('İş ilanını analiz et');
         $response->assertSee('CV için öneriler');
         $response->assertSee('Analiz et');
+        $response->assertSee('Analiz CV’si');
+        $response->assertSee('İlan analizi tamamlanamadı');
+        $this->assertStringContainsString("'), JSON.parse('", $response->getContent());
+        $this->assertStringNotContainsString("')), JSON.parse('", $response->getContent());
+        $this->assertStringContainsString("activeJobForApply ? activeJobForApply.title", $response->getContent());
+
+        $icons = file_get_contents(resource_path('js/marketing-motion.js'));
+        $this->assertStringContainsString('Search,', $icons);
+        $this->assertStringContainsString('Send,', $icons);
     }
 
     public function test_panel_ilan_eslestirme_analiz_endpoint(): void
@@ -299,7 +314,7 @@ class MarketingPagesTest extends TestCase
         $response = $this->withSession(['panel_locale' => 'en'])->get('/panel/ilan-analizi');
 
         $response->assertStatus(200);
-        $response->assertSee('Job Opportunities');
+        $response->assertSee('Job Analysis');
         $response->assertSee('Analyze');
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\App\CvBuilderController;
 use App\Http\Controllers\App\CvUploadController;
 use App\Http\Controllers\App\DashboardController;
 use App\Http\Controllers\App\JobMatchesController;
+use App\Http\Controllers\App\JobListingsController;
 use App\Http\Controllers\App\LocaleController as PanelLocaleController;
 use App\Http\Controllers\App\ProfileController;
 use App\Http\Controllers\App\RoadmapController;
@@ -126,10 +127,16 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::get('/cv-merkezi/analiz/{analysisId}/akis', [CvUploadController::class, 'stream'])->name('cv.analysis-stream');
     Route::post('/cv-merkezi/temizle', [CvUploadController::class, 'clear'])->name('cv.clear');
     Route::post('/cv-merkezi/pdf-arsivle', [CvUploadController::class, 'archiveGeneratedPdf'])->name('cv.archive-generated');
+    Route::get('/cv-merkezi/surumler', [CvBuilderController::class, 'listVersions'])->name('cv.versions.list');
+    Route::post('/cv-merkezi/surumler', [CvBuilderController::class, 'createVersion'])->name('cv.versions.create');
+    Route::put('/cv-merkezi/surumler/{id}', [CvBuilderController::class, 'updateVersion'])->name('cv.versions.update');
+    Route::delete('/cv-merkezi/surumler/{id}', [CvBuilderController::class, 'deleteVersion'])->name('cv.versions.delete');
+
     Route::get('/kariyer-rotam', [RoadmapController::class, 'show'])->name('roadmap');
     Route::post('/kariyer-rotam/hedef', [CareerLadderController::class, 'select'])->name('career-ladder.select');
     Route::get('/kariyer-rotam/plan-durumu/{targetId}', [RoadmapController::class, 'planStatus'])->name('roadmap.plan-status');
     Route::get('/kariyer-rotam/analiz-durumu', [RoadmapController::class, 'analysisStatus'])->name('roadmap.analysis-status');
+    Route::get('/is-ilanlari', [JobListingsController::class, 'index'])->name('job-listings');
     Route::get('/ilan-analizi', [JobMatchesController::class, 'show'])->name('job-matches');
     Route::post('/ilan-analizi/analiz', [JobMatchesController::class, 'analyze'])->name('job-matches.analyze');
     Route::get('/ilan-analizi/{jobId}/durum', [JobMatchesController::class, 'status'])->name('job-matches.status');
@@ -142,6 +149,9 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::patch('/basvurularim/{applicationId}', [StudentFeaturesController::class, 'updateApplication'])->name('applications.update');
     Route::get('/mulakat-hazirligi', [StudentFeaturesController::class, 'interview'])->name('interview');
     Route::post('/mulakat-hazirligi', [StudentFeaturesController::class, 'startInterview'])->name('interview.start');
+    Route::get('/mulakat-hazirligi/gecmis', [StudentFeaturesController::class, 'interviewHistory'])->name('interview.history');
+    Route::get('/mulakat-hazirligi/gecmis/{interviewId}', [StudentFeaturesController::class, 'interviewDetail'])->name('interview.detail');
+    Route::post('/mulakat-hazirligi/{interviewId}/tekrar', [StudentFeaturesController::class, 'retryInterview'])->name('interview.retry');
     Route::post('/mulakat-hazirligi/{interviewId}/cevap', [StudentFeaturesController::class, 'scoreInterview'])->name('interview.score');
     Route::get('/uzmanlardan-destek', [StudentFeaturesController::class, 'mentors'])->name('mentors');
     Route::get('/hesap', [ProfileController::class, 'account'])->name('account');
@@ -152,7 +162,10 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::put('/hesap/profil', [ProfileController::class, 'update'])->name('account.profile.update');
     Route::get('/ai-yardimcisi', [ChatController::class, 'show'])->name('chat');
     Route::post('/ai-yardimcisi', [ChatController::class, 'send'])->name('chat.send');
-    Route::delete('/ai-yardimcisi', [ChatController::class, 'clear'])->name('chat.clear');
+    Route::post('/ai-yardimcisi/yeni', [ChatController::class, 'startNew'])->name('chat.new');
+    Route::get('/ai-yardimcisi/gecmis', [ChatController::class, 'history'])->name('chat.history');
+    Route::get('/ai-yardimcisi/gecmis/{threadId}', [ChatController::class, 'historyDetail'])->name('chat.history.detail');
+    Route::post('/ai-yardimcisi/ilan/{jobId}/cv-surumu', [ChatController::class, 'createCvVersion'])->name('chat.cv-version');
 
     Route::get('/kariyer-rotam/kariyer-merdiveni', fn () => redirect()->to(route('panel.roadmap').'#kariyer-merdiveni'))->name('career-ladder');
     Route::get('/kariyer-rotam/egitimler', fn () => redirect()->to(route('panel.roadmap').'#egitimler'))->name('learning');

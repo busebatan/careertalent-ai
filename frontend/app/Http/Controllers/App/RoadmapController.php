@@ -6,6 +6,7 @@ use App\Services\CareerTalentApiClient;
 use App\Services\PanelTargetRoleStore;
 use App\Services\TaskReadinessCalculator;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
 
 class RoadmapController extends PanelController
 {
@@ -62,6 +63,15 @@ class RoadmapController extends PanelController
         $analysisStatus = (string) ($analysis['status'] ?? '');
         $isAnalysisPending = in_array($analysisStatus, ['queued', 'running'], true);
         $isPlanPending = is_array($target) && in_array($target['status'] ?? null, ['queued', 'running'], true);
+        $analysisCv = null;
+        if ($analysisStatus === 'ready' && ! empty($analysis['file_name'])) {
+            try {
+                $analyzedAt = ! empty($analysis['created_at']) ? Carbon::parse($analysis['created_at'])->format('d.m.Y H:i') : null;
+            } catch (\Throwable) {
+                $analyzedAt = null;
+            }
+            $analysisCv = ['name' => (string) $analysis['file_name'], 'analyzed_at' => $analyzedAt];
+        }
 
         return $this->panelView('app.roadmap', [
             'stats' => [
@@ -82,6 +92,7 @@ class RoadmapController extends PanelController
             'analysisStatus' => $analysisStatus,
             'isAnalysisPending' => $isAnalysisPending,
             'isPlanPending' => $isPlanPending,
+            'analysisCv' => $analysisCv,
         ]);
     }
 

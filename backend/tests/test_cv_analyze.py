@@ -3,7 +3,7 @@
 from io import BytesIO
 
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.main import app
 from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence
@@ -171,6 +171,44 @@ def test_cv_analyze_accepts_pdf_and_tracks_current_upload(client, monkeypatch, t
     assert reanalysis.json()["status"] == "queued"
 
 
+def test_reset_all_keeps_uploaded_cv_in_history_without_current_badge(client, monkeypatch, tmp_path):
+    client.post(
+        "/api/v1/auth/register",
+        json={"full_name": "Reset Owner", "email": "reset@example.com", "password": "GucluParola123!"},
+    )
+    token = client.post(
+        "/api/v1/auth/login",
+        data={"username": "reset@example.com", "password": "GucluParola123!"},
+    ).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    monkeypatch.setattr(
+        "app.api.v1.cv.extract_text_from_pdf",
+        lambda _data: "SQL Python Excel Pandas ile veri analizi deneyimi",
+    )
+    monkeypatch.setattr("app.api.v1.cv.analyze_cv_task.delay", lambda _analysis_id: None)
+    monkeypatch.setattr("app.api.v1.cv.settings.UPLOAD_DIR", str(tmp_path))
+
+    queued = client.post(
+        "/api/v1/cv/analyze",
+        files={"file": ("history.pdf", BytesIO(_MINIMAL_PDF), "application/pdf")},
+        headers=headers,
+    )
+    document = client.get("/api/v1/cv/documents", headers=headers).json()[0]
+    stored_path = tmp_path / "1" / "cv" / f"{document['id']}.pdf"
+
+    reset = client.post("/api/v1/career/reset", json={"scope": "all"}, headers=headers)
+
+    assert reset.status_code == 200
+    assert reset.json()["deleted"]["current_cvs"] == 1
+    assert client.get(f"/api/v1/career/analysis/{queued.json()['analysis_id']}", headers=headers).status_code == 404
+    documents = client.get("/api/v1/cv/documents", headers=headers).json()
+    assert len(documents) == 1
+    assert documents[0]["id"] == document["id"]
+    assert documents[0]["is_current"] is False
+    assert stored_path.exists()
+    assert client.get("/api/v1/career/profile", headers=headers).json()["uploaded_cv"] is None
+
+
 def test_deleting_last_cv_clears_career_flow(client, monkeypatch, tmp_path):
     client.post("/api/v1/auth/register", json={"full_name": "Delete Owner", "email": "delete@example.com", "password": "GucluParola123!"})
     token = client.post("/api/v1/auth/login", data={"username": "delete@example.com", "password": "GucluParola123!"}).json()["access_token"]
@@ -238,3 +276,150 @@ def test_generated_cv_archive_can_start_owner_scoped_active_analysis(client, mon
     assert client.post(f"/api/v1/cv/documents/{document_id}/analyze", headers={"Authorization": f"Bearer {other_token}"}).status_code == 404
     assert client.delete(f"/api/v1/cv/documents/{document_id}", headers=headers).status_code == 204
     assert client.get(f"/api/v1/cv/documents/{document_id}", headers=headers).status_code == 404
+
+
+def test_archived_document_publish_failure_marks_analysis_failed(client, monkeypatch, tmp_path):
+    client.post("/api/v1/auth/register", json={"full_name": "Archive Queue", "email": "archive-queue@example.com", "password": "GucluParola123!"})
+    token = client.post("/api/v1/auth/login", data={"username": "archive-queue@example.com", "password": "GucluParola123!"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    monkeypatch.setattr("app.api.v1.cv.settings.UPLOAD_DIR", str(tmp_path))
+    created = client.post(
+        "/api/v1/cv/documents/generated",
+        headers=headers,
+        files={"file": ("archive.pdf", BytesIO(_MINIMAL_PDF), "application/pdf")},
+        data={
+            "display_name": "Archive CV.pdf",
+            "language": "tr",
+            "builder_data": '{"tr":{"summary":"SQL Python Excel ile veri analizi ve raporlama deneyimi"}}',
+        },
+    )
+    assert created.status_code == 201
+    monkeypatch.setattr(
+        "app.api.v1.cv.analyze_cv_task.delay",
+        lambda _analysis_id: (_ for _ in ()).throw(RuntimeError("broker offline")),
+    )
+
+    response = client.post(f"/api/v1/cv/documents/{created.json()['id']}/analyze", headers=headers)
+
+    assert response.status_code == 503
+    db = next(app.dependency_overrides[__import__("app.core.database", fromlist=["get_db"]).get_db]())
+    row = db.scalar(select(CareerAnalysis).where(CareerAnalysis.user_id == 1))
+    assert row.status == "failed"
+    assert row.error_code == "queue_unavailable"
+    db.close()
+
+
+def test_generated_activation_publish_failure_marks_analysis_failed(client, monkeypatch, tmp_path):
+    client.post("/api/v1/auth/register", json={"full_name": "Builder Queue", "email": "builder-queue@example.com", "password": "GucluParola123!"})
+    token = client.post("/api/v1/auth/login", data={"username": "builder-queue@example.com", "password": "GucluParola123!"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    monkeypatch.setattr("app.api.v1.cv.settings.UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(
+        "app.api.v1.cv.analyze_cv_task.delay",
+        lambda _analysis_id: (_ for _ in ()).throw(RuntimeError("broker offline")),
+    )
+
+    response = client.post(
+        "/api/v1/cv/documents/generated/activate",
+        headers=headers,
+        files={"file": ("builder.pdf", BytesIO(_MINIMAL_PDF), "application/pdf")},
+        data={
+            "display_name": "Builder Queue CV.pdf",
+            "language": "tr",
+            "builder_data": '{"tr":{"summary":"SQL Python Excel ile veri analizi deneyimi"}}',
+            "cv_text": "Builder Queue SQL Python Excel ile veri analizi ve raporlama deneyimi",
+        },
+    )
+
+    assert response.status_code == 503
+    db = next(app.dependency_overrides[__import__("app.core.database", fromlist=["get_db"]).get_db]())
+    row = db.scalar(select(CareerAnalysis).where(CareerAnalysis.user_id == 1))
+    assert row.status == "failed"
+    assert row.error_code == "queue_unavailable"
+    db.close()
+
+
+def test_builder_save_atomically_replaces_active_cv_and_career_state(client, monkeypatch, tmp_path):
+    client.post("/api/v1/auth/register", json={"full_name": "Builder Owner", "email": "builder@example.com", "password": "GucluParola123!"})
+    token = client.post("/api/v1/auth/login", data={"username": "builder@example.com", "password": "GucluParola123!"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    monkeypatch.setattr("app.api.v1.cv.settings.UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr("app.api.v1.cv.analyze_cv_task.delay", lambda _analysis_id: None)
+
+    old_path = tmp_path / "1" / "cv" / "old-upload.pdf"
+    old_path.parent.mkdir(parents=True)
+    old_path.write_bytes(_MINIMAL_PDF)
+    evidence_path = tmp_path / "1" / "old-evidence.pdf"
+    evidence_path.write_bytes(_MINIMAL_PDF)
+
+    override = app.dependency_overrides
+    db = next(override[__import__("app.core.database", fromlist=["get_db"]).get_db]())
+    db.execute(text("PRAGMA foreign_keys=ON"))
+    target = CareerTarget(id="builder-old-target", user_id=1, title="Eski Rota", source="ladder", status="active")
+    task = CareerTask(id="builder-old-task", user_id=1, target_id=target.id, title="Eski Görev", hint="", status="pending", evidence_types=["file"], skill_impacts=["SQL"])
+    db.add_all([
+        CvDocument(id="old-upload", user_id=1, kind="uploaded", display_name="Eski CV.pdf", original_name="Eski CV.pdf", file_path=str(old_path), file_size=len(_MINIMAL_PDF), is_current=True),
+        CareerAnalysis(id="builder-old-analysis", user_id=1, status="ready", source="upload", file_name="Eski CV.pdf", cv_text="SQL Python deneyimi", profile={}, skills=[], radar=[], career_ladder=[]),
+        target,
+        task,
+        Evidence(id="builder-old-evidence", user_id=1, task_id=task.id, kind="file", file_path=str(evidence_path), status="accepted"),
+    ])
+    db.commit()
+    db.close()
+
+    builder_data = '{"tr":{"personal":{"full_name":"Builder Owner","summary":"Veri analizi ve raporlama uzmanı"},"experience":[{"title":"Veri Analisti","bullets":["SQL Python ile raporlama"]}],"education":[],"skills":[{"category":"Teknik","items":"SQL Python Excel"}],"projects":[],"certificates":[]},"en":{"personal":{"full_name":"Builder Owner"},"experience":[],"education":[],"skills":[],"projects":[],"certificates":[]}}'
+    response = client.post(
+        "/api/v1/cv/documents/generated/activate",
+        headers=headers,
+        files={"file": ("builder-owner-cv.pdf", BytesIO(_MINIMAL_PDF), "application/pdf")},
+        data={
+            "display_name": "Builder Owner CV.pdf",
+            "language": "tr",
+            "builder_data": builder_data,
+            "cv_text": "Builder Owner\nÖzet: Veri analizi ve raporlama uzmanı\nVeri Analisti\nSQL Python Excel ile raporlama deneyimi",
+        },
+    )
+
+    assert response.status_code == 202
+    payload = response.json()
+    assert payload["status"] == "queued"
+    assert payload["file_name"] == "Builder Owner CV.pdf"
+    documents = client.get("/api/v1/cv/documents", headers=headers).json()
+    current = [item for item in documents if item["is_current"]]
+    assert len(current) == 1
+    assert current[0]["kind"] == "generated"
+    assert current[0]["display_name"] == "Builder Owner CV.pdf"
+    assert next(item for item in documents if item["id"] == "old-upload")["is_current"] is False
+
+    analysis = client.get(f"/api/v1/career/analysis/{payload['analysis_id']}", headers=headers).json()
+    assert analysis["cv_document_id"] == current[0]["id"]
+    assert analysis["source"] == "builder"
+    assert client.get("/api/v1/career/targets", headers=headers).json() == []
+    assert evidence_path.exists() is False
+
+
+def test_invalid_builder_save_keeps_existing_active_state(client, monkeypatch, tmp_path):
+    client.post("/api/v1/auth/register", json={"full_name": "Safe Owner", "email": "safe-builder@example.com", "password": "GucluParola123!"})
+    token = client.post("/api/v1/auth/login", data={"username": "safe-builder@example.com", "password": "GucluParola123!"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    monkeypatch.setattr("app.api.v1.cv.settings.UPLOAD_DIR", str(tmp_path))
+    old_path = tmp_path / "1" / "cv" / "safe-old.pdf"
+    old_path.parent.mkdir(parents=True)
+    old_path.write_bytes(_MINIMAL_PDF)
+
+    override = app.dependency_overrides
+    db = next(override[__import__("app.core.database", fromlist=["get_db"]).get_db]())
+    db.add(CvDocument(id="safe-old", user_id=1, kind="uploaded", display_name="Safe Old.pdf", original_name="Safe Old.pdf", file_path=str(old_path), file_size=len(_MINIMAL_PDF), is_current=True))
+    db.commit()
+    db.close()
+
+    response = client.post(
+        "/api/v1/cv/documents/generated/activate",
+        headers=headers,
+        files={"file": ("bad.pdf", BytesIO(_MINIMAL_PDF), "application/pdf")},
+        data={"display_name": "Bad.pdf", "language": "tr", "builder_data": "not-json", "cv_text": "SQL Python Excel ile veri analizi deneyimi ve raporlama"},
+    )
+
+    assert response.status_code == 422
+    documents = client.get("/api/v1/cv/documents", headers=headers).json()
+    assert [item["id"] for item in documents if item["is_current"]] == ["safe-old"]

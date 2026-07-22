@@ -6,6 +6,7 @@
         'roadmap' => 'map',
         'learning' => 'book-open',
         'jobs' => 'briefcase-business',
+        'job-analysis' => 'search',
         'radar' => 'radar',
         'applications' => 'files',
         'passport' => 'book-user',

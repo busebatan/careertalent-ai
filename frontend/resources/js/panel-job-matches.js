@@ -6,14 +6,37 @@ function normalizeJob(job) {
         missing_skills: Array.isArray(job.missing_skills) ? job.missing_skills : [],
         cv_suggestions: Array.isArray(job.cv_suggestions) ? job.cv_suggestions : [],
         apply_status: job.apply_status || null, result_analysis_id: job.result_analysis_id || null,
+        source_analysis_id: job.source_analysis_id || null, source_cv_file_name: job.source_cv_file_name || '',
         error_message: job.error_message || '', created_at: job.created_at || new Date().toISOString(), selected: [], application_created: Boolean(job.application_created),
     };
 }
 
-export function panelJobMatches(seedJobs, config) {
+function normalizeCvAnalysis(analysis) {
+    const radar = Array.isArray(analysis?.radar) ? analysis.radar : [];
+    const scores = radar.map((item) => Number(item?.score)).filter(Number.isFinite);
+
+    return {
+        id: analysis?.id || null,
+        status: analysis?.status || 'missing',
+        skills: Array.isArray(analysis?.skills) ? analysis.skills : [],
+        radar,
+        readiness: scores.length ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length) : 0,
+        error_message: analysis?.error_message || '',
+    };
+}
+
+export function panelJobMatches(seedJobs, config, seedAnalysis = null) {
     return {
         jobs: seedJobs.map(normalizeJob), jobUrl: '', jobText: '', loading: false, error: '', config,
+        cv: normalizeCvAnalysis(seedAnalysis),
+        showApplyModal: false, cvVersions: [], selectedCvVersionId: '', activeJobForApply: null, loadingVersions: false,
+        wait(milliseconds) { return new Promise((resolve) => setTimeout(resolve, milliseconds)); },
         init() {
+            if (this.cv.status === 'queued' || this.cv.status === 'running') {
+                this.pollCv().catch(error => {
+                    this.cv.error_message = error.message;
+                });
+            }
             this.jobs.forEach(job => {
                 if (job.status === 'queued' || job.status === 'running') {
                     this.poll(job, false).catch(err => { this.error = err.message; });
@@ -23,6 +46,7 @@ export function panelJobMatches(seedJobs, config) {
                 }
             });
         },
+        get cvReady() { return this.cv.status === 'ready'; },
         get sortedJobs() { return [...this.jobs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); },
         scoreClass(score) { return score >= 70 ? 'text-emerald-600 dark:text-emerald-400' : score >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'; },
         formatDate(iso) { try { return new Intl.DateTimeFormat(this.config.locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)); } catch { return iso; } },
@@ -35,7 +59,7 @@ export function panelJobMatches(seedJobs, config) {
             return payload;
         },
         async addJob() {
-            if (this.loading || (!this.jobUrl.trim() && this.jobText.trim().length < 40)) return;
+            if (this.loading || !this.cvReady || (!this.jobUrl.trim() && this.jobText.trim().length < 40)) return;
             this.loading = true; this.error = '';
             try {
                 let job = normalizeJob(await this.request(this.config.analyzeUrl, { method: 'POST', body: JSON.stringify({ source_url: this.jobUrl.trim() || null, job_text: this.jobText.trim() || null }) }));
@@ -45,13 +69,26 @@ export function panelJobMatches(seedJobs, config) {
         },
         async poll(job, applying) {
             for (let attempt = 0; attempt < 150; attempt += 1) {
-                await new Promise((resolve) => setTimeout(resolve, 2000));
+                await this.wait(2000);
                 const fresh = normalizeJob(await this.request(this.endpoint(this.config.statusUrl, job)));
-                fresh.selected = job.selected || [];
-                Object.assign(job, fresh);
+                const target = this.jobs.find((item) => item.id === job.id) || job;
+                fresh.selected = target.selected || [];
+                fresh.application_created = target.application_created || fresh.application_created;
+                Object.assign(target, fresh);
+                job = target;
                 const state = applying ? job.apply_status : job.status;
                 if (state === 'ready') return;
                 if (state === 'failed') throw new Error(job.error_message || this.config.errors.generic);
+            }
+            throw new Error(this.config.errors.timeout);
+        },
+        async pollCv() {
+            if (!this.cv.id || !this.config.cvStatusUrl) return;
+            for (let attempt = 0; attempt < 150; attempt += 1) {
+                await this.wait(2000);
+                const url = this.config.cvStatusUrl.replace('__ANALYSIS__', encodeURIComponent(this.cv.id));
+                this.cv = normalizeCvAnalysis(await this.request(url));
+                if (this.cv.status === 'ready' || this.cv.status === 'failed') return;
             }
             throw new Error(this.config.errors.timeout);
         },
@@ -59,9 +96,37 @@ export function panelJobMatches(seedJobs, config) {
         async markApplied(job) { try { await this.request(this.endpoint(this.config.appliedUrl, job), { method: 'POST', body: '{}' }); job.application_created = true; } catch (error) { this.error = error.message; } },
         async applyJob(job) {
             if (!job.selected.length || job.apply_status === 'queued' || job.apply_status === 'running') return;
+            this.activeJobForApply = job;
+            this.selectedCvVersionId = '';
+            this.loadingVersions = true;
+            this.showApplyModal = true;
+            try {
+                this.cvVersions = await this.request('/panel/cv-merkezi/surumler');
+                const mainVer = this.cvVersions.find(v => v.is_main);
+                if (mainVer) {
+                    this.selectedCvVersionId = mainVer.id;
+                } else if (this.cvVersions.length > 0) {
+                    this.selectedCvVersionId = this.cvVersions[0].id;
+                }
+            } catch (err) {
+                // handle error
+            } finally {
+                this.loadingVersions = false;
+            }
+        },
+        async confirmApply() {
+            const job = this.activeJobForApply;
+            if (!job) return;
+            this.showApplyModal = false;
             this.error = '';
             try {
-                Object.assign(job, normalizeJob(await this.request(this.endpoint(this.config.applyUrl, job), { method: 'POST', body: JSON.stringify({ suggestion_ids: job.selected }) })));
+                Object.assign(job, normalizeJob(await this.request(this.endpoint(this.config.applyUrl, job), {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        suggestion_ids: job.selected,
+                        cv_version_id: this.selectedCvVersionId || null
+                    })
+                })));
                 await this.poll(job, true);
             } catch (error) { this.error = error.message; }
         },

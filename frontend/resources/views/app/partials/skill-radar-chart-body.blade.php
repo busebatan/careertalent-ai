@@ -1,6 +1,21 @@
-<div data-skill-radar-layout="split" class="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(15rem,18rem)] md:items-center">
-    <div class="relative mx-auto min-w-0 w-full max-w-[32rem] overflow-hidden md:ml-auto md:mr-0">
-        <svg viewBox="0 0 320 320" class="h-auto w-full overflow-hidden" role="img" aria-label="{{ __('panel.skill_radar.title') }}">
+@php
+    $radarAlignment = in_array(($radarAlignment ?? 'left'), ['left', 'intro-centered', 'frame-centered'], true)
+        ? $radarAlignment
+        : 'left';
+@endphp
+
+<div data-skill-radar-layout="split"
+    data-skill-radar-alignment="{{ $radarAlignment }}"
+    class="grid min-w-0 gap-4 md:mx-auto md:w-fit md:max-w-full md:grid-cols-[minmax(0,35rem)_minmax(15rem,18rem)] md:items-center">
+    <div class="relative mx-auto min-w-0 w-full max-w-[35rem] overflow-hidden">
+        <svg viewBox="0 0 {{ $svgSize }} {{ $svgSize }}"
+            data-radar-label-safe-layout
+            data-radar-plot-safe-zone
+            data-radar-plot-min-x="{{ $plotSafeMin }}"
+            data-radar-plot-min-y="{{ $plotSafeMin }}"
+            data-radar-plot-max-x="{{ $plotSafeMax }}"
+            data-radar-plot-max-y="{{ $plotSafeMax }}"
+            class="h-auto w-full overflow-hidden" role="img" aria-label="{{ __('panel.skill_radar.title') }}">
             @foreach ([25, 50, 75, 100] as $ring)
                 @php
                     $ringPoints = [];
@@ -35,26 +50,44 @@
             @foreach ($skills as $i => $skill)
                 @php
                     [$px, $py] = $radarPoint($i, $n, (float) $skill['score']);
-                    [$lx, $ly] = $labelPoint($i, $n);
-                    $anchor = $lx < $cx - 10 ? 'end' : ($lx > $cx + 10 ? 'start' : 'middle');
-                    $labelLines = $wrapSkillLabel((string) $skill['label']);
-                    $labelWidth = 96;
+                    $angle = (2 * M_PI * $i / $n) - M_PI / 2;
+                    $cosine = cos($angle);
+                    $sine = sin($angle);
+                    $usesSideColumn = abs($cosine) >= abs($sine);
+                    $labelSide = $usesSideColumn
+                        ? ($cosine >= 0 ? 'right' : 'left')
+                        : ($sine >= 0 ? 'bottom' : 'top');
+                    $labelWidth = $usesSideColumn ? 66 : 128;
+                    $labelLines = $wrapSkillLabel((string) $skill['label'], $usesSideColumn ? 10 : 18, 4);
                     $lineHeight = 11;
                     $labelHeight = count($labelLines) * $lineHeight + 2;
-                    $labelX = match ($anchor) {
-                        'end' => max(4, $lx - $labelWidth),
-                        'start' => min(320 - $labelWidth - 4, $lx),
-                        default => $lx - ($labelWidth / 2),
+                    $labelRadius = $maxR + 36;
+                    $verticalLabelGap = 8;
+                    $labelX = match ($labelSide) {
+                        'left' => 4,
+                        'right' => $svgSize - $labelWidth - 4,
+                        default => min(
+                            $svgSize - $labelWidth - 4,
+                            max(4, $cx + ($labelRadius * $cosine) - ($labelWidth / 2)),
+                        ),
                     };
-                    $labelY = min(320 - $labelHeight - 3, max(3, $ly - ($labelHeight / 2)));
-                    $labelAlign = match ($anchor) {
-                        'end' => 'text-right',
-                        'start' => 'text-left',
+                    $labelY = match ($labelSide) {
+                        'top' => max(4, $plotSafeMin - $labelHeight - $verticalLabelGap),
+                        'bottom' => min($svgSize - $labelHeight - 4, $plotSafeMax + $verticalLabelGap),
+                        default => min(
+                            $svgSize - $labelHeight - 4,
+                            max(4, $cy + ($labelRadius * $sine) - ($labelHeight / 2)),
+                        ),
+                    };
+                    $labelAlign = match ($labelSide) {
+                        'left' => 'text-right',
+                        'right' => 'text-left',
                         default => 'text-center',
                     };
                 @endphp
                 <circle cx="{{ $px }}" cy="{{ $py }}" r="3.5" class="fill-emerald-500 dark:fill-emerald-400"/>
-                <foreignObject x="{{ $labelX }}" y="{{ $labelY }}" width="{{ $labelWidth }}" height="{{ $labelHeight }}">
+                <foreignObject data-radar-label-box data-radar-label-side="{{ $labelSide }}"
+                    x="{{ round($labelX, 2) }}" y="{{ round($labelY, 2) }}" width="{{ $labelWidth }}" height="{{ $labelHeight }}">
                     <div xmlns="http://www.w3.org/1999/xhtml"
                         class="{{ $labelAlign }} break-words [overflow-wrap:anywhere] text-[9px] font-medium leading-[11px] text-slate-600 dark:text-slate-300">
                         @foreach ($labelLines as $line)

@@ -144,12 +144,4 @@
 
   @include('app.partials.cv-builder-optional-sections')
 
-  <div class="panel-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-    <p class="panel-muted text-sm" x-text="uiLabels[panelLocale].save_hint"></p>
-    <button type="button" @click="saveCv()"
-      class="rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-500 disabled:opacity-60"
-      :disabled="saveStatus === 'saving'"
-      x-text="saveStatus === 'saved' ? uiLabels[panelLocale].saved : (saveStatus === 'saving' ? uiLabels[panelLocale].saving : uiLabels[panelLocale].save)">
-    </button>
-  </div>
 </div>

@@ -29,7 +29,10 @@ from app.schemas.career import (
     EvidenceResponse,
     JobAnalyzeRequest,
     JobApplyRequest,
+    JobCvVersionRequest,
 )
+from app.schemas.cv import CandidateCvVersionResponse
+from app.services.ai_factory import AIOutputError, AIProviderError, AIUnavailableError
 from app.services.career_engine import (
     CareerLocalizationError,
     ensure_career_localizations,
@@ -40,7 +43,18 @@ from app.services.career_engine import (
     submit_evidence,
     reset_career_state,
 )
-from app.services.job_opportunity import create_job, current_analysis as current_ready_analysis, serialize_job
+from app.services.job_opportunity import (
+    JobCvVersionError,
+    JobQueueUnavailableError,
+    QUEUE_UNAVAILABLE_CODE,
+    QUEUE_UNAVAILABLE_MESSAGE,
+    create_cv_version_for_job,
+    create_job,
+    cv_snapshot,
+    dispatch_job_analysis,
+    latest_analysis as latest_user_analysis,
+    serialize_job,
+)
 from app.tasks.career import analyze_cv_task, analyze_job_task, apply_job_suggestions_task, plan_target_task, review_evidence_task
 
 router = APIRouter(prefix="/career", tags=["Career Engine"], dependencies=[Depends(get_current_user)])
@@ -89,16 +103,27 @@ def _localized_locale(
 
 @router.post("/jobs/analyze", status_code=202)
 def create_job_analysis(request: JobAnalyzeRequest, db: DB, user: CurrentUser):
-    if current_ready_analysis(db, user.id) is None:
+    analysis = latest_user_analysis(db, user.id)
+    if analysis is None or analysis.status != "ready":
         raise HTTPException(status_code=409, detail="İlan analizi için önce CV analizi tamamlanmalı")
-    row = create_job(db, user.id, request.source_url, request.job_text)
-    analyze_job_task.delay(row.id)
+    snapshot = cv_snapshot(analysis)
+    row = create_job(db, user.id, request.source_url, request.job_text, analysis)
+    try:
+        dispatch_job_analysis(db, row, snapshot, analyze_job_task.delay)
+    except JobQueueUnavailableError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": QUEUE_UNAVAILABLE_CODE,
+                "message": QUEUE_UNAVAILABLE_MESSAGE,
+            },
+        ) from exc
     return serialize_job(row)
 
 
 @router.get("/jobs")
-def saved_jobs(db: DB, user: CurrentUser):
-    rows = db.scalars(select(JobOpportunity).where(JobOpportunity.user_id == user.id, JobOpportunity.saved.is_(True)).order_by(JobOpportunity.created_at.desc())).all()
+def list_jobs(db: DB, user: CurrentUser):
+    rows = db.scalars(select(JobOpportunity).where(JobOpportunity.user_id == user.id).order_by(JobOpportunity.created_at.desc())).all()
     applied_job_ids = set(db.scalars(select(JobApplication.job_id).where(JobApplication.user_id == user.id, JobApplication.job_id.is_not(None))).all())
     return [serialize_job(row) | {"application_created": row.id in applied_job_ids} for row in rows]
 
@@ -140,11 +165,108 @@ def apply_job(job_id: str, request: JobApplyRequest, db: DB, user: CurrentUser):
     selected = [indexed.get(item_id) for item_id in request.suggestion_ids]
     if row.status != "ready" or any(item is None or not item.get("safe_to_apply") for item in selected):
         raise HTTPException(status_code=422, detail="Yalnız güvenli CV önerileri uygulanabilir")
+
+    # ── B2B Snapshots Integration ──────────────────────────────────────
+    from datetime import timedelta
+    from app.models.company_recruiting import RecruitingPosition, RecruitingApplication, RecruitingApplicationSnapshot
+    from app.models.engagement import CandidateCvVersion
+    
+    position = db.scalar(select(RecruitingPosition).where(RecruitingPosition.id == job_id))
+    if position is not None:
+        existing_app = db.scalar(
+            select(RecruitingApplication).where(
+                RecruitingApplication.position_id == position.id,
+                RecruitingApplication.candidate_user_id == user.id
+            )
+        )
+        if not existing_app:
+            payload_data = {}
+            if request.cv_version_id:
+                cv_ver = db.scalar(
+                    select(CandidateCvVersion).where(
+                        CandidateCvVersion.id == request.cv_version_id,
+                        CandidateCvVersion.user_id == user.id
+                    )
+                )
+                if cv_ver:
+                    payload_data = cv_ver.payload
+            
+            if not payload_data:
+                cv_ver = db.scalar(
+                    select(CandidateCvVersion).where(
+                        CandidateCvVersion.user_id == user.id,
+                        CandidateCvVersion.is_main.is_(True)
+                    )
+                )
+                if cv_ver:
+                    payload_data = cv_ver.payload
+                else:
+                    latest_analysis = db.scalar(
+                        select(CareerAnalysis)
+                        .where(CareerAnalysis.user_id == user.id, CareerAnalysis.status == "ready")
+                        .order_by(CareerAnalysis.created_at.desc())
+                    )
+                    if latest_analysis:
+                        payload_data = {
+                            "current_role": latest_analysis.current_role,
+                            "profile": latest_analysis.profile,
+                            "skills": latest_analysis.skills,
+                            "radar": latest_analysis.radar
+                        }
+            
+            app_id = str(uuid4())
+            new_app = RecruitingApplication(
+                id=app_id,
+                organization_id=position.organization_id,
+                position_id=position.id,
+                candidate_user_id=user.id,
+                candidate_name=user.full_name or "Aday",
+                candidate_email=user.email,
+                current_stage="new",
+                applied_at=datetime.now(timezone.utc),
+                retention_expires_at=datetime.now(timezone.utc) + timedelta(days=180),
+            )
+            db.add(new_app)
+            db.flush()
+            
+            snapshot_id = str(uuid4())
+            new_snapshot = RecruitingApplicationSnapshot(
+                id=snapshot_id,
+                application_id=app_id,
+                schema_version=1,
+                payload=payload_data,
+                consent_scope="all",
+                created_at=datetime.now(timezone.utc)
+            )
+            db.add(new_snapshot)
+            db.commit()
+    # ───────────────────────────────────────────────────────────────────
+
     row.apply_status = "queued"
     db.commit()
     apply_job_suggestions_task.delay(row.id, request.suggestion_ids)
     db.refresh(row)
     return serialize_job(row)
+
+
+@router.post("/jobs/{job_id}/cv-version", response_model=CandidateCvVersionResponse, status_code=201)
+def create_job_cv_version(job_id: str, request: JobCvVersionRequest, db: DB, user: CurrentUser):
+    row = db.scalar(select(JobOpportunity).where(JobOpportunity.id == job_id, JobOpportunity.user_id == user.id))
+    if row is None:
+        raise _not_found()
+    try:
+        return create_cv_version_for_job(
+            db,
+            row,
+            request.suggestion_ids,
+            request.source_cv_version_id,
+            user.preferred_locale,
+        )
+    except JobCvVersionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except (AIUnavailableError, AIOutputError, AIProviderError) as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
 
 
 @router.get("/analysis/current", response_model=CareerAnalysisResponse | None)
@@ -155,6 +277,20 @@ def current_analysis(db: DB, user: CurrentUser):
         .order_by(CareerAnalysis.created_at.desc())
     )
     return serialize_analysis(row, _localized_locale(db, user, include_targets=False)) if row else None
+
+
+@router.get("/analysis/latest", response_model=CareerAnalysisResponse | None)
+def latest_analysis(db: DB, user: CurrentUser):
+    row = latest_user_analysis(db, user.id)
+    if row is None:
+        return None
+    locale = _localized_locale(
+        db,
+        user,
+        analysis_id=row.id,
+        include_targets=False,
+    ) if row.status == "ready" else user.preferred_locale
+    return serialize_analysis(row, locale)
 
 
 @router.get("/analysis/{analysis_id}", response_model=CareerAnalysisResponse)

@@ -6,6 +6,44 @@ export function careerAnalysisWatcher(config, runtime = {}) {
     return createCareerStatusWatcher(config, runtime, ['ready']);
 }
 
+export function careerDataReset(config, runtime = {}) {
+    const fetcher = runtime.fetch || globalThis.fetch;
+    const reload = runtime.reload || (() => globalThis.location?.reload());
+    const clearLocalCv = runtime.clearLocalCv || (() => globalThis.PanelCvStore?.clear());
+    const csrfToken = runtime.csrfToken || (() => globalThis.document?.querySelector('meta[name="csrf-token"]')?.getAttribute('content'));
+
+    return {
+        resetOpen: false,
+        resetScope: 'all',
+        resetWorking: false,
+        resetError: '',
+        async clearCareerData() {
+            if (!config.clearUrl || this.resetWorking) return;
+            this.resetWorking = true;
+            this.resetError = '';
+            const token = csrfToken();
+            try {
+                const response = await fetcher(config.clearUrl, {
+                    method: 'POST',
+                    headers: {
+                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                    },
+                    body: JSON.stringify({ scope: this.resetScope }),
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(payload.message || config.errorMessage);
+                if (['analysis', 'all'].includes(this.resetScope)) clearLocalCv();
+                reload();
+            } catch (error) {
+                this.resetError = error?.message || config.errorMessage;
+                this.resetWorking = false;
+            }
+        },
+    };
+}
+
 function createCareerStatusWatcher(config, runtime = {}, readyStatuses = ['active', 'ready']) {
     const fetcher = runtime.fetch || globalThis.fetch;
     const sleep = runtime.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));

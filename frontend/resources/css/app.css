@@ -54,6 +54,10 @@ html:not(.dark) { color-scheme: light; }
         @apply text-slate-500 dark:text-slate-400;
     }
 
+    .panel-sky-card-link {
+        @apply font-medium text-sky-800 hover:text-sky-900 hover:underline dark:text-sky-200 dark:hover:text-sky-100;
+    }
+
     .panel-nav-link {
         @apply flex items-center gap-2.5 rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200;
     }

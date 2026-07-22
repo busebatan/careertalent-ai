@@ -104,6 +104,8 @@ class JobOpportunity(Base):
     apply_status: Mapped[str | None] = mapped_column(String(24), nullable=True)
     applied_suggestion_ids: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     result_analysis_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    source_analysis_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    source_cv_file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
     error_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

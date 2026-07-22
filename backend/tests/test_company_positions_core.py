@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.core.database import get_db
 from app.main import app
-from app.models.company_recruiting import CompanyTaskOutbox, RecruitingApplication, RecruitingPositionActivity, RecruitingPositionAiAnalysis, RecruitingPositionCriteriaVersion
+from app.models.company_recruiting import CompanyTaskOutbox, RecruitingApplication, RecruitingPosition, RecruitingPositionActivity, RecruitingPositionAiAnalysis, RecruitingPositionCriteriaVersion
 from app.models.engagement import CvDocument
 from app.models.recruiting import Organization, OrganizationMembership
 from app.models.user import User
@@ -333,6 +333,67 @@ def test_public_share_link_and_candidate_application_contract(client, monkeypatc
     assert archived_page.status_code == 200
     assert archived_page.json()["position"]["status"] == "archived"
     assert archived_page.json()["position"]["application_open"] is False
+
+
+def test_public_position_marketplace_lists_only_open_active_organization_positions(client):
+    organization_id, headers = _company(client, "marketplace")
+
+    backend_payload = _position_payload("published")
+    backend_payload["title"] = "Backend Developer"
+    backend = client.post("/api/v1/company/positions", headers=headers, json=backend_payload).json()
+
+    data_payload = _position_payload("published")
+    data_payload.update({
+        "title": "Veri Analisti",
+        "department": "Data",
+        "employment_type": "contract",
+        "workplace_type": "onsite",
+        "location": "Ankara",
+    })
+    data_position = client.post("/api/v1/company/positions", headers=headers, json=data_payload).json()
+
+    expired = client.post(
+        "/api/v1/company/positions", headers=headers,
+        json={**_position_payload("published"), "title": "Süresi Geçen İlan"},
+    ).json()
+    client.post(
+        "/api/v1/company/positions", headers=headers,
+        json={**_position_payload("draft"), "title": "Taslak İlan"},
+    )
+
+    other_organization_id, other_headers = _company(client, "suspended-marketplace")
+    hidden_organization_position = client.post(
+        "/api/v1/company/positions", headers=other_headers,
+        json={**_position_payload("published"), "title": "Askıdaki Kurum İlanı"},
+    ).json()
+
+    with next(app.dependency_overrides[get_db]()) as db:
+        now = datetime.now(UTC)
+        db.get(RecruitingPosition, backend["id"]).opened_at = now - timedelta(days=2)
+        db.get(RecruitingPosition, data_position["id"]).opened_at = now - timedelta(days=1)
+        db.get(RecruitingPosition, expired["id"]).application_deadline = now - timedelta(minutes=1)
+        db.get(Organization, other_organization_id).status = "suspended"
+        db.commit()
+
+    listed = client.get("/api/v1/public/positions")
+    assert listed.status_code == 200, listed.text
+    assert listed.json()["total"] == 2
+    assert [item["position"]["title"] for item in listed.json()["items"]] == ["Veri Analisti", "Backend Developer"]
+    assert all(item["position"]["status"] == "published" for item in listed.json()["items"])
+    assert all(item["position"]["application_open"] is True for item in listed.json()["items"])
+    assert "Askıdaki Kurum İlanı" not in str(listed.json())
+    assert hidden_organization_position["public_id"] not in str(listed.json())
+
+    filtered = client.get("/api/v1/public/positions?q=Veri&workplace_type=onsite&employment_type=contract")
+    assert filtered.status_code == 200
+    assert filtered.json()["total"] == 1
+    assert filtered.json()["items"][0]["position"]["public_path"] == data_position["public_path"]
+
+    paged = client.get("/api/v1/public/positions?limit=1&offset=0")
+    assert paged.status_code == 200
+    assert paged.json()["total"] == 2
+    assert paged.json()["has_more"] is True
+    assert len(paged.json()["items"]) == 1
 
 
 def test_candidate_cannot_submit_another_users_cv_or_draft_position(client):

@@ -18,6 +18,9 @@ class CvHistoryTest extends TestCase
     {
         Http::fake([
             'http://localhost:8000/api/v1/career/profile' => Http::response(['full_name' => 'User', 'email' => 'user@example.com', 'social_links' => []]),
+            'http://localhost:8000/api/v1/career/analysis/current' => Http::response([
+                'status' => 'ready', 'source' => 'archive_uploaded', 'file_name' => 'old.pdf',
+            ]),
             'http://localhost:8000/api/v1/cv/documents' => Http::response([
                 ['id' => 'current-1', 'kind' => 'uploaded', 'display_name' => 'current.pdf', 'is_current' => true, 'created_at' => '2026-07-13T20:00:00+00:00'],
                 ['id' => 'generated-1', 'kind' => 'generated', 'display_name' => 'Trendyol CV.pdf', 'is_current' => false, 'created_at' => '2026-07-13T21:30:00+00:00'],
@@ -26,15 +29,31 @@ class CvHistoryTest extends TestCase
             'http://localhost:8000/*' => Http::response([]),
         ]);
 
-        $this->get('/panel/hesap#cv-yukle')->assertOk()
+        $response = $this->get('/panel/hesap#cv-yukle');
+
+        $response->assertOk()
             ->assertSee('current.pdf')->assertSee('Trendyol CV.pdf')->assertSee('old.pdf')
+            ->assertSee('data-cv-history-analysis-ready', false)
+            ->assertSee('data-initial-history-analysis-ready="true"', false)
             ->assertSee('Kariyer rotasına git')
             ->assertSee('href="'.route('panel.roadmap').'"', false)
-            ->assertSee('@drop.prevent="onDrop($event)"', false)
-            ->assertSee('panel-upload-zone-active', false)
+            ->assertSeeInOrder(['data-cv-history-analysis-ready', '<ul class="mt-5'], false)
+            ->assertDontSee('@drop.prevent="onDrop($event)"', false)
+            ->assertDontSee('panel-upload-zone', false)
             ->assertDontSee('Tekrar indir')
             ->assertSee('Aç ve düzenle')->assertSee('Aktif analiz yap')
+            ->assertSee('data-cv-delete-dialog', false)
+            ->assertSee('border-t border-slate-200 pt-5', false)
+            ->assertSee('@click="deleteDialogOpen = true"', false)
+            ->assertSee(__('panel.profile.cv_delete_title'))
+            ->assertSee(__('panel.profile.cv_delete_action'))
+            ->assertDontSee('return confirm(', false)
             ->assertSee('13.07.2026 21:30');
+
+        $dom = new \DOMDocument();
+        @$dom->loadHTML($response->getContent());
+        $xpath = new \DOMXPath($dom);
+        $this->assertCount(1, $xpath->query('//*[@id="cv-yukle"]//a[@href="'.route('panel.roadmap').'"]'));
     }
 
     public function test_cv_tab_selection_updates_hash_and_is_restored_after_reload(): void
@@ -118,6 +137,23 @@ class CvHistoryTest extends TestCase
 
         $this->get('/panel/hesap/cv-gecmisi/generated-1/indir')->assertOk()->assertHeader('content-type', 'application/pdf')->assertContent('%PDF-1.4');
         $this->get('/panel/cv-merkezi?cvDocument=generated-1')->assertOk()->assertSee('Restore User')->assertSee('restoredFromHistory', false);
+    }
+
+    public function test_ai_created_cv_version_opens_in_builder_without_replacing_main_cv(): void
+    {
+        Http::fake([
+            'http://localhost:8000/api/v1/cv/versions' => Http::response([[
+                'id' => 'version-ai', 'version_name' => 'Data Analyst için CV', 'language' => 'tr', 'is_main' => false,
+                'payload' => ['personal' => ['full_name' => 'AI Draft User', 'summary' => 'İlana özel özet'], 'education' => [], 'experience' => [], 'skills' => [], 'projects' => [], 'certificates' => [], 'enabledOptional' => [], 'optional' => []],
+            ]]),
+            'http://localhost:8000/*' => Http::response([]),
+        ]);
+
+        $this->get('/panel/cv-merkezi?cvVersion=version-ai')
+            ->assertOk()
+            ->assertSee('AI Draft User')
+            ->assertSee('İlana özel özet')
+            ->assertSee('restoredFromHistory', false);
     }
 
     public function test_history_document_can_start_a_fresh_ai_analysis(): void

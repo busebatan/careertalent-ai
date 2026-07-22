@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.career_engine import CareerAnalysis, CareerTarget, CareerTask, Evidence
-from app.models.engagement import PersonalTask
+from app.models.engagement import CareerInterview, CvDocument, PersonalTask
 from app.models.user import User
 from app.schemas.career import (
     CareerAnalysisAI,
@@ -383,6 +383,8 @@ def create_analysis(
     source: str,
     file_name: str | None,
     cv_document_id: str | None = None,
+    *,
+    commit: bool = True,
 ) -> CareerAnalysis:
     now = datetime.now(timezone.utc)
     row = CareerAnalysis(
@@ -391,8 +393,11 @@ def create_analysis(
         created_at=now, updated_at=now,
     )
     db.add(row)
-    db.commit()
-    db.refresh(row)
+    if commit:
+        db.commit()
+        db.refresh(row)
+    else:
+        db.flush()
     return row
 
 
@@ -684,10 +689,23 @@ def submit_evidence(db: Session, user_id: int, task: CareerTask, kind: str, url:
 def reset_career_state(db: Session, user_id: int, scope: str, *, commit: bool = True) -> dict[str, int]:
     evidence_files = career_evidence_file_paths(db, user_id) if scope in {"plan", "all"} else []
     deleted = {"analyses": 0, "targets": 0, "tasks": 0, "evidence": 0}
+    if scope in {"analysis", "all"}:
+        ended_at = datetime.now(timezone.utc)
+        db.execute(
+            update(CareerInterview)
+            .where(CareerInterview.user_id == user_id, CareerInterview.status == "active")
+            .values(status="archived", ended_at=ended_at, updated_at=ended_at)
+        )
     if scope in {"plan", "all"}:
         deleted.update(_delete_target_plan(db, user_id))
     if scope in {"analysis", "all"}:
         deleted["analyses"] = db.execute(delete(CareerAnalysis).where(CareerAnalysis.user_id == user_id)).rowcount
+    if scope == "all":
+        deleted["current_cvs"] = db.execute(
+            update(CvDocument)
+            .where(CvDocument.user_id == user_id, CvDocument.is_current.is_(True))
+            .values(is_current=False)
+        ).rowcount
     if commit:
         db.commit()
         remove_career_evidence_files(user_id, evidence_files)

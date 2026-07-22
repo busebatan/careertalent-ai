@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 
@@ -10,6 +12,9 @@ from app.services.job_opportunity import analyze_job, apply_suggestions
 _CV_DATABASE_RETRY_DELAYS = (1, 2, 4)
 _CV_DATABASE_ERROR_CODE = "database_unavailable"
 _CV_DATABASE_ERROR_MESSAGE = "Veritabanı bağlantısı geçici olarak kesildi. Lütfen CV analizini yeniden dene."
+_JOB_ANALYSIS_ERROR_CODE = "analysis_failed"
+_JOB_ANALYSIS_ERROR_MESSAGE = "İlan analizi beklenmeyen bir hata nedeniyle tamamlanamadı. Lütfen tekrar deneyin."
+logger = logging.getLogger(__name__)
 
 
 def retry_cv_database_disconnect(task, db, analysis_id: str, error: OperationalError) -> None:
@@ -108,13 +113,27 @@ def review_evidence_task(evidence_id: str) -> str:
 
 
 @celery_app.task(name="career.analyze_job")
-def analyze_job_task(job_id: str) -> str:
+def analyze_job_task(job_id: str, cv_snapshot: dict | None = None) -> str:
     db = SessionLocal()
     try:
         row = db.scalar(select(JobOpportunity).where(JobOpportunity.id == job_id))
         if row is not None:
-            analyze_job(db, row)
+            analyze_job(db, row, None, cv_snapshot)
         return job_id
+    except Exception:
+        logger.exception("Unexpected job analysis task failure", extra={"job_id": job_id})
+        try:
+            db.rollback()
+            row = db.scalar(select(JobOpportunity).where(JobOpportunity.id == job_id))
+            if row is not None:
+                row.status = "failed"
+                row.error_code = _JOB_ANALYSIS_ERROR_CODE
+                row.error_message = _JOB_ANALYSIS_ERROR_MESSAGE
+                db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("Could not persist unexpected job analysis failure", extra={"job_id": job_id})
+        raise
     finally:
         db.close()
 

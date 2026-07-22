@@ -216,6 +216,43 @@ class PanelCareerTargetTest extends TestCase
             ->assertDontSee('panel-btn-ladder-selected', false);
     }
 
+    public function test_roadmap_shows_analysis_cv_source_and_reset_controls(): void
+    {
+        Http::fake([
+            'http://localhost:8000/health' => Http::response(['status' => 'ok']),
+            'http://localhost:8000/api/v1/career/analysis/current' => Http::response([
+                'status' => 'ready',
+                'source' => 'archive_uploaded',
+                'file_name' => 'Fatma_Kesici.pdf',
+                'created_at' => '2026-07-20T21:17:00+00:00',
+                'current_role' => 'Data Analyst',
+                'radar' => [],
+                'career_ladder' => [],
+            ]),
+            'http://localhost:8000/api/v1/career/targets' => Http::response([]),
+            'http://localhost:8000/*' => Http::response([]),
+        ]);
+
+        $this->get(route('panel.roadmap'))
+            ->assertOk()
+            ->assertSee('data-roadmap-analysis-cv', false)
+            ->assertSee('Fatma_Kesici.pdf')
+            ->assertSee('20.07.2026 21:17')
+            ->assertSee('data-roadmap-clear', false)
+            ->assertSee('data-roadmap-analysis-actions', false)
+            ->assertSee('class="panel-sky-card-link"', false)
+            ->assertSeeInOrder(['data-roadmap-analysis-cv', '20.07.2026 21:17', 'data-roadmap-clear'], false)
+            ->assertDontSee('inline-flex shrink-0 items-center justify-center rounded-xl border border-red-500/30', false)
+            ->assertSee('careerDataReset(', false)
+            ->assertSee((string) \Illuminate\Support\Js::from([
+                'clearUrl' => route('panel.cv.clear'),
+                'errorMessage' => __('panel.skill_radar.reset_failed'),
+            ]), false)
+            ->assertSee('value="analysis"', false)
+            ->assertSee('value="plan"', false)
+            ->assertSee('value="all"', false);
+    }
+
     public function test_selecting_another_role_moves_the_fixed_open_state(): void
     {
         $roles = [

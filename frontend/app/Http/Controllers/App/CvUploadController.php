@@ -97,12 +97,19 @@ class CvUploadController extends PanelController
     public function analyzeBuilder(Request $request, CareerTalentApiClient $api): JsonResponse
     {
         $validated = $request->validate([
-            'locales' => ['required', 'array'],
-            'locale' => ['nullable', 'string', 'in:tr,en'],
+            'pdf' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+            'display_name' => ['required', 'string', 'max:250'],
+            'language' => ['required', 'string', 'in:tr,en'],
+            'locales' => ['required', 'string', 'max:1000000'],
         ]);
 
-        $locale = $validated['locale'] ?? app()->getLocale();
-        $locales = $validated['locales'];
+        $locale = $validated['language'];
+        $locales = json_decode($validated['locales'], true);
+        if (! is_array($locales)) {
+            return response()->json([
+                'message' => __('panel.cv_builder.analyze_failed'),
+            ], 422);
+        }
         if (! BuilderCvTextExporter::hasCareerContent($locales, $locale)) {
             return response()->json([
                 'message' => __('panel.cv_builder.analyze_too_short'),
@@ -116,11 +123,13 @@ class CvUploadController extends PanelController
             ], 422);
         }
 
-        $fileName = BuilderCvTextExporter::fileName($locales, $locale);
-        $result = $api->analyzeCvTextQueued([
-            'cv_text' => $cvText,
-            'file_name' => $fileName,
-        ]);
+        $result = $api->activateGeneratedCv(
+            $request->file('pdf'),
+            $validated['display_name'],
+            $locale,
+            $validated['locales'],
+            $cvText,
+        );
 
         if (! ($result['ok'] ?? false)) {
             return response()->json([
@@ -132,7 +141,8 @@ class CvUploadController extends PanelController
         return response()->json([
             'status' => $body['status'] ?? 'queued',
             'analysis_id' => $body['analysis_id'] ?? null,
-            'file_name' => $fileName,
+            'file_name' => $body['file_name'] ?? $validated['display_name'],
+            'cv_document_id' => $body['cv_document_id'] ?? null,
             'skill_radar' => $body['skill_radar'] ?? null,
             'career_ladder' => $body['career_ladder'] ?? [],
             'redirect' => ($body['status'] ?? null) === 'ready' ? route('panel.cv-builder') : null,

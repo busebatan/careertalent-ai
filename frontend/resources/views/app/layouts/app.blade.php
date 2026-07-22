@@ -70,7 +70,7 @@
 
         <div class="panel-main">
             @include('app.partials.panel-header')
-            <main class="flex-1 p-6 md:p-10">
+            <main class="flex-1 p-6 md:p-10 @yield('main_class')">
                 @include('partials.flash-status')
                 @if (session('panel_error'))
                     <div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300" role="alert">

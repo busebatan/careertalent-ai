@@ -53,7 +53,7 @@
         <section class="panel-card border-dashed p-8 text-center">
             <h2 class="mb-2 text-lg font-semibold">{{ app()->getLocale() === 'en' ? 'AI analysis is not ready' : 'AI analizi henüz hazır değil' }}</h2>
             <p class="panel-muted text-sm">{{ $careerEngineError ?: (app()->getLocale() === 'en' ? 'Upload a CV to generate your career ladder.' : 'Kariyer merdivenini oluşturmak için CV yükle.') }}</p>
-            <a href="{{ route('panel.account') }}#cv-yukle" class="mt-4 inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white">{{ __('panel.dashboard.upload_cv') }}</a>
+            <a href="{{ route('panel.cv-builder') }}" class="mt-4 inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white">{{ __('panel.dashboard.upload_cv') }}</a>
         </section>
     @endif
 </div>

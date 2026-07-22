@@ -14,6 +14,7 @@
                 'cvFileDynamic' => ! empty($cvFileName),
                 'showCvToolbar' => true,
                 'fromApi' => $hasCvAnalysis ?? false,
+                'radarAlignment' => 'intro-centered',
             ])
         @endif
     </div>
@@ -25,7 +26,7 @@
         <h2 class="mb-2 text-lg font-semibold" x-text="labels.empty_title"></h2>
         <p class="panel-muted mx-auto mb-4 max-w-md text-sm" x-text="labels.empty_desc"></p>
         <div class="flex flex-wrap justify-center gap-2">
-            <a href="{{ route('panel.account') }}#cv-yukle"
+            <a href="{{ route('panel.cv-builder') }}"
                 class="inline-flex rounded-xl bg-emerald-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-emerald-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
                 x-text="labels.upload_cta"></a>
             <a href="{{ route('panel.cv-builder') }}"

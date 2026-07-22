@@ -326,6 +326,14 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/public/apply/'.rawurlencode($organizationSlug).'/'.rawurlencode($positionPath), 10);
     }
 
+    /** @param array<string, int|string> $filters */
+    public function publicPositions(array $filters = []): array
+    {
+        $query = $filters !== [] ? '?'.http_build_query($filters) : '';
+
+        return $this->getJson('/api/v1/public/positions'.$query, 10);
+    }
+
     public function resolvePublicJobShareLink(string $shortCode): array
     {
         return $this->getJson('/api/v1/public/a/'.rawurlencode($shortCode), 10);
@@ -522,6 +530,24 @@ class CareerTalentApiClient
         }
     }
 
+    public function activateGeneratedCv(UploadedFile $file, string $displayName, string $language, string $builderData, string $cvText): array
+    {
+        try {
+            $response = $this->request(120)
+                ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+                ->post($this->baseUrl().'/api/v1/cv/documents/generated/activate', [
+                    'display_name' => $displayName,
+                    'language' => $language,
+                    'builder_data' => $builderData,
+                    'cv_text' => $cvText,
+                ]);
+
+            return $this->normalizeResponse($response);
+        } catch (ConnectionException $exception) {
+            return $this->connectionError($exception);
+        }
+    }
+
     public function archiveCurrentCv(string $documentId): array
     {
         return $this->patchJson('/api/v1/cv/documents/'.rawurlencode($documentId).'/archive', [], 15);
@@ -563,6 +589,11 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/career/analysis/current', 10);
     }
 
+    public function latestCareerAnalysis(): array
+    {
+        return $this->getJson('/api/v1/career/analysis/latest', 10);
+    }
+
     public function resetCareer(string $scope): array
     {
         return $this->postJson('/api/v1/career/reset', ['scope' => $scope], 15);
@@ -589,11 +620,19 @@ class CareerTalentApiClient
         return $this->postJson('/api/v1/career/jobs/'.rawurlencode($jobId).'/save', [], 15);
     }
 
-    /** @param list<string> $suggestionIds */
-    public function applyCareerJobSuggestions(string $jobId, array $suggestionIds): array
+    /**
+     * @param list<string> $suggestionIds
+     * @param string|null $cvVersionId
+     */
+    public function applyCareerJobSuggestions(string $jobId, array $suggestionIds, ?string $cvVersionId = null): array
     {
-        return $this->postJson('/api/v1/career/jobs/'.rawurlencode($jobId).'/apply', ['suggestion_ids' => $suggestionIds], 20);
+        $payload = ['suggestion_ids' => $suggestionIds];
+        if ($cvVersionId !== null) {
+            $payload['cv_version_id'] = $cvVersionId;
+        }
+        return $this->postJson('/api/v1/career/jobs/'.rawurlencode($jobId).'/apply', $payload, 20);
     }
+
 
     public function deleteCareerJob(string $jobId): array
     {
@@ -641,6 +680,29 @@ class CareerTalentApiClient
         return $this->putJson('/api/v1/career/profile', $payload, 15);
     }
 
+    public function cvVersions(): array
+    {
+        return $this->getJson('/api/v1/cv/versions', 10);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function createCvVersion(array $payload): array
+    {
+        return $this->postJson('/api/v1/cv/versions', $payload, 15);
+    }
+
+    /** @param array<string, mixed> $payload */
+    public function updateCvVersion(string $id, array $payload): array
+    {
+        return $this->putJson('/api/v1/cv/versions/'.rawurlencode($id), $payload, 15);
+    }
+
+    public function deleteCvVersion(string $id): array
+    {
+        return $this->deleteJson('/api/v1/cv/versions/'.rawurlencode($id), 15);
+    }
+
+
     public function careerChat(): array
     {
         return $this->getJson('/api/v1/career/chat', 10);
@@ -654,6 +716,33 @@ class CareerTalentApiClient
         ], 90);
     }
 
+    public function careerChatThreads(int $limit = 20, int $offset = 0): array
+    {
+        return $this->getJson('/api/v1/career/chat/threads?'.http_build_query([
+            'limit' => $limit,
+            'offset' => $offset,
+        ]), 10);
+    }
+
+    public function startNewCareerChat(): array
+    {
+        return $this->postJson('/api/v1/career/chat/threads', [], 15);
+    }
+
+    public function careerChatThread(string $threadId): array
+    {
+        return $this->getJson('/api/v1/career/chat/threads/'.rawurlencode($threadId), 10);
+    }
+
+    /** @param list<string> $suggestionIds */
+    public function createCareerChatCvVersion(string $jobId, array $suggestionIds, ?string $sourceCvVersionId): array
+    {
+        return $this->postJson('/api/v1/career/jobs/'.rawurlencode($jobId).'/cv-version', [
+            'suggestion_ids' => $suggestionIds,
+            'source_cv_version_id' => $sourceCvVersionId,
+        ], 120);
+    }
+
     public function clearCareerChat(): array
     {
         return $this->deleteJson('/api/v1/career/chat', 15);
@@ -664,6 +753,19 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/career/interviews/current', 15);
     }
 
+    public function interviewHistory(int $limit = 20, int $offset = 0): array
+    {
+        return $this->getJson('/api/v1/career/interviews/history?'.http_build_query([
+            'limit' => $limit,
+            'offset' => $offset,
+        ]), 15);
+    }
+
+    public function interviewDetail(string $interviewId): array
+    {
+        return $this->getJson('/api/v1/career/interviews/'.rawurlencode($interviewId), 15);
+    }
+
     public function startInterview(string $language = 'tr'): array
     {
         return $this->postJson('/api/v1/career/interviews', ['language' => $language], 90);
@@ -672,6 +774,11 @@ class CareerTalentApiClient
     public function scoreInterviewAnswer(string $interviewId, array $payload): array
     {
         return $this->postJson('/api/v1/career/interviews/'.rawurlencode($interviewId).'/answers', $payload, 90);
+    }
+
+    public function retryInterview(string $interviewId): array
+    {
+        return $this->postJson('/api/v1/career/interviews/'.rawurlencode($interviewId).'/retry', [], 15);
     }
 
     public function personalTasks(?string $targetId = null): array
