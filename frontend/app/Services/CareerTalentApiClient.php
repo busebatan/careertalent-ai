@@ -708,9 +708,12 @@ class CareerTalentApiClient
         return $this->getJson('/api/v1/career/chat', 10);
     }
 
-    public function sendCareerChat(string $message): array
+    public function sendCareerChat(string $message, ?string $mode = null): array
     {
-        return $this->postJson('/api/v1/career/chat', ['message' => $message], 90);
+        return $this->postJson('/api/v1/career/chat', [
+            'message' => $message,
+            'mode' => $mode,
+        ], 90);
     }
 
     public function careerChatThreads(int $limit = 20, int $offset = 0): array

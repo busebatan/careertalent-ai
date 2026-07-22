@@ -20,7 +20,7 @@ class PanelApiConnectionTest extends TestCase
             'http://localhost:8000/api/v1/career/profile' => Http::response(['full_name' => 'Gerçek Kullanıcı', 'email' => 'user@example.com', 'social_links' => []], 200),
         ]);
 
-        $this->postJson('/panel/ai-yardimcisi', ['message' => 'Kariyer planım nedir?'])->assertCreated()->assertJsonPath('content', 'AI cevap');
+        $this->postJson('/panel/ai-yardimcisi', ['message' => 'Kariyer planım nedir?', 'mode' => 'career'])->assertCreated()->assertJsonPath('content', 'AI cevap');
         $this->postJson('/panel/mulakat-hazirligi', ['language' => 'en'])->assertCreated()->assertJsonPath('id', 'i1');
         $this->postJson('/panel/mulakat-hazirligi/i1/cevap', ['question_id' => 'q1', 'answer' => 'Somut bir projede sorguyu optimize ederek süreyi düşürdüm.'])->assertCreated()->assertJsonPath('score', 80);
         $this->getJson('/panel/mulakat-hazirligi/gecmis?limit=20&offset=0')->assertOk()->assertJsonPath('items.0.id', 'i1');
@@ -29,7 +29,7 @@ class PanelApiConnectionTest extends TestCase
         $this->postJson('/panel/basvurularim', ['company' => 'Acme', 'role' => 'Analyst'])->assertCreated()->assertJsonPath('stage', 'applied');
         $this->putJson('/panel/hesap/profil', ['full_name' => 'Gerçek Kullanıcı', 'phone' => null, 'location' => null, 'headline' => null, 'linkedin' => null, 'social_links' => []])->assertOk()->assertJsonPath('full_name', 'Gerçek Kullanıcı');
 
-        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/career/chat' && $request['message'] === 'Kariyer planım nedir?');
+        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/career/chat' && $request['message'] === 'Kariyer planım nedir?' && $request['mode'] === 'career');
         Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/career/interviews' && $request['language'] === 'en');
         Http::assertSent(fn ($request) => str_starts_with($request->url(), 'http://localhost:8000/api/v1/career/interviews/history?limit=20&offset=0'));
         Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/career/interviews/i1/retry');

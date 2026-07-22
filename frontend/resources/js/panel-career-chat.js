@@ -7,14 +7,25 @@ function endpoint(template, id) {
     return template.replace('__JOB__', encodeURIComponent(id));
 }
 
+const CHAT_MODES = new Set(['cv', 'interview', 'career']);
+
+function persistedMode(messages) {
+    return [...messages].reverse().find((message) => CHAT_MODES.has(message?.meta?.mode))?.meta?.mode || null;
+}
+
 export function careerChat(initialMessages, sendUrl, newChatUrl, labels, actions = {}, runtime = {}) {
     const fetcher = runtime.fetch || globalThis.fetch;
     const sleep = runtime.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
     const navigate = runtime.navigate || ((url) => globalThis.location?.assign(url));
 
+    const messages = Array.isArray(initialMessages) ? initialMessages : [];
+    const initialMode = persistedMode(messages);
+
     return {
-        messages: Array.isArray(initialMessages) ? initialMessages : [],
+        messages,
         text: '',
+        mode: initialMode,
+        modeSelected: Boolean(initialMode) || messages.length > 0,
         sending: false,
         error: '',
         sendUrl,
@@ -29,6 +40,19 @@ export function careerChat(initialMessages, sendUrl, newChatUrl, labels, actions
         newChatLoading: false,
         historyOpen: false,
         selectedThread: null,
+        selectMode(mode) {
+            if (!CHAT_MODES.has(mode) || this.messages.length) return;
+            this.mode = mode;
+            this.modeSelected = true;
+        },
+        changeMode() {
+            if (this.messages.length) return;
+            this.mode = null;
+            this.modeSelected = false;
+        },
+        modeLabel() {
+            return this.labels.modes?.[this.mode]?.title || '';
+        },
         async init() {
             this.messages.forEach((message) => this.prepareAction(message));
             if (this.messages.some((message) => message.meta?.action?.type === 'job_cv_draft')) {
@@ -135,14 +159,16 @@ export function careerChat(initialMessages, sendUrl, newChatUrl, labels, actions
         },
         async send() {
             const content = this.text.trim();
-            if (!content || this.sending) return;
-            this.messages.push({ id: `pending-${Date.now()}`, role: 'user', content, meta: {} });
+            if (!content || this.sending || !this.modeSelected) return;
+            const modeMeta = this.mode ? { mode: this.mode } : {};
+            this.messages.push({ id: `pending-${Date.now()}`, role: 'user', content, meta: modeMeta });
             this.text = '';
             this.sending = true;
             this.error = '';
             this.scrollToBottom();
             try {
-                const payload = await this.request(this.sendUrl, { method: 'POST', body: JSON.stringify({ message: content }) });
+                const body = { message: content, ...(this.mode ? { mode: this.mode } : {}) };
+                const payload = await this.request(this.sendUrl, { method: 'POST', body: JSON.stringify(body) });
                 this.messages.push(payload);
                 const action = this.prepareAction(payload);
                 this.scrollToBottom();
@@ -165,6 +191,8 @@ export function careerChat(initialMessages, sendUrl, newChatUrl, labels, actions
                 const payload = await this.request(this.newChatUrl, { method: 'POST' });
                 this.messages = [];
                 this.text = '';
+                this.mode = null;
+                this.modeSelected = false;
                 if (payload.archived && !this.threads.some((thread) => thread.id === payload.archived.id)) {
                     this.threads.unshift(payload.archived);
                     this.historyOffset += 1;

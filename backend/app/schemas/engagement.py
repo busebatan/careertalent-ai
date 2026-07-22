@@ -24,6 +24,7 @@ class ProfileUpdate(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=2, max_length=30000)
+    mode: Literal["cv", "interview", "career"] | None = None
 
 
 class ChatReplyAI(BaseModel):

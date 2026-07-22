@@ -29,8 +29,12 @@ class ChatController extends PanelController
 
     public function send(Request $request, CareerTalentApiClient $api): JsonResponse
     {
-        $validated = $request->validate(['message' => ['required', 'string', 'min:2', 'max:30000']]);
-        return $this->apiJson($api->sendCareerChat($validated['message']));
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'min:2', 'max:30000'],
+            'mode' => ['nullable', 'string', 'in:cv,interview,career'],
+        ]);
+
+        return $this->apiJson($api->sendCareerChat($validated['message'], $validated['mode'] ?? null));
     }
 
     public function createCvVersion(Request $request, string $jobId, CareerTalentApiClient $api): JsonResponse

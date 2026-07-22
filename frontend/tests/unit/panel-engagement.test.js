@@ -10,8 +10,27 @@ describe('account-backed engagement panels', () => {
     it('chat sends the user message and appends persisted AI reply', async () => {
         let sent;
         globalThis.fetch = async (_url, options) => { sent = JSON.parse(options.body); return { ok: true, json: async () => ({ id: 'a1', role: 'assistant', content: 'Hedef görevi tamamla', meta: {} }) }; };
-        const state = careerChat([], '/chat', '/chat', { failed: 'failed' }); state.text = 'Bugün ne yapmalıyım?'; await state.send();
-        assert.deepEqual(sent, { message: 'Bugün ne yapmalıyım?' }); assert.equal(state.messages[0].role, 'user'); assert.equal(state.messages[1].content, 'Hedef görevi tamamla');
+        const state = careerChat([], '/chat', '/chat', { failed: 'failed' });
+        state.selectMode('career'); state.text = 'Bugün ne yapmalıyım?'; await state.send();
+        assert.deepEqual(sent, { message: 'Bugün ne yapmalıyım?', mode: 'career' }); assert.equal(state.messages[0].role, 'user'); assert.equal(state.messages[1].content, 'Hedef görevi tamamla');
+    });
+
+    it('requires a mode for an empty chat and restores persisted mode metadata after reload', async () => {
+        let requests = 0;
+        const empty = careerChat([], '/chat', '/chat/new', { failed: 'failed' }, {}, {
+            fetch: async () => { requests += 1; return { ok: true, status: 201, json: async () => ({}) }; },
+        });
+        empty.text = 'Bu mesaj gönderilmemeli';
+        await empty.send();
+        assert.equal(requests, 0);
+        assert.equal(empty.modeSelected, false);
+
+        const restored = careerChat([
+            { id: 'm1', role: 'user', content: 'CV analizi', meta: { mode: 'cv' } },
+            { id: 'm2', role: 'assistant', content: 'Yanıt', meta: { mode: 'cv' } },
+        ], '/chat', '/chat/new', { failed: 'failed' });
+        assert.equal(restored.mode, 'cv');
+        assert.equal(restored.modeSelected, true);
     });
 
     it('chat polls a job action, keeps approval explicit, and opens the new CV version', async () => {
@@ -30,6 +49,7 @@ describe('account-backed engagement panels', () => {
                 return { ok: true, status: 201, json: async () => ({ id: 'version-1' }) };
             },
         });
+        state.selectMode('cv');
         state.text = 'CVmi bu uzun ilan metnine göre oluşturmak istiyorum. SQL ve raporlama deneyimi arıyoruz.';
 
         await state.send();
@@ -69,6 +89,8 @@ describe('account-backed engagement panels', () => {
 
         await state.startNewChat();
         assert.deepEqual(state.messages, []);
+        assert.equal(state.mode, null);
+        assert.equal(state.modeSelected, false);
         assert.equal(state.threads[0].title, 'Eski kariyer konuşması');
         await state.openHistory(archived);
         assert.equal(state.historyOpen, true);

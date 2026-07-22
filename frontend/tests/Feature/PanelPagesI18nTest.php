@@ -62,7 +62,8 @@ class PanelPagesI18nTest extends TestCase
       'applications-en' => ['/panel/basvurularim', 'en', ['Applications', 'Active applications']],
       'interview-tr' => ['/panel/mulakat-hazirligi', 'tr', ['Mülakat Hazırlığı', 'AI mülakatı başlat', 'Önceki soru', 'Mülakat geçmişi']],
       'interview-en' => ['/panel/mulakat-hazirligi', 'en', ['Interview Preparation', 'Start AI interview', 'Previous question', 'Interview history']],
-      'chat-tr' => ['/panel/ai-yardimcisi', 'tr', ['Kariyer Asistanı', 'kişisel AI kariyer desteği']],
+      'chat-tr' => ['/panel/ai-yardimcisi', 'tr', ['Kariyer Asistanı', 'kişisel AI kariyer desteği', 'CV Analizi', 'Mülakat Koçu', 'Kariyer Planı']],
+      'chat-en' => ['/panel/ai-yardimcisi', 'en', ['Career Assistant', 'Personal AI career support', 'CV Analysis', 'Interview Coach', 'Career Planning']],
     ];
   }
 
@@ -142,6 +143,11 @@ class PanelPagesI18nTest extends TestCase
       ->assertSee('min-h-0 flex-1 space-y-3 overflow-y-auto', false)
       ->assertSee('data-chat-history', false)
       ->assertSee('data-chat-history-modal', false)
+      ->assertSee('data-chat-mode-selector', false)
+      ->assertSee('CV Analizi', false)
+      ->assertSee('Mülakat Koçu', false)
+      ->assertSee('Kariyer Planı', false)
+      ->assertSee('x-show="modeSelected"', false)
       ->assertSee('@click="startNewChat()"', false)
       ->assertSee('data-chat-cv-action', false)
       ->assertSee('jobStatusUrl', false)

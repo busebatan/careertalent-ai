@@ -5,6 +5,11 @@
     'failed' => __('panel.chat.failed'),
     'action_failed' => __('panel.chat.action_failed'),
     'action_timeout' => __('panel.chat.action_timeout'),
+    'modes' => [
+        'cv' => ['title' => __('panel.chat.mode_cv_title')],
+        'interview' => ['title' => __('panel.chat.mode_interview_title')],
+        'career' => ['title' => __('panel.chat.mode_career_title')],
+    ],
 ]) }}, {{ Js::from([
     'jobStatusUrl' => route('panel.job-matches.status', ['jobId' => '__JOB__']),
     'createCvVersionUrl' => route('panel.chat.cv-version', ['jobId' => '__JOB__']),
@@ -25,7 +30,33 @@
 
     <section data-chat-panel class="panel-card flex h-[calc(100dvh-15rem)] min-h-[28rem] max-h-[52rem] flex-col overflow-hidden p-5 sm:h-[calc(100dvh-13rem)]">
         <div x-ref="messages" data-chat-messages class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-slate-100 p-4 dark:border-slate-800 dark:bg-slate-950/70" aria-live="polite">
-            <div x-show="!messages.length" class="rounded-2xl rounded-tl-sm border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-slate-800 dark:text-slate-200">{{ __('panel.chat.ready_message') }}</div>
+            <div data-chat-mode-selector x-show="!modeSelected && !messages.length" class="rounded-2xl border border-emerald-500/20 bg-white p-4 dark:bg-slate-900">
+                <p class="text-sm text-slate-600 dark:text-slate-300">{{ __('panel.chat.ready_message') }}</p>
+                <h2 class="mt-3 font-semibold">{{ __('panel.chat.mode_title') }}</h2>
+                <p class="panel-muted mt-1 text-xs">{{ __('panel.chat.mode_subtitle') }}</p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                    <button type="button" class="rounded-xl border border-slate-200 p-4 text-left transition hover:border-emerald-500 hover:bg-emerald-500/5 dark:border-slate-700" @click="selectMode('cv')">
+                        <i data-lucide="file-search" class="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true"></i>
+                        <span class="mt-3 block text-sm font-semibold">{{ __('panel.chat.mode_cv_title') }}</span>
+                        <span class="panel-muted mt-1 block text-xs">{{ __('panel.chat.mode_cv_description') }}</span>
+                    </button>
+                    <button type="button" class="rounded-xl border border-slate-200 p-4 text-left transition hover:border-emerald-500 hover:bg-emerald-500/5 dark:border-slate-700" @click="selectMode('interview')">
+                        <i data-lucide="messages-square" class="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true"></i>
+                        <span class="mt-3 block text-sm font-semibold">{{ __('panel.chat.mode_interview_title') }}</span>
+                        <span class="panel-muted mt-1 block text-xs">{{ __('panel.chat.mode_interview_description') }}</span>
+                    </button>
+                    <button type="button" class="rounded-xl border border-slate-200 p-4 text-left transition hover:border-emerald-500 hover:bg-emerald-500/5 dark:border-slate-700" @click="selectMode('career')">
+                        <i data-lucide="route" class="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true"></i>
+                        <span class="mt-3 block text-sm font-semibold">{{ __('panel.chat.mode_career_title') }}</span>
+                        <span class="panel-muted mt-1 block text-xs">{{ __('panel.chat.mode_career_description') }}</span>
+                    </button>
+                </div>
+            </div>
+
+            <div x-show="modeSelected && !messages.length" class="flex flex-wrap items-center justify-between gap-3 rounded-2xl rounded-tl-sm border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-slate-800 dark:text-slate-200">
+                <span><span class="font-medium">{{ __('panel.chat.mode_selected') }}:</span> <span x-text="modeLabel()"></span></span>
+                <button type="button" class="font-medium text-emerald-700 hover:underline dark:text-emerald-300" @click="changeMode()">{{ __('panel.chat.mode_change') }}</button>
+            </div>
 
             <template x-for="message in messages" :key="message.id">
                 <div class="flex" :class="message.role === 'user' ? 'justify-end' : 'justify-start'">
@@ -65,7 +96,7 @@
             <p x-show="sending" class="text-sm text-slate-500">{{ __('panel.chat.thinking') }}</p>
         </div>
         <p x-show="error" x-text="error" class="mt-3 text-sm text-red-600"></p>
-        <form class="mt-4 flex items-end gap-3" @submit.prevent="send()"><textarea x-model="text" rows="2" maxlength="30000" class="panel-input-block min-w-0 flex-1 resize-none rounded-xl" placeholder="{{ __('panel.chat.input_placeholder') }}" @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }"></textarea><button :disabled="sending" class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60">{{ __('panel.chat.send') }}</button></form>
+        <form x-show="modeSelected" class="mt-4 flex items-end gap-3" @submit.prevent="send()"><textarea x-model="text" rows="2" maxlength="30000" class="panel-input-block min-w-0 flex-1 resize-none rounded-xl" placeholder="{{ __('panel.chat.input_placeholder') }}" :disabled="!modeSelected" @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }"></textarea><button :disabled="sending || !modeSelected" class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60">{{ __('panel.chat.send') }}</button></form>
     </section>
 
     <section data-chat-history class="panel-card mt-8 p-5 sm:p-6">

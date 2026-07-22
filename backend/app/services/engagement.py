@@ -3,6 +3,7 @@
 import json
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 from uuid import uuid4
 
 from sqlalchemy import func, select, update
@@ -182,7 +183,12 @@ def get_chat_thread(db: Session, user_id: int, thread_id: str) -> tuple[CareerCh
     return thread, list(rows)
 
 
-def answer_chat(db: Session, user_id: int, message: str) -> CareerChatMessage:
+def answer_chat(
+    db: Session,
+    user_id: int,
+    message: str,
+    mode: Literal["cv", "interview", "career"] | None = None,
+) -> CareerChatMessage:
     thread = ensure_active_chat_thread(db, user_id)
     history = db.scalars(
         select(CareerChatMessage)
@@ -190,8 +196,13 @@ def answer_chat(db: Session, user_id: int, message: str) -> CareerChatMessage:
         .order_by(CareerChatMessage.created_at.desc())
         .limit(12)
     ).all()
+    purpose = {
+        "cv": "Kullanıcının CV'sini kendi kariyer verisine dayanarak analiz et; güçlü ve geliştirilecek alanlar için uygulanabilir öneriler ver",
+        "interview": "Kullanıcıya kendi kariyer verisine dayanan mülakat koçluğu yap; cevap yapısı, kanıt ve gelişim önerileri ver",
+        "career": "Kullanıcının kendi kariyer verisine dayanan hedef, yol haritası ve uygulanabilir kariyer adımları oluştur",
+    }.get(mode, "Kullanıcıya yalnız kendi kariyer verisine dayanan uygulanabilir kariyer desteği ver")
     output = _invoke(json.dumps({
-        "purpose": "Kullanıcıya yalnız kendi kariyer verisine dayanan uygulanabilir kariyer desteği ver",
+        "purpose": purpose,
         "rules": [
             "CV'de veya kanıtlarda olmayan başarı uydurma",
             "Belirsiz bilgiyi belirt",
@@ -228,8 +239,9 @@ def answer_chat(db: Session, user_id: int, message: str) -> CareerChatMessage:
         thread.title = _chat_title(message)
     thread.updated_at = datetime.now(timezone.utc)
     message_time = datetime.now(timezone.utc)
+    mode_meta = {"mode": mode} if mode else {}
     user_row = CareerChatMessage(
-        id=str(uuid4()), user_id=user_id, thread_id=thread.id, role="user", content=message, meta={}, created_at=message_time
+        id=str(uuid4()), user_id=user_id, thread_id=thread.id, role="user", content=message, meta=mode_meta, created_at=message_time
     )
     assistant_row = CareerChatMessage(
         id=str(uuid4()),
@@ -237,7 +249,7 @@ def answer_chat(db: Session, user_id: int, message: str) -> CareerChatMessage:
         thread_id=thread.id,
         role="assistant",
         content=reply,
-        meta={"suggested_actions": suggested_actions, **({"action": action} if action else {})},
+        meta={"suggested_actions": suggested_actions, **mode_meta, **({"action": action} if action else {})},
         created_at=message_time + timedelta(microseconds=1),
     )
     db.add_all([user_row, assistant_row]); db.commit(); db.refresh(assistant_row)

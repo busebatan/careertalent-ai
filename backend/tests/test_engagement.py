@@ -75,6 +75,34 @@ def test_chat_uses_ai_and_persists_user_and_assistant_messages(client, monkeypat
     assert client.get("/api/v1/career/chat", headers=auth).json() == []
 
 
+def test_chat_mode_is_validated_used_in_prompt_and_persisted(client, monkeypatch):
+    auth = register_and_headers(client, "chat-mode@example.com")
+    prompts = []
+
+    def fake_invoke(prompt, _schema):
+        prompts.append(json.loads(prompt))
+        return ChatReplyAI(reply="CV odaklı yanıt", suggested_actions=[])
+
+    monkeypatch.setattr("app.services.engagement._invoke", fake_invoke)
+
+    response = client.post(
+        "/api/v1/career/chat",
+        headers=auth,
+        json={"message": "CV'mdeki zayıf alanlar neler?", "mode": "cv"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["meta"]["mode"] == "cv"
+    assert "CV" in prompts[0]["purpose"]
+    history = client.get("/api/v1/career/chat", headers=auth).json()
+    assert [item["meta"]["mode"] for item in history] == ["cv", "cv"]
+    assert client.post(
+        "/api/v1/career/chat",
+        headers=auth,
+        json={"message": "Geçersiz mod", "mode": "unknown"},
+    ).status_code == 422
+
+
 def test_chat_thread_history_is_paginated_and_user_scoped(client, monkeypatch):
     auth = register_and_headers(client, "chat-owner@example.com")
     other = register_and_headers(client, "chat-other@example.com")
