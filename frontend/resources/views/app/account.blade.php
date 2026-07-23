@@ -191,9 +191,77 @@
     <section id="cv-yukle" x-show="tab === 'cv'" x-cloak
         data-initial-history-analysis-ready="{{ ! empty($hasReadyHistoryAnalysis) ? 'true' : 'false' }}"
         x-data="profileCvUpload(@js(app()->getLocale()), '', @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), '', @js(route('panel.cv-history.analyze', ['documentId' => '__DOCUMENT_ID__'])), @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])), @js(! empty($hasReadyHistoryAnalysis)))">
-        <div class="panel-card p-6">
-            <h2 class="font-semibold">{{ __('panel.profile.cv_history_title') }}</h2>
-            <p class="panel-muted mt-1 text-sm">{{ __('panel.profile.cv_history_desc') }}</p>
+        @php
+            $deletableCvIds = collect($cvHistory ?? [])
+                ->filter(fn ($document) => is_array($document) && ! ($document['is_current'] ?? false))
+                ->pluck('id')
+                ->filter()
+                ->values()
+                ->all();
+        @endphp
+        <div data-cv-history-manager class="panel-card p-6"
+            x-data="{
+                selectedCvIds: [],
+                deletableCvIds: @js($deletableCvIds),
+                previewOpen: false,
+                previewName: '',
+                previewUrl: '',
+                deleteDialogOpen: false,
+                openPreview(name, url) {
+                    this.previewName = name;
+                    this.previewUrl = url;
+                    this.previewOpen = true;
+                },
+                closePreview() {
+                    this.previewOpen = false;
+                    this.previewUrl = '';
+                    this.previewName = '';
+                },
+                toggleAll(checked) {
+                    this.selectedCvIds = checked ? [...this.deletableCvIds] : [];
+                },
+            }">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                    <h2 class="font-semibold">{{ __('panel.profile.cv_history_title') }}</h2>
+                    <p class="panel-muted mt-1 text-sm">{{ __('panel.profile.cv_history_desc') }}</p>
+                </div>
+                @if (! empty($deletableCvIds))
+                    <div class="flex shrink-0 flex-wrap items-center gap-3">
+                        <label class="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+                            <input data-cv-history-select-all type="checkbox"
+                                class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900"
+                                :checked="selectedCvIds.length === deletableCvIds.length"
+                                x-effect="$el.indeterminate = selectedCvIds.length > 0 && selectedCvIds.length < deletableCvIds.length"
+                                @change="toggleAll($event.target.checked)">
+                            <span>{{ __('panel.profile.cv_select_all') }}</span>
+                        </label>
+                        <span x-show="selectedCvIds.length > 0" x-cloak class="panel-muted text-xs">
+                            <span x-text="selectedCvIds.length"></span>
+                            {{ __('panel.profile.cv_selected_count') }}
+                        </span>
+                        <button data-cv-history-bulk-delete type="button"
+                            @click="deleteDialogOpen = true"
+                            :disabled="selectedCvIds.length === 0"
+                            class="inline-flex items-center gap-2 rounded-xl border border-red-500/30 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/>
+                            </svg>
+                            {{ __('panel.profile.cv_delete_selected') }}
+                        </button>
+                    </div>
+                @endif
+            </div>
+
+            @if (session('cv_status'))
+                <p class="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-200"
+                    role="status">{{ session('cv_status') }}</p>
+            @endif
+            @if (isset($errors) && $errors->has('cv'))
+                <p class="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200"
+                    role="alert">{{ $errors->first('cv') }}</p>
+            @endif
 
             <p x-show="historyLoadingId" x-cloak class="mt-4 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-800 dark:text-sky-200">
                 {{ __('panel.profile.cv_analyze_active_working') }}
@@ -221,14 +289,27 @@
                                     labels: @js(['failed' => __('panel.profile.cv_builder_import_failed'), 'timeout' => __('panel.profile.cv_builder_import_timeout')])
                                 })"
                             @endif>
-                            <div class="min-w-0">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <p class="truncate text-sm font-medium">{{ $document['display_name'] }}</p>
-                                    @if ($document['is_current'] ?? false)
-                                        <span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{{ __('panel.profile.cv_current') }}</span>
-                                    @endif
+                            <div class="flex min-w-0 flex-1 items-start gap-3">
+                                @if ($document['is_current'] ?? false)
+                                    <input data-cv-history-select data-cv-history-select-disabled type="checkbox" disabled
+                                        class="mt-0.5 h-4 w-4 cursor-not-allowed rounded border-slate-300 text-emerald-600 opacity-40 dark:border-slate-600 dark:bg-slate-900"
+                                        aria-label="{{ __('panel.profile.cv_current_not_deletable') }}: {{ $document['display_name'] }}"
+                                        title="{{ __('panel.profile.cv_current_not_deletable') }}">
+                                @else
+                                    <input data-cv-history-select type="checkbox" value="{{ $document['id'] }}"
+                                        x-model="selectedCvIds"
+                                        class="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900"
+                                        aria-label="{{ __('panel.profile.cv_delete_selected') }}: {{ $document['display_name'] }}">
+                                @endif
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <p class="truncate text-sm font-medium">{{ $document['display_name'] }}</p>
+                                        @if ($document['is_current'] ?? false)
+                                            <span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{{ __('panel.profile.cv_current') }}</span>
+                                        @endif
+                                    </div>
+                                    <p class="panel-muted mt-1 text-xs">{{ ($document['kind'] ?? '') === 'generated' ? __('panel.profile.cv_generated') : __('panel.profile.cv_uploaded') }} · {{ \Illuminate\Support\Carbon::parse($document['created_at'])->format('d.m.Y H:i') }}</p>
                                 </div>
-                                <p class="panel-muted mt-1 text-xs">{{ ($document['kind'] ?? '') === 'generated' ? __('panel.profile.cv_generated') : __('panel.profile.cv_uploaded') }} · {{ \Illuminate\Support\Carbon::parse($document['created_at'])->format('d.m.Y H:i') }}</p>
                             </div>
                             <div class="flex flex-wrap items-center gap-3 text-xs">
                                 <button type="button" @click="analyzeHistory(@js($document['id']))" :disabled="historyLoadingId !== null"
@@ -255,34 +336,16 @@
                                     </button>
                                     <span x-show="error" x-cloak x-text="error" class="font-medium text-red-600 dark:text-red-400" role="alert"></span>
                                 @endif
-                                <div x-data="{ deleteDialogOpen: false }">
-                                    <button type="button" @click="deleteDialogOpen = true"
-                                        class="text-red-600 hover:underline dark:text-red-400">{{ __('panel.profile.cv_delete') }}</button>
-                                    <div data-cv-delete-dialog x-show="deleteDialogOpen" x-cloak
-                                        @keydown.escape.window="deleteDialogOpen = false"
-                                        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4"
-                                        role="dialog" aria-modal="true" aria-labelledby="cv-delete-title-{{ $loop->index }}">
-                                        <div @click.outside="deleteDialogOpen = false" class="panel-card w-full max-w-md space-y-5 p-6">
-                                            <div>
-                                                <h2 id="cv-delete-title-{{ $loop->index }}" class="text-lg font-semibold">{{ __('panel.profile.cv_delete_title') }}</h2>
-                                                <p class="panel-muted mt-2 text-sm">{{ __('panel.profile.cv_delete_confirm') }}</p>
-                                                <p class="mt-3 truncate text-sm font-medium">{{ $document['display_name'] }}</p>
-                                            </div>
-                                            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                                                <button type="button" @click="deleteDialogOpen = false" class="panel-btn-secondary">
-                                                    {{ __('panel.profile.cv_delete_cancel') }}
-                                                </button>
-                                                <form method="post" action="{{ route('panel.cv-history.destroy', $document['id']) }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="w-full rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 sm:w-auto">
-                                                        {{ __('panel.profile.cv_delete_action') }}
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <button data-cv-history-preview-trigger type="button"
+                                    @click="openPreview(@js($document['display_name']), @js(route('panel.cv-history.preview', $document['id'])))"
+                                    class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-300 text-slate-600 transition hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:border-slate-700 dark:text-slate-300 dark:hover:text-emerald-300"
+                                    aria-label="{{ __('panel.profile.cv_preview') }}: {{ $document['display_name'] }}"
+                                    title="{{ __('panel.profile.cv_preview') }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M2.1 12a10.8 10.8 0 0 1 19.8 0 10.8 10.8 0 0 1-19.8 0Z"/><circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                </button>
                             </div>
                         </li>
                     @endforeach
@@ -290,6 +353,70 @@
             @else
                 <p class="mt-5 rounded-xl border border-dashed border-slate-300 p-5 text-center text-sm text-slate-500 dark:border-slate-700">{{ __('panel.profile.cv_history_empty') }}</p>
             @endif
+
+            <div data-cv-history-preview-modal x-show="previewOpen" x-cloak
+                @keydown.escape.window="closePreview()"
+                class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-4"
+                role="dialog" aria-modal="true" aria-labelledby="cv-history-preview-title">
+                <div class="panel-card flex h-[88vh] w-full max-w-5xl flex-col overflow-hidden p-0"
+                    @click.outside="closePreview()">
+                    <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+                        <div class="min-w-0">
+                            <h2 id="cv-history-preview-title" class="text-lg font-semibold">{{ __('panel.profile.cv_preview_title') }}</h2>
+                            <p class="panel-muted mt-1 truncate text-sm" x-text="previewName"></p>
+                        </div>
+                        <button type="button" @click="closePreview()"
+                            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 dark:hover:bg-slate-800 dark:hover:text-white"
+                            aria-label="{{ __('panel.profile.cv_delete_cancel') }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <iframe x-show="previewUrl" :src="previewUrl" class="min-h-0 flex-1 bg-slate-100 dark:bg-slate-950"
+                        :title="`${@js(__('panel.profile.cv_preview_title'))}: ${previewName}`"
+                        type="application/pdf"></iframe>
+                </div>
+            </div>
+
+            <div data-cv-history-bulk-delete-modal x-show="deleteDialogOpen" x-cloak
+                @keydown.escape.window="deleteDialogOpen = false"
+                class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/70 p-4"
+                role="dialog" aria-modal="true" aria-labelledby="cv-bulk-delete-title"
+                aria-describedby="cv-bulk-delete-description">
+                <div @click.outside="deleteDialogOpen = false" class="panel-card w-full max-w-md space-y-5 p-6">
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-600 dark:text-red-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <h2 id="cv-bulk-delete-title" class="text-lg font-semibold">{{ __('panel.profile.cv_bulk_delete_title') }}</h2>
+                            <p id="cv-bulk-delete-description" class="panel-muted mt-2 text-sm"
+                                x-text="@js(__('panel.profile.cv_bulk_delete_confirm', ['count' => ':count'])).replace(':count', selectedCvIds.length)"></p>
+                        </div>
+                    </div>
+                    <form method="post" action="{{ route('panel.cv-history.bulk-destroy') }}">
+                        @csrf
+                        @method('DELETE')
+                        <template x-for="documentId in selectedCvIds" :key="documentId">
+                            <input type="hidden" name="document_ids[]" :value="documentId">
+                        </template>
+                        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                            <button type="button" @click="deleteDialogOpen = false" class="panel-btn-secondary">
+                                {{ __('panel.profile.cv_delete_cancel') }}
+                            </button>
+                            <button type="submit" :disabled="selectedCvIds.length === 0"
+                                class="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50">
+                                {{ __('panel.profile.cv_delete_action') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </section>
 

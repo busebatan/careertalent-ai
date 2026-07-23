@@ -6,6 +6,7 @@ use App\Services\CareerTalentApiClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 
 class ProfileController extends PanelController
@@ -73,6 +74,47 @@ class ProfileController extends PanelController
             : $this->cvTabRedirect()->withErrors(['cv' => $result['error'] ?? 'CV silinemedi']);
     }
 
+    public function destroyCvs(Request $request, CareerTalentApiClient $api): RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'document_ids' => ['required', 'array', 'min:1', 'max:50'],
+            'document_ids.*' => ['required', 'string', 'distinct', 'max:64'],
+        ]);
+        if ($validator->fails()) {
+            return $this->cvTabRedirect()->withErrors($validator)->withInput();
+        }
+
+        $documentIds = $validator->validated()['document_ids'];
+
+        $deleted = 0;
+        $failed = 0;
+
+        foreach ($documentIds as $documentId) {
+            $result = $api->deleteCvDocument($documentId);
+            if ($result['ok'] ?? false) {
+                $deleted++;
+            } else {
+                $failed++;
+            }
+        }
+
+        $redirect = $this->cvTabRedirect();
+
+        if ($deleted > 0) {
+            $redirect->with('cv_status', __('panel.profile.cv_bulk_deleted', ['count' => $deleted]));
+        }
+
+        if ($failed > 0) {
+            $message = $deleted > 0
+                ? __('panel.profile.cv_bulk_partial', ['deleted' => $deleted, 'failed' => $failed])
+                : __('panel.profile.cv_bulk_failed');
+
+            $redirect->withErrors(['cv' => $message]);
+        }
+
+        return $redirect;
+    }
+
     public function analyzeCv(string $documentId, CareerTalentApiClient $api): JsonResponse
     {
         $result = $api->analyzeCvDocument($documentId);
@@ -90,6 +132,23 @@ class ProfileController extends PanelController
         return response($result['content'], 200, [
             'Content-Type' => $result['content_type'] ?: 'application/pdf',
             'Content-Disposition' => $result['content_disposition'] ?: 'attachment; filename="cv.pdf"',
+        ]);
+    }
+
+    public function previewCv(string $documentId, CareerTalentApiClient $api): Response
+    {
+        $result = $api->downloadCvDocument($documentId);
+        abort_unless($result['ok'] ?? false, $result['status'] ?? 404);
+
+        $content = (string) ($result['content'] ?? '');
+        $contentType = strtolower((string) ($result['content_type'] ?? ''));
+        $hasPdfSignature = str_contains(substr($content, 0, 1024), '%PDF-');
+        abort_unless(str_contains($contentType, 'application/pdf') && $hasPdfSignature, 415);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="cv.pdf"',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 

@@ -163,6 +163,8 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::get('/hesap', [ProfileController::class, 'account'])->name('account');
     Route::post('/hesap/cv-gecmisi/{documentId}/arsivle', [ProfileController::class, 'archiveCurrent'])->name('cv-history.archive-current');
     Route::post('/hesap/cv-gecmisi/{documentId}/analiz', [ProfileController::class, 'analyzeCv'])->name('cv-history.analyze');
+    Route::delete('/hesap/cv-gecmisi/toplu-sil', [ProfileController::class, 'destroyCvs'])->name('cv-history.bulk-destroy');
+    Route::get('/hesap/cv-gecmisi/{documentId}/onizle', [ProfileController::class, 'previewCv'])->name('cv-history.preview');
     Route::get('/hesap/cv-gecmisi/{documentId}/indir', [ProfileController::class, 'downloadCv'])->name('cv-history.download');
     Route::delete('/hesap/cv-gecmisi/{documentId}', [ProfileController::class, 'destroyCv'])->name('cv-history.destroy');
     Route::put('/hesap/profil', [ProfileController::class, 'update'])->name('account.profile.update');

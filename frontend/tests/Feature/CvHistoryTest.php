@@ -33,6 +33,16 @@ class CvHistoryTest extends TestCase
 
         $response->assertOk()
             ->assertSee('current.pdf')->assertSee('Trendyol CV.pdf')->assertSee('old.pdf')
+            ->assertSee('data-cv-history-manager', false)
+            ->assertSee('data-cv-history-select-all', false)
+            ->assertSee('data-cv-history-select', false)
+            ->assertSee('data-cv-history-select-disabled', false)
+            ->assertSee('data-cv-history-bulk-delete', false)
+            ->assertSee('data-cv-history-preview-trigger', false)
+            ->assertSee('data-cv-history-preview-modal', false)
+            ->assertSee('data-cv-history-bulk-delete-modal', false)
+            ->assertSee('role="dialog" aria-modal="true"', false)
+            ->assertSee('iframe', false)
             ->assertSee('data-cv-history-analysis-ready', false)
             ->assertSee('data-initial-history-analysis-ready="true"', false)
             ->assertSee('Kariyer rotasına git')
@@ -44,18 +54,22 @@ class CvHistoryTest extends TestCase
             ->assertSee('Aç ve düzenle')->assertSee('Aktif analiz yap')
             ->assertSee('AI ile kutuları doldur')
             ->assertSee('Oluşturucuda aç')
-            ->assertSee('data-cv-delete-dialog', false)
             ->assertSee('border-t border-slate-200 pt-5', false)
-            ->assertSee('@click="deleteDialogOpen = true"', false)
-            ->assertSee(__('panel.profile.cv_delete_title'))
+            ->assertSee(__('panel.profile.cv_select_all'))
+            ->assertSee(__('panel.profile.cv_delete_selected'))
+            ->assertSee(__('panel.profile.cv_preview'))
+            ->assertSee(__('panel.profile.cv_bulk_delete_title'))
             ->assertSee(__('panel.profile.cv_delete_action'))
+            ->assertDontSee('data-cv-delete-dialog', false)
             ->assertDontSee('return confirm(', false)
             ->assertSee('13.07.2026 21:30');
 
-        $dom = new \DOMDocument();
+        $dom = new \DOMDocument;
         @$dom->loadHTML($response->getContent());
         $xpath = new \DOMXPath($dom);
         $this->assertCount(1, $xpath->query('//*[@id="cv-yukle"]//a[@href="'.route('panel.roadmap').'"]'));
+        $this->assertCount(3, $xpath->query('//*[@data-cv-history-select]'));
+        $this->assertCount(1, $xpath->query('//*[@data-cv-history-select-disabled]'));
     }
 
     public function test_cv_tab_selection_updates_hash_and_is_restored_after_reload(): void
@@ -108,6 +122,66 @@ class CvHistoryTest extends TestCase
         $this->delete('/panel/hesap/cv-gecmisi/history-2')
             ->assertRedirect('/panel/hesap#cv-yukle')
             ->assertSessionHasErrors('cv');
+    }
+
+    public function test_previewing_history_cv_streams_an_inline_pdf(): void
+    {
+        Http::fake([
+            'http://localhost:8000/api/v1/cv/documents/history-1/download' => Http::response(
+                "%PDF-1.4\n%%EOF",
+                200,
+                ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="history.pdf"'],
+            ),
+        ]);
+
+        $this->get('/panel/hesap/cv-gecmisi/history-1/onizle')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('content-disposition', 'inline; filename="cv.pdf"')
+            ->assertHeader('x-content-type-options', 'nosniff')
+            ->assertContent("%PDF-1.4\n%%EOF");
+    }
+
+    public function test_preview_rejects_a_non_pdf_upstream_response(): void
+    {
+        Http::fake([
+            'http://localhost:8000/api/v1/cv/documents/history-1/download' => Http::response(
+                '<html>not a pdf</html>',
+                200,
+                ['Content-Type' => 'text/html'],
+            ),
+        ]);
+
+        $this->get('/panel/hesap/cv-gecmisi/history-1/onizle')->assertUnsupportedMediaType();
+    }
+
+    public function test_bulk_delete_removes_successful_documents_and_reports_partial_failures(): void
+    {
+        Http::fake([
+            'http://localhost:8000/api/v1/cv/documents/history-1' => Http::response([], 204),
+            'http://localhost:8000/api/v1/cv/documents/history-2' => Http::response(['detail' => 'failed'], 502),
+        ]);
+
+        $response = $this->delete('/panel/hesap/cv-gecmisi/toplu-sil', [
+            'document_ids' => ['history-1', 'history-2'],
+        ]);
+        $response
+            ->assertRedirect('/panel/hesap#cv-yukle')
+            ->assertSessionHas('cv_status', __('panel.profile.cv_bulk_deleted', ['count' => 1]))
+            ->assertSessionHas('errors');
+
+        Http::assertSentCount(2);
+    }
+
+    public function test_bulk_delete_requires_distinct_bounded_document_ids(): void
+    {
+        $response = $this->from('/panel/hesap#cv-yukle')
+            ->delete('/panel/hesap/cv-gecmisi/toplu-sil', [
+                'document_ids' => ['history-1', 'history-1'],
+            ]);
+        $response->assertSessionHas('errors');
+
+        Http::assertNothingSent();
     }
 
     public function test_generated_pdf_is_archived_before_laravel_returns_success(): void
@@ -237,6 +311,7 @@ class CvHistoryTest extends TestCase
             if ($request->method() === 'POST' && $request->url() === 'http://localhost:8000/api/v1/cv/documents/upload-1/builder-draft') {
                 return Http::response(['id' => 'upload-1', 'builder_draft_status' => 'queued'], 202);
             }
+
             return Http::response([], 404);
         });
 
