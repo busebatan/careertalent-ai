@@ -54,6 +54,24 @@ class CvBuilderRadarTest extends TestCase
             ->assertDontSee('data-cv-form-save', false);
     }
 
+    public function test_cv_version_manager_uses_panel_cards_and_in_app_action_dialogs(): void
+    {
+        $this->get(route('panel.cv-builder'))
+            ->assertOk()
+            ->assertSee('data-cv-version-manager', false)
+            ->assertSee('data-cv-version-card', false)
+            ->assertSee('data-cv-version-action-modal', false)
+            ->assertSee('class="panel-card my-8 p-6"', false)
+            ->assertSee('class="panel-entry relative flex flex-col', false)
+            ->assertSee('@click="requestVersionLoad(version)"', false)
+            ->assertSee('@click="requestVersionDelete(version)"', false)
+            ->assertSee('role="dialog" aria-modal="true"', false)
+            ->assertDontSee('confirm(', false)
+            ->assertDontSee('alert(', false)
+            ->assertDontSee('border-violet-500', false)
+            ->assertDontSee('from-violet-', false);
+    }
+
     public function test_generated_current_cv_is_rendered_as_the_active_analysis_source(): void
     {
         Http::fake([
@@ -80,7 +98,7 @@ class CvBuilderRadarTest extends TestCase
             ->assertSee('data-skill-radar-alignment="intro-centered"', false)
             ->assertSee(':open="radarExpanded"', false)
             ->assertSee('@toggle="onRadarToggle($event)"', false)
-            ->assertSee("readCvRadarExpanded?.(serverAnalysisId)", false)
+            ->assertSee('readCvRadarExpanded?.(serverAnalysisId)', false)
             ->assertSee(__('panel.skill_radar.analysis_source', ['source' => __('panel.skill_radar.sources.text')]), false)
             ->assertSeeInOrder(['id="yetenek-radari"', 'data-cv-builder-status', 'grid gap-8 lg:grid-cols-2'], false)
             ->assertSeeInOrder([__('panel.skill_radar.view_ladder'), __('panel.skill_radar.clear_cv')], false);
@@ -128,7 +146,7 @@ class CvBuilderRadarTest extends TestCase
             ->assertSeeInOrder(['data-cv-current-file', 'id="yetenek-radari"', 'data-cv-builder-status', 'grid gap-8 lg:grid-cols-2'], false)
             ->assertSee(':open="radarExpanded"', false)
             ->assertSee('@toggle="onRadarToggle($event)"', false)
-            ->assertSee("persistCvRadarExpanded?.(this.serverAnalysisId", false);
+            ->assertSee('persistCvRadarExpanded?.(this.serverAnalysisId', false);
     }
 
     public function test_pending_uploaded_analysis_resumes_and_locks_the_upload_area_after_returning(): void

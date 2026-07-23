@@ -58,6 +58,17 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         previewVersionData: null,
         renamingVersionId: null,
         renameInput: '',
+        versionActionModalOpen: false,
+        versionActionKind: '',
+        versionActionVersion: null,
+        versionActionTitle: '',
+        versionActionDescription: '',
+        versionActionConfirmLabel: '',
+        versionActionBusy: false,
+        versionActionError: '',
+        versionNotice: '',
+        versionNoticeTone: 'success',
+        _versionNoticeTimer: null,
         _skipLocalesSync: false,
         _versionsInitialized: false,
 
@@ -594,10 +605,71 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
             }
         },
 
-        async loadVersion(version) {
-            if (!confirm('Seçilen sürümün içeriği editöre yüklenecektir. Kaydedilmemiş değişiklikler kaybolabilir. Devam etmek istiyor musunuz?')) {
+        showVersionNotice(message, tone = 'success') {
+            this.versionNotice = message || '';
+            this.versionNoticeTone = tone;
+            if (this._versionNoticeTimer) {
+                clearTimeout(this._versionNoticeTimer);
+            }
+            this._versionNoticeTimer = setTimeout(() => {
+                this.versionNotice = '';
+                this._versionNoticeTimer = null;
+            }, 5000);
+        },
+
+        requestVersionLoad(version) {
+            this.versionActionKind = 'load';
+            this.versionActionVersion = version;
+            this.versionActionTitle = this.panelLocale === 'en' ? 'Load version into editor?' : 'Sürüm editöre yüklensin mi?';
+            this.versionActionDescription = this.panelLocale === 'en'
+                ? 'Unsaved changes in the editor will be replaced by the selected version.'
+                : 'Editördeki kaydedilmemiş değişiklikler seçilen sürümle değiştirilecek.';
+            this.versionActionConfirmLabel = this.panelLocale === 'en' ? 'Load into editor' : 'Editöre yükle';
+            this.versionActionError = '';
+            this.versionActionModalOpen = true;
+        },
+
+        requestVersionDelete(version) {
+            this.versionActionKind = 'delete';
+            this.versionActionVersion = version;
+            this.versionActionTitle = this.panelLocale === 'en' ? 'Delete this version?' : 'Bu sürüm silinsin mi?';
+            this.versionActionDescription = this.panelLocale === 'en'
+                ? `"${version.version_name}" will be permanently removed.`
+                : `"${version.version_name}" kalıcı olarak silinecek.`;
+            this.versionActionConfirmLabel = this.panelLocale === 'en' ? 'Delete version' : 'Sürümü sil';
+            this.versionActionError = '';
+            this.versionActionModalOpen = true;
+        },
+
+        closeVersionActionModal() {
+            if (this.versionActionBusy) {
                 return;
             }
+            this.versionActionModalOpen = false;
+            this.versionActionKind = '';
+            this.versionActionVersion = null;
+            this.versionActionError = '';
+        },
+
+        async confirmVersionAction() {
+            const version = this.versionActionVersion;
+            if (!version || this.versionActionBusy) {
+                return;
+            }
+            if (this.versionActionKind === 'load') {
+                this.loadVersion(version);
+                this.closeVersionActionModal();
+                this.showVersionNotice(
+                    this.panelLocale === 'en' ? 'Version loaded into the editor.' : 'Sürüm editöre yüklendi.'
+                );
+                return;
+            }
+            if (this.versionActionKind === 'delete') {
+                await this.deleteVersion(version);
+            }
+        },
+
+        loadVersion(version) {
             this.locales[version.language] = JSON.parse(JSON.stringify(version.payload));
             this.normalizeAllLocales();
             this.editLang = version.language;
@@ -608,7 +680,6 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
             if (window.PanelCvStore) {
                 window.PanelCvStore.saveBuilder(this.locales, this.panelLocale);
             }
-            alert('Sürüm başarıyla yüklendi!');
         },
 
         async setVersionMain(version) {
@@ -628,19 +699,24 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
                 });
                 if (response.ok) {
                     await this.fetchVersions();
+                    this.showVersionNotice(
+                        this.panelLocale === 'en' ? 'Main CV version updated.' : 'Ana CV sürümü güncellendi.'
+                    );
                 } else {
                     const data = await response.json();
-                    alert(data.message || 'Ana sürüm ayarlanamadı');
+                    this.showVersionNotice(data.message || 'Ana sürüm ayarlanamadı.', 'error');
                 }
             } catch (err) {
-                alert('Bir hata oluştu');
+                this.showVersionNotice(
+                    this.panelLocale === 'en' ? 'The main version could not be updated.' : 'Ana sürüm güncellenemedi.',
+                    'error'
+                );
             }
         },
 
         async deleteVersion(version) {
-            if (!confirm('Bu sürümü silmek istediğinize emin misiniz?')) {
-                return;
-            }
+            this.versionActionBusy = true;
+            this.versionActionError = '';
             try {
                 const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                 const url = this.deleteVersionUrl.replace('__ID__', version.id);
@@ -653,11 +729,22 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
                 });
                 if (response.ok) {
                     await this.fetchVersions();
+                    this.versionActionBusy = false;
+                    this.closeVersionActionModal();
+                    this.showVersionNotice(
+                        this.panelLocale === 'en' ? 'CV version deleted.' : 'CV sürümü silindi.'
+                    );
                 } else {
-                    alert('Sürüm silinemedi');
+                    const data = await response.json().catch(() => ({}));
+                    this.versionActionError = data.message
+                        || (this.panelLocale === 'en' ? 'The version could not be deleted.' : 'Sürüm silinemedi.');
                 }
             } catch (err) {
-                alert('Bir hata oluştu');
+                this.versionActionError = this.panelLocale === 'en'
+                    ? 'The version could not be deleted.'
+                    : 'Sürüm silinemedi.';
+            } finally {
+                this.versionActionBusy = false;
             }
         },
 
@@ -711,12 +798,18 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
                 if (response.ok) {
                     this.cancelRename();
                     await this.fetchVersions();
+                    this.showVersionNotice(
+                        this.panelLocale === 'en' ? 'Version name updated.' : 'Sürüm adı güncellendi.'
+                    );
                 } else {
                     const data = await response.json();
-                    alert(data.message || 'Yeniden adlandırma başarısız');
+                    this.showVersionNotice(data.message || 'Yeniden adlandırma başarısız.', 'error');
                 }
             } catch (err) {
-                alert('Bir hata oluştu');
+                this.showVersionNotice(
+                    this.panelLocale === 'en' ? 'The version could not be renamed.' : 'Sürüm yeniden adlandırılamadı.',
+                    'error'
+                );
             }
         }
     };

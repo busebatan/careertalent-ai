@@ -46,20 +46,22 @@
     @endif
 
     <!-- Sürüm Oluşturma Modalı -->
-    <div x-show="showVersionCreateModal" x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"
-        @keydown.escape.window="showVersionCreateModal = false">
-        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
+    <div data-cv-version-create-modal x-show="showVersionCreateModal" x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4"
+        @keydown.escape.window="showVersionCreateModal = false"
+        role="dialog" aria-modal="true" aria-labelledby="cv-version-create-title">
+        <div class="panel-card w-full max-w-md p-6"
             @click.outside="showVersionCreateModal = false">
-            <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">
+            <h2 id="cv-version-create-title" class="mb-2 text-lg font-semibold text-slate-950 dark:text-white">
                 {{ app()->getLocale() === 'en' ? 'Save CV Version' : 'CV Sürümü Kaydet' }}
             </h2>
-            <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">
+            <p class="panel-muted mb-5 text-sm">
                 {{ app()->getLocale() === 'en' ? 'This will save the current builder content for the selected language as a standalone version.' : 'Bu işlem, seçtiğiniz dildeki mevcut editör içeriğini bağımsız bir sürüm olarak kaydeder.' }}
             </p>
 
             <template x-if="versionError">
-                <div class="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950/30 dark:text-red-300" x-text="versionError"></div>
+                <div class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-200"
+                    x-text="versionError" role="alert"></div>
             </template>
 
             <div class="space-y-4">
@@ -90,13 +92,13 @@
                 </div>
             </div>
 
-            <div class="mt-6 flex justify-end gap-2">
+            <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <button type="button" @click="showVersionCreateModal = false"
-                    class="rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                    class="panel-btn-secondary">
                     {{ app()->getLocale() === 'en' ? 'Cancel' : 'İptal' }}
                 </button>
                 <button type="button" @click="createVersionFromCurrent()"
-                    class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition">
+                    class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-500">
                     {{ app()->getLocale() === 'en' ? 'Save' : 'Kaydet' }}
                 </button>
             </div>
