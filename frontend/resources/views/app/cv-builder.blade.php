@@ -92,6 +92,10 @@
             </div>
         </div>
     </div>
+    @php($currentIsUploaded = is_array($currentCv ?? null) && ($currentCv['kind'] ?? null) === 'uploaded')
+    @php($currentIsGenerated = is_array($currentCv ?? null) && ($currentCv['kind'] ?? null) === 'generated')
+
+    @if (empty($skillRadar))
     <section id="cv-analiz-yukle"
         class="panel-card mb-8 overflow-hidden p-6 lg:p-8"
         data-cv-analysis-upload
@@ -100,9 +104,6 @@
             <h2 class="mb-2 font-semibold">{{ __('panel.profile.cv_file_title') }}</h2>
             <p class="text-sm text-slate-600 dark:text-slate-400">{{ __('panel.cv_builder.upload_desc') }}</p>
         </div>
-
-        @php($currentIsUploaded = is_array($currentCv ?? null) && ($currentCv['kind'] ?? null) === 'uploaded')
-        @php($currentIsGenerated = is_array($currentCv ?? null) && ($currentCv['kind'] ?? null) === 'generated')
 
         @if ($currentIsUploaded)
             <div data-cv-current-file x-show="saveStatus !== 'saving'"
@@ -192,7 +193,17 @@
         </div>
     </section>
 
-    @include('app.partials.career-reset-modal', ['resetAction' => 'clearCvAnalysis()'])
+        @include('app.partials.career-reset-modal', ['resetAction' => 'clearCvAnalysis()'])
+    @else
+        @include('app.partials.skill-radar-chart', [
+            'skillRadar' => $skillRadar,
+            'cvFileName' => $cvFileName ?? null,
+            'fromApi' => $hasCvAnalysis ?? false,
+            'collapsible' => true,
+            'showClearInline' => true,
+            'radarAlignment' => 'intro-centered',
+        ])
+    @endif
 
     <p x-show="analyzeError" x-cloak class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200" x-text="analyzeError"></p>
 
@@ -229,15 +240,6 @@
             </button>
         </div>
     </div>
-
-    @if (! empty($skillRadar))
-        @include('app.partials.skill-radar-chart', [
-            'skillRadar' => $skillRadar,
-            'cvFileName' => $cvFileName ?? null,
-            'fromApi' => $hasCvAnalysis ?? false,
-            'radarAlignment' => 'intro-centered',
-        ])
-    @endif
 
     <div class="grid gap-8 lg:grid-cols-2">
         @include('app.partials.cv-builder-form')

@@ -19,7 +19,7 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         serverAnalysisStatus,
         serverAnalysisId,
         analyzeError: null,
-        radarExpanded: localStorage.getItem('panel-cv-radar-expanded') !== '0',
+        radarExpanded: window.readCvRadarExpanded?.(serverAnalysisId) ?? true,
         cvFileName: serverFileName || '',
         analyzeBuilderUrl,
         clearUrl,
@@ -169,7 +169,7 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
 
         onRadarToggle(event) {
             this.radarExpanded = event.target.open;
-            localStorage.setItem('panel-cv-radar-expanded', this.radarExpanded ? '1' : '0');
+            window.persistCvRadarExpanded?.(this.serverAnalysisId, this.radarExpanded);
         },
 
         uid() { return 'id-' + Math.random().toString(36).slice(2, 9); },

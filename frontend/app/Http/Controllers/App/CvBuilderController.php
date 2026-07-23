@@ -63,7 +63,11 @@ class CvBuilderController extends PanelController
             'builderImportMeta' => $builderImportMeta,
             'builderImportMissingFields' => $builderImportMissingFields,
             'cvLabels' => $this->cvLabelsForJs(),
-            'skillRadar' => $this->skillRadar($analysis),
+            'skillRadar' => $this->skillRadar(
+                $analysis,
+                is_array($currentCv) ? (string) ($currentCv['display_name'] ?? '') : '',
+                is_array($currentCv) ? (string) ($currentCv['kind'] ?? '') : '',
+            ),
             'hasCvAnalysis' => $hasCvAnalysis,
             'analysisStatus' => (string) ($analysis['status'] ?? ''),
             'analysisId' => (string) ($analysis['id'] ?? ''),
@@ -115,7 +119,7 @@ class CvBuilderController extends PanelController
         return $draft;
     }
 
-    private function skillRadar(array $analysis): array
+    private function skillRadar(array $analysis, string $fallbackFileName = '', string $documentKind = ''): array
     {
         $skills = array_values(array_filter(array_map(static function ($item): ?array {
             if (! is_array($item) || ! isset($item['label'])) {
@@ -126,13 +130,23 @@ class CvBuilderController extends PanelController
         if ($skills === []) {
             return [];
         }
+        $fileName = trim((string) ($analysis['file_name'] ?? '')) ?: $fallbackFileName ?: 'cv';
+        $source = trim((string) ($analysis['source'] ?? ''));
+        if ($source === '') {
+            $source = match ($documentKind) {
+                'uploaded' => 'upload',
+                'generated' => 'text',
+                default => '',
+            };
+        }
+
         return [
             'skills' => $skills,
             'target_role' => (string) ($analysis['current_role'] ?? ''),
             'analyzed_at' => (string) ($analysis['created_at'] ?? ''),
             'analysis_id' => (string) ($analysis['id'] ?? ''),
-            'file_name' => (string) ($analysis['file_name'] ?? 'cv'),
-            'source' => (string) ($analysis['source'] ?? ''),
+            'file_name' => $fileName,
+            'source' => $source,
             'cv_document_id' => (string) ($analysis['cv_document_id'] ?? ''),
             'overall_match' => (int) round(array_sum(array_column($skills, 'score')) / count($skills)),
         ];

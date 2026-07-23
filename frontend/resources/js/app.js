@@ -1,4 +1,12 @@
-import { PanelCvStore, panelCvRadar, profileCvUpload, pollCvAnalysis, waitForCvAnalysis } from './panel-cv-store';
+import {
+    PanelCvStore,
+    panelCvRadar,
+    persistCvRadarExpanded,
+    pollCvAnalysis,
+    profileCvUpload,
+    readCvRadarExpanded,
+    waitForCvAnalysis,
+} from './panel-cv-store';
 import { panelJobMatches } from './panel-job-matches';
 import { panelJobListings } from './panel-job-listings';
 import { WeeklyTasksStore, dashboardWeeklyPlan } from './panel-weekly-tasks';
@@ -32,6 +40,8 @@ window.panelCvRadar = panelCvRadar;
 window.profileCvUpload = profileCvUpload;
 window.pollCvAnalysis = pollCvAnalysis;
 window.waitForCvAnalysis = waitForCvAnalysis;
+window.readCvRadarExpanded = readCvRadarExpanded;
+window.persistCvRadarExpanded = persistCvRadarExpanded;
 window.WeeklyTasksStore = WeeklyTasksStore;
 window.dashboardWeeklyPlan = dashboardWeeklyPlan;
 window.careerTasks = careerTasks;

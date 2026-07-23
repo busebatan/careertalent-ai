@@ -50,7 +50,7 @@ class CvBuilderRadarTest extends TestCase
         Http::fake([
             'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
             'http://localhost:8000/api/v1/career/analysis/current' => Http::response([
-                'status' => 'ready', 'file_name' => 'Buse Batan CV.pdf',
+                'id' => 'analysis-generated', 'status' => 'ready', 'file_name' => 'Buse Batan CV.pdf',
                 'radar' => [['label' => 'SQL', 'score' => 72, 'target' => 70]],
             ], 200),
             'http://localhost:8000/api/v1/cv/documents' => Http::response([
@@ -62,22 +62,27 @@ class CvBuilderRadarTest extends TestCase
         $this->get(route('panel.cv-builder'))
             ->assertOk()
             ->assertSee('data-cv-builder-status', false)
+            ->assertDontSee('data-cv-analysis-upload', false)
             ->assertDontSee('data-cv-current-file', false)
             ->assertSee('Buse Batan CV.pdf', false)
             ->assertSee('%72', false)
             ->assertSee('id="yetenek-radari"', false)
             ->assertSee('data-skill-radar-layout="split"', false)
             ->assertSee('data-skill-radar-alignment="intro-centered"', false)
-            ->assertSeeInOrder(['data-cv-analysis-upload', 'data-cv-builder-status', 'id="yetenek-radari"', 'grid gap-8 lg:grid-cols-2'], false)
+            ->assertSee(':open="radarExpanded"', false)
+            ->assertSee('@toggle="onRadarToggle($event)"', false)
+            ->assertSee("readCvRadarExpanded?.(serverAnalysisId)", false)
+            ->assertSee(__('panel.skill_radar.analysis_source', ['source' => __('panel.skill_radar.sources.text')]), false)
+            ->assertSeeInOrder(['id="yetenek-radari"', 'data-cv-builder-status', 'grid gap-8 lg:grid-cols-2'], false)
             ->assertSeeInOrder([__('panel.skill_radar.view_ladder'), __('panel.skill_radar.clear_cv')], false);
     }
 
-    public function test_cv_builder_shows_upload_score_and_full_radar_after_cv_analysis(): void
+    public function test_cv_builder_replaces_upload_area_with_collapsible_radar_after_cv_analysis(): void
     {
         Http::fake([
             'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
             'http://localhost:8000/api/v1/career/analysis/current' => Http::response([
-                'status' => 'ready', 'current_role' => 'Business Analyst', 'created_at' => '2026-07-04T00:00:00Z',
+                'id' => 'analysis-uploaded', 'status' => 'ready', 'current_role' => 'Business Analyst', 'created_at' => '2026-07-04T00:00:00Z',
                 'radar' => [['label' => 'Excel', 'score' => 80, 'target' => 70]], 'career_ladder' => [],
             ], 200),
             'http://localhost:8000/api/v1/cv/documents' => Http::response([
@@ -89,16 +94,14 @@ class CvBuilderRadarTest extends TestCase
 
         $response = $this->get(route('panel.cv-builder', ['locale' => 'en']));
         $response->assertOk()
-            ->assertSee('data-cv-analysis-upload', false)
-            ->assertSee('data-cv-current-file', false)
-            ->assertSee('data-cv-analysis-score', false)
-            ->assertSee('lg:grid-cols-[minmax(0,1fr)_auto]', false)
+            ->assertDontSee('data-cv-analysis-upload', false)
+            ->assertDontSee('data-cv-current-file', false)
+            ->assertDontSee('lg:grid-cols-[minmax(0,1fr)_auto]', false)
+            ->assertDontSee('panel-upload-zone', false)
             ->assertSee('%80', false)
             ->assertSee(route('panel.career-ladder'), false)
-            ->assertSee(__('panel.profile.cv_file_title'), false)
-            ->assertSee(__('panel.cv_builder.upload_desc'), false)
-            ->assertSee('Fatma_Kesici.pdf', false)
-            ->assertSee(__('panel.profile.last_upload', ['date' => '20.07.2026 21:17']), false)
+            ->assertSee(__('panel.skill_radar.analysis_cv', ['name' => 'Fatma_Kesici.pdf']), false)
+            ->assertSee(__('panel.skill_radar.analysis_source', ['source' => __('panel.skill_radar.sources.upload')]), false)
             ->assertSee('@click.stop="resetOpen = true"', false)
             ->assertSee('value="analysis"', false)
             ->assertSee('value="plan"', false)
@@ -108,8 +111,9 @@ class CvBuilderRadarTest extends TestCase
             ->assertSee('id="yetenek-radari"', false)
             ->assertSee('data-skill-radar-layout="split"', false)
             ->assertSee('data-skill-radar-alignment="intro-centered"', false)
-            ->assertSeeInOrder(['data-cv-analysis-upload', 'data-cv-builder-status', 'id="yetenek-radari"', 'grid gap-8 lg:grid-cols-2'], false)
-            ->assertDontSee('@toggle="onRadarToggle($event)"', false)
-            ->assertSee(__('panel.skill_radar.analysis_cv', ['name' => 'cv']), false);
+            ->assertSeeInOrder(['id="yetenek-radari"', 'data-cv-builder-status', 'grid gap-8 lg:grid-cols-2'], false)
+            ->assertSee(':open="radarExpanded"', false)
+            ->assertSee('@toggle="onRadarToggle($event)"', false)
+            ->assertSee("persistCvRadarExpanded?.(this.serverAnalysisId", false);
     }
 }

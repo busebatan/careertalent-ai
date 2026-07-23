@@ -25,7 +25,19 @@ function installBrowserMocks() {
 
 installBrowserMocks();
 
-const { PanelCvStore, PANEL_CV_STORAGE_KEY, panelCvRadar, pollCvAnalysis, profileCvUpload, waitForCvAnalysis, watchCvAnalysisViaSse, isPdfCvFile, validateCvUploadFile } = await import('../../resources/js/panel-cv-store.js');
+const {
+    PanelCvStore,
+    PANEL_CV_STORAGE_KEY,
+    isPdfCvFile,
+    panelCvRadar,
+    persistCvRadarExpanded,
+    pollCvAnalysis,
+    profileCvUpload,
+    readCvRadarExpanded,
+    validateCvUploadFile,
+    waitForCvAnalysis,
+    watchCvAnalysisViaSse,
+} = await import('../../resources/js/panel-cv-store.js');
 
 function sampleLocales() {
     return {
@@ -45,6 +57,28 @@ function sampleLocales() {
         },
     };
 }
+
+describe('CV radar expansion persistence', () => {
+    beforeEach(() => {
+        storage.clear();
+    });
+
+    it('opens a new analysis and remembers a collapsed analysis after login reloads', () => {
+        assert.equal(readCvRadarExpanded('analysis-new'), true);
+
+        persistCvRadarExpanded('analysis-new', false);
+
+        assert.equal(readCvRadarExpanded('analysis-new'), false);
+        assert.equal(readCvRadarExpanded('analysis-next'), true);
+    });
+
+    it('falls back to open when stored state is malformed or lacks an analysis id', () => {
+        localStorage.setItem('panel-cv-radar-expanded', '0');
+
+        assert.equal(readCvRadarExpanded('analysis-new'), true);
+        assert.equal(readCvRadarExpanded(''), true);
+    });
+});
 
 describe('PanelCvStore.saveBuilder', () => {
     beforeEach(() => {

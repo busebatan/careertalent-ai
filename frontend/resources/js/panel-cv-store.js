@@ -1,4 +1,5 @@
 export const PANEL_CV_STORAGE_KEY = 'panel-cv-state';
+export const PANEL_CV_RADAR_EXPANDED_KEY = 'panel-cv-radar-expanded';
 const CV_ANALYSIS_MAX_POLLS = 180;
 const CV_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -59,6 +60,34 @@ function readState() {
 function writeState(state) {
     localStorage.setItem(PANEL_CV_STORAGE_KEY, JSON.stringify(state));
     window.dispatchEvent(new CustomEvent('panel-cv-updated', { detail: state }));
+}
+
+export function readCvRadarExpanded(analysisId, storage = localStorage) {
+    if (!analysisId) {
+        return true;
+    }
+
+    try {
+        const state = JSON.parse(storage.getItem(PANEL_CV_RADAR_EXPANDED_KEY) || 'null');
+        if (!state || state.analysisId !== analysisId) {
+            return true;
+        }
+
+        return state.expanded !== false;
+    } catch {
+        return true;
+    }
+}
+
+export function persistCvRadarExpanded(analysisId, expanded, storage = localStorage) {
+    if (!analysisId) {
+        return;
+    }
+
+    storage.setItem(PANEL_CV_RADAR_EXPANDED_KEY, JSON.stringify({
+        analysisId,
+        expanded: expanded === true,
+    }));
 }
 
 export async function pollCvAnalysis(analysisId, statusUrl, locale, onProgress = null) {
