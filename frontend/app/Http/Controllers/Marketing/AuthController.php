@@ -7,7 +7,10 @@ use App\Services\CareerTalentApiClient;
 use App\Support\PortalAuthSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class AuthController extends Controller
 {
@@ -163,10 +166,16 @@ class AuthController extends Controller
         $this->startSession($request, $result['body']['access_token'], $me['body']);
 
         if ($isAdmin) {
+            $request->session()->forget('url.intended');
+
             return redirect()->route(($me['body']['must_change_password'] ?? false) === true ? 'admin.profile' : 'admin.dashboard');
         }
 
-        return redirect()->intended(route('panel.dashboard'));
+        $intendedUrl = $this->candidateIntendedUrl($request);
+
+        return $intendedUrl !== null
+            ? redirect()->to($intendedUrl)
+            : redirect()->route('panel.dashboard');
     }
 
     public function store(Request $request, CareerTalentApiClient $api): RedirectResponse
@@ -199,7 +208,11 @@ class AuthController extends Controller
 
         $this->startSession($request, $loggedIn['body']['access_token'], $registered['body']);
 
-        return redirect()->intended(route('panel.dashboard'));
+        $intendedUrl = $this->candidateIntendedUrl($request);
+
+        return $intendedUrl !== null
+            ? redirect()->to($intendedUrl)
+            : redirect()->route('panel.dashboard');
     }
 
     public function logout(Request $request): RedirectResponse
@@ -233,6 +246,44 @@ class AuthController extends Controller
                 ? $user['preferred_locale']
                 : 'tr',
         );
+    }
+
+    private function candidateIntendedUrl(Request $request): ?string
+    {
+        $intendedUrl = $request->session()->pull('url.intended');
+        if (! is_string($intendedUrl) || $intendedUrl === '') {
+            return null;
+        }
+
+        $intendedHost = parse_url($intendedUrl, PHP_URL_HOST);
+        if (is_string($intendedHost)
+            && ! hash_equals(strtolower($request->getHost()), strtolower($intendedHost))) {
+            return null;
+        }
+
+        $intendedPath = parse_url($intendedUrl, PHP_URL_PATH);
+        if (! is_string($intendedPath) || $intendedPath === '') {
+            return null;
+        }
+
+        try {
+            $route = Route::getRoutes()->match(Request::create($intendedPath, 'GET'));
+        } catch (MethodNotAllowedHttpException|NotFoundHttpException) {
+            return null;
+        }
+
+        $routeName = $route->getName();
+        if (! is_string($routeName)
+            || (! str_starts_with($routeName, 'panel.') && $routeName !== 'public.jobs.start')) {
+            return null;
+        }
+
+        $query = parse_url($intendedUrl, PHP_URL_QUERY);
+        $fragment = parse_url($intendedUrl, PHP_URL_FRAGMENT);
+
+        return $intendedPath
+            .(is_string($query) && $query !== '' ? '?'.$query : '')
+            .(is_string($fragment) && $fragment !== '' ? '#'.$fragment : '');
     }
 
     private function authError(?int $status): string

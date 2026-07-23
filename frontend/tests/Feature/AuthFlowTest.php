@@ -93,6 +93,72 @@ class AuthFlowTest extends TestCase
             ->assertSessionDoesntHaveErrors();
     }
 
+    public function test_student_login_discards_a_stale_company_intended_url(): void
+    {
+        Http::fake([
+            '*/api/v1/auth/login' => Http::response(['access_token' => 'student-token', 'token_type' => 'bearer']),
+            '*/api/v1/auth/me' => Http::response(array_merge($this->user(), ['role' => 'student'])),
+        ]);
+
+        $this->withSession(['url.intended' => url('/acme/pozisyonlar')])
+            ->post('/panel/login', [
+                'email' => 'ayse@example.com',
+                'password' => 'GucluParola123!',
+            ])->assertRedirect('/panel')
+            ->assertSessionMissing('url.intended')
+            ->assertSessionHas('auth.access_token', 'student-token');
+    }
+
+    public function test_student_login_preserves_a_candidate_panel_intended_url(): void
+    {
+        Http::fake([
+            '*/api/v1/auth/login' => Http::response(['access_token' => 'student-token', 'token_type' => 'bearer']),
+            '*/api/v1/auth/me' => Http::response(array_merge($this->user(), ['role' => 'student'])),
+        ]);
+
+        $this->withSession(['url.intended' => route('panel.cv-builder')])
+            ->post('/panel/login', [
+                'email' => 'ayse@example.com',
+                'password' => 'GucluParola123!',
+            ])->assertRedirect(route('panel.cv-builder'))
+            ->assertSessionMissing('url.intended');
+    }
+
+    public function test_student_login_preserves_a_candidate_job_application_intended_url(): void
+    {
+        Http::fake([
+            '*/api/v1/auth/login' => Http::response(['access_token' => 'student-token', 'token_type' => 'bearer']),
+            '*/api/v1/auth/me' => Http::response(array_merge($this->user(), ['role' => 'student'])),
+        ]);
+
+        $intendedUrl = route('public.jobs.start', [
+            'organizationSlug' => 'acme',
+            'positionPath' => 'backend-developer-ABC123',
+        ]);
+
+        $this->withSession(['url.intended' => $intendedUrl])
+            ->post('/panel/login', [
+                'email' => 'ayse@example.com',
+                'password' => 'GucluParola123!',
+            ])->assertRedirect($intendedUrl)
+            ->assertSessionMissing('url.intended');
+    }
+
+    public function test_student_login_rejects_an_external_intended_url(): void
+    {
+        Http::fake([
+            '*/api/v1/auth/login' => Http::response(['access_token' => 'student-token', 'token_type' => 'bearer']),
+            '*/api/v1/auth/me' => Http::response(array_merge($this->user(), ['role' => 'student'])),
+        ]);
+
+        $this->withSession(['url.intended' => 'https://attacker.example/panel'])
+            ->post('/panel/login', [
+                'email' => 'ayse@example.com',
+                'password' => 'GucluParola123!',
+            ])->assertRedirect('/panel')
+            ->assertSessionMissing('url.intended');
+    }
+
     public function test_admin_account_using_panel_login_is_redirected_to_admin_panel(): void
     {
         Http::fake([
@@ -275,6 +341,7 @@ class AuthFlowTest extends TestCase
                     'Bearer delete-token' => ['students.delete'],
                     default => [],
                 };
+
                 return Http::response(array_merge($this->user(true), [
                     'role' => 'admin', 'admin_permissions' => $permissions, 'must_change_password' => false,
                 ]));
