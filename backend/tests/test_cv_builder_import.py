@@ -9,7 +9,12 @@ from sqlalchemy.pool import StaticPool
 from app.core.database import Base
 from app.models.career_engine import CareerAnalysis
 from app.models.engagement import CvDocument
-from app.schemas.career import CvBuilderDraftAI, CvBuilderSourceDraftAI
+from app.schemas.career import (
+    CvBuilderDraftAI,
+    CvBuilderSourceDraftAI,
+    CvCertificateDraftAI,
+    CvProjectDraftAI,
+)
 from app.services import cv_builder_import as service
 
 
@@ -371,3 +376,42 @@ def test_source_fidelity_allows_ai_to_group_skills_under_a_category():
     raw_cv_text = _draft_source_text(source).replace("Technical Skills", "")
 
     service._validate_source_fidelity(source, raw_cv_text)
+
+
+def test_translation_allows_natural_language_project_and_certificate_names():
+    source = _draft(
+        location="Istanbul",
+        summary="Senior data analyst.",
+        title="Senior Data Analyst",
+        bullet="Built SQL dashboards.",
+        skill_category="Technical Skills",
+    )
+    source.projects = [CvProjectDraftAI(
+        name="Müşteri Analitiği Projesi",
+        link="https://example.com/project",
+        description="Satış verilerini analiz etti.",
+    )]
+    source.certificates = [CvCertificateDraftAI(
+        name="İleri Veri Analizi Eğitimi",
+        issuer="Google LLC",
+        date="2024",
+    )]
+    translated = _draft(
+        location="Istanbul",
+        summary="Senior data analyst.",
+        title="Senior Data Analyst",
+        bullet="Built SQL dashboards.",
+        skill_category="Technical Skills",
+    )
+    translated.projects = [CvProjectDraftAI(
+        name="Customer Analytics Project",
+        link="https://example.com/project",
+        description="Analyzed sales data.",
+    )]
+    translated.certificates = [CvCertificateDraftAI(
+        name="Advanced Data Analytics Training",
+        issuer="Google LLC",
+        date="2024",
+    )]
+
+    service._validate_translation(source, translated)

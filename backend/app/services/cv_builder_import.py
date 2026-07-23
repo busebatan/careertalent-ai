@@ -57,7 +57,8 @@ def _translation_prompt(source_language: str, target_language: str, source: CvBu
             "Hiçbir gerçek, satır, madde veya alan ekleme, silme, birleştirme ya da yeniden sıralama",
             "Boş alanları boş bırak; kaynakta olmayan bilgi üretme",
             "Ad, kurum, marka, teknoloji, kısaltma, tarih, e-posta, telefon ve URL değerlerini birebir koru",
-            "Yalnız doğal dildeki unvan, özet, açıklama, madde ve kategori metinlerini çevir",
+            "Doğal dildeki unvan, özet, açıklama, madde, kategori, proje ve sertifika adlarını çevir",
+            "Tescilli ürün, proje veya sertifika adlarını özel ad olarak koru",
         ],
         "source_draft": source.model_dump(mode="json"),
     }
@@ -121,8 +122,8 @@ def _validate_translation(source: CvBuilderDraftAI, translated: CvBuilderDraftAI
     preserved_by_section = {
         "education": ("institution", "start", "end"),
         "experience": ("organization", "start", "end"),
-        "projects": ("name", "link"),
-        "certificates": ("name", "issuer", "date"),
+        "projects": ("link",),
+        "certificates": ("issuer", "date"),
     }
     for section, fields in preserved_by_section.items():
         for index, source_row in enumerate(source_payload[section]):
