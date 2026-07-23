@@ -229,19 +229,32 @@ class PanelCareerTargetTest extends TestCase
                 'radar' => [],
                 'career_ladder' => [],
             ]),
-            'http://localhost:8000/api/v1/career/targets' => Http::response([]),
+            'http://localhost:8000/api/v1/career/targets' => Http::response([
+                [
+                    'id' => 'target-product-manager',
+                    'title' => 'Ürün Yöneticisi',
+                    'status' => 'active',
+                    'plan' => [],
+                ],
+            ]),
+            'http://localhost:8000/api/v1/career/targets/target-product-manager/tasks' => Http::response([]),
             'http://localhost:8000/*' => Http::response([]),
         ]);
 
         $this->get(route('panel.roadmap'))
             ->assertOk()
-            ->assertSee('data-roadmap-analysis-cv', false)
+            ->assertSee('data-roadmap-selected-target', false)
+            ->assertSee('data-roadmap-analysis-source', false)
+            ->assertSee('panel-card mb-4 border-sky-500/30 bg-sky-500/10 p-4', false)
+            ->assertSee('Ürün Yöneticisi')
             ->assertSee('Fatma_Kesici.pdf')
             ->assertSee('20.07.2026 21:17')
             ->assertSee('data-roadmap-clear', false)
             ->assertSee('data-roadmap-analysis-actions', false)
             ->assertSee('class="panel-sky-card-link"', false)
-            ->assertSeeInOrder(['data-roadmap-analysis-cv', '20.07.2026 21:17', 'data-roadmap-clear'], false)
+            ->assertSeeInOrder(['data-roadmap-selected-target', 'Ürün Yöneticisi', 'data-roadmap-analysis-source', 'Fatma_Kesici.pdf', '20.07.2026 21:17', 'data-roadmap-clear'], false)
+            ->assertDontSee('data-roadmap-analysis-cv', false)
+            ->assertDontSee('panel-card mb-4 border-emerald-500/30 bg-emerald-500/10 p-4', false)
             ->assertDontSee('inline-flex shrink-0 items-center justify-center rounded-xl border border-red-500/30', false)
             ->assertSee('careerDataReset(', false)
             ->assertSee((string) \Illuminate\Support\Js::from([

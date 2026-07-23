@@ -35,32 +35,36 @@
             </div>
         </header>
 
-        @if (! empty($analysisCv))
-            <div data-roadmap-analysis-cv class="panel-card mb-4 border-sky-500/30 bg-sky-500/10 p-4">
-                <p class="text-xs font-medium uppercase tracking-wide text-sky-700 dark:text-sky-300">{{ __('panel.roadmap.cv_source_title') }}</p>
-                <p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{{ __('panel.roadmap.cv_source', ['name' => $analysisCv['name']]) }}</p>
-                <div data-roadmap-analysis-actions class="mt-1 flex flex-wrap items-center justify-between gap-2">
-                    @if (! empty($analysisCv['analyzed_at']))
-                        <p class="panel-muted text-xs">{{ __('panel.roadmap.cv_analyzed_at', ['date' => $analysisCv['analyzed_at']]) }}</p>
-                    @endif
-                    <button type="button" data-roadmap-clear @click.stop="resetOpen = true"
-                        class="panel-sky-card-link">
-                        {{ __('panel.skill_radar.clear_cv') }}
-                    </button>
-                </div>
-            </div>
-        @endif
-
     @if (! empty($careerEngineError))
         <div class="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-200" role="status">{{ $careerEngineError }}</div>
     @endif
 
-    @if (! empty($selectedTarget))
-        <div class="panel-card mb-4 border-emerald-500/30 bg-emerald-500/10 p-4">
-            <p class="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{{ __('panel.roadmap.selected_target') }}</p>
-            <p class="mt-1 font-semibold text-slate-900 dark:text-slate-100">{{ $selectedTarget['title'] }}</p>
-            @if (! empty($selectedTarget['job_url']))
-                <a href="{{ $selectedTarget['job_url'] }}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex text-xs text-emerald-700 hover:underline dark:text-emerald-300">{{ __('panel.roadmap.open_job') }}</a>
+    @if (! empty($selectedTarget) || ! empty($analysisCv))
+        <div data-roadmap-selected-target class="panel-card mb-4 border-sky-500/30 bg-sky-500/10 p-4">
+            @if (! empty($selectedTarget))
+                <p class="text-xs font-medium uppercase tracking-wide text-sky-700 dark:text-sky-300">{{ __('panel.roadmap.selected_target') }}</p>
+                <p class="mt-1 font-semibold text-slate-900 dark:text-slate-100">{{ $selectedTarget['title'] }}</p>
+                @if (! empty($selectedTarget['job_url']))
+                    <a href="{{ $selectedTarget['job_url'] }}" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex text-xs text-sky-700 hover:underline dark:text-sky-300">{{ __('panel.roadmap.open_job') }}</a>
+                @endif
+            @endif
+
+            @if (! empty($analysisCv))
+                <div data-roadmap-analysis-source @class([
+                    'border-t border-sky-500/20 pt-3' => ! empty($selectedTarget),
+                    'mt-3' => ! empty($selectedTarget),
+                ])>
+                    <p class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ __('panel.roadmap.cv_source', ['name' => $analysisCv['name']]) }}</p>
+                    <div data-roadmap-analysis-actions class="mt-1 flex flex-wrap items-center justify-between gap-2">
+                        @if (! empty($analysisCv['analyzed_at']))
+                            <p class="panel-muted text-xs">{{ __('panel.roadmap.cv_analyzed_at', ['date' => $analysisCv['analyzed_at']]) }}</p>
+                        @endif
+                        <button type="button" data-roadmap-clear @click.stop="resetOpen = true"
+                            class="panel-sky-card-link">
+                            {{ __('panel.skill_radar.clear_cv') }}
+                        </button>
+                    </div>
+                </div>
             @endif
         </div>
     @endif
