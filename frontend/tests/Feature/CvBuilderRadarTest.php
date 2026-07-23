@@ -95,10 +95,13 @@ class CvBuilderRadarTest extends TestCase
         $response = $this->get(route('panel.cv-builder', ['locale' => 'en']));
         $response->assertOk()
             ->assertDontSee('data-cv-analysis-upload', false)
-            ->assertDontSee('data-cv-current-file', false)
             ->assertDontSee('lg:grid-cols-[minmax(0,1fr)_auto]', false)
             ->assertDontSee('panel-upload-zone', false)
             ->assertSee('%80', false)
+            ->assertSee('data-cv-current-file', false)
+            ->assertSee(__('panel.profile.cv_builder_import_create'), false)
+            ->assertSee(__('panel.profile.cv_builder_import_open'), false)
+            ->assertSee(__('panel.skill_radar.clear_cv'), false)
             ->assertSee(route('panel.career-ladder'), false)
             ->assertSee(__('panel.skill_radar.analysis_cv', ['name' => 'Fatma_Kesici.pdf']), false)
             ->assertSee(__('panel.skill_radar.analysis_source', ['source' => __('panel.skill_radar.sources.upload')]), false)
@@ -111,7 +114,7 @@ class CvBuilderRadarTest extends TestCase
             ->assertSee('id="yetenek-radari"', false)
             ->assertSee('data-skill-radar-layout="split"', false)
             ->assertSee('data-skill-radar-alignment="intro-centered"', false)
-            ->assertSeeInOrder(['id="yetenek-radari"', 'data-cv-builder-status', 'grid gap-8 lg:grid-cols-2'], false)
+            ->assertSeeInOrder(['data-cv-current-file', 'id="yetenek-radari"', 'data-cv-builder-status', 'grid gap-8 lg:grid-cols-2'], false)
             ->assertSee(':open="radarExpanded"', false)
             ->assertSee('@toggle="onRadarToggle($event)"', false)
             ->assertSee("persistCvRadarExpanded?.(this.serverAnalysisId", false);
