@@ -554,7 +554,10 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
             this.renameInput = version.version_name;
             this.$nextTick(() => {
                 const el = this.$root.querySelector('#rename-version-input-' + version.id);
-                if (el) el.focus();
+                if (el) {
+                    el.focus();
+                    el.select();
+                }
             });
         },
 
