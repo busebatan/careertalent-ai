@@ -93,7 +93,7 @@ class CompanyController extends Controller
         if (in_array('applications.view', $permissions, true)) {
             $tabs[] = 'comparison';
         }
-        array_push($tabs, 'activity', 'share', 'settings');
+        array_push($tabs, 'activity', 'questions', 'share', 'settings');
         $tab = in_array($request->query('tab'), $tabs, true) ? $request->query('tab') : 'overview';
         $result = $api->companyPosition($this->organizationId($request), $position);
         abort_unless($result['ok'], $result['status'] === 404 ? 404 : 503, $result['error']);

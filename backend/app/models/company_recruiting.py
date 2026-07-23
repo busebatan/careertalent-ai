@@ -85,6 +85,37 @@ class RecruitingPosition(Base):
     )
 
 
+class RecruitingPositionQuestion(Base):
+    __tablename__ = "recruiting_position_questions"
+    __table_args__ = (
+        CheckConstraint(
+            "question_type IN ('text', 'number', 'single_choice')",
+            name="ck_recruiting_position_questions_type",
+        ),
+        ForeignKeyConstraint(
+            ["position_id", "organization_id"],
+            ["recruiting_positions.id", "recruiting_positions.organization_id"],
+            name="fk_recruiting_position_questions_position_tenant",
+            ondelete="CASCADE",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    position_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    question_text: Mapped[str] = mapped_column(Text, nullable=False)
+    question_type: Mapped[str] = mapped_column(String(20), nullable=False, default="text")
+    options: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    is_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
 class RecruitingApplication(Base):
     __tablename__ = "recruiting_applications"
     __table_args__ = (

@@ -52,7 +52,7 @@ return [
     'tabs' => [
         'overview' => 'Genel Bakış', 'requirements' => 'Gereksinimler', 'applications' => 'Başvurular',
         'assessment' => 'Değerlendirme', 'comparison' => 'Aday Karşılaştırma', 'activity' => 'Etkinlik Geçmişi',
-        'share' => 'Yayınla ve Paylaş', 'settings' => 'Ayarlar',
+        'questions' => 'Başvuru Soruları', 'share' => 'Yayınla ve Paylaş', 'settings' => 'Ayarlar',
     ],
     'sections' => [
         'process' => 'Süreç özeti', 'recent' => 'Son hareketler', 'must_have' => 'Vazgeçilmezler',

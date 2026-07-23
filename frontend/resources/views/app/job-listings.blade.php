@@ -212,12 +212,40 @@
                             </select>
                         </label>
 
-                        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm text-slate-600 transition hover:border-emerald-300 dark:border-slate-700 dark:text-slate-300" id="application-consent-label">
-                            <input type="checkbox" x-model="demoConsent"
-                                class="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                id="application-consent">
-                            <span>{{ __('panel.job_listings.demo_consent') }}</span>
-                        </label>
+                        {{-- İlana Özel Başvuru / Ön Eleme Soruları --}}
+                        <template x-if="applicationJob?.position?.questions && applicationJob.position.questions.length > 0">
+                            <div class="rounded-xl border border-slate-200 p-4 space-y-4 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40">
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">İlan Başvuru Soruları</h4>
+                                <template x-for="q in applicationJob.position.questions" :key="q.id">
+                                    <div class="space-y-1">
+                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                            <span x-text="q.question_text"></span>
+                                            <span x-show="q.is_required" class="text-rose-500 font-bold">*</span>
+                                        </label>
+
+                                        <!-- Text Question -->
+                                        <template x-if="q.question_type === 'text'">
+                                            <textarea x-model="applicationAnswers[q.id]" rows="2" class="panel-input-block text-xs w-full" placeholder="Yanıtınızı giriniz..."></textarea>
+                                        </template>
+
+                                        <!-- Number Question -->
+                                        <template x-if="q.question_type === 'number'">
+                                            <input type="number" x-model="applicationAnswers[q.id]" class="panel-input-block text-xs w-full" placeholder="Sayısal değer giriniz...">
+                                        </template>
+
+                                        <!-- Single Choice Question -->
+                                        <template x-if="q.question_type === 'single_choice'">
+                                            <select x-model="applicationAnswers[q.id]" class="panel-input-block text-xs w-full">
+                                                <option value="">Seçiniz...</option>
+                                                <template x-for="opt in (q.options || [])" :key="opt">
+                                                    <option :value="opt" x-text="opt"></option>
+                                                </template>
+                                            </select>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
 
                         {{-- Hata mesajı --}}
                         <p x-show="applicationError"

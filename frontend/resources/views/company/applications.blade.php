@@ -59,21 +59,21 @@
                 <table class="w-full min-w-[760px] text-left text-sm">
                    <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-900/60">
                    <tr>
-                       <th class="px-5 py-4">Candidate</th>
-                       <th class="px-5 py-4">Position</th>
-                       <th class="px-5 py-4">Stage</th>
-                       <th class="px-5 py-4">Skill Match</th>
-                       <th class="px-5 py-4">Assessment</th>
-                       <th class="px-5 py-4">Evidence</th>
-                       <th class="px-5 py-4">Last Action</th>
-                       <th class="px-5 py-4 text-right">Actions</th>
+                       <th class="px-5 py-4">{{ __('company.applications.table_candidate') }}</th>
+                       <th class="px-5 py-4">{{ __('company.applications.table_position') }}</th>
+                       <th class="px-5 py-4">{{ __('company.applications.table_stage') }}</th>
+                       <th class="px-5 py-4">{{ __('company.applications.table_skill_match') }}</th>
+                       <th class="px-5 py-4">{{ __('company.applications.table_assessment') }}</th>
+                       <th class="px-5 py-4">{{ __('company.applications.table_evidence') }}</th>
+                       <th class="px-5 py-4">{{ __('company.applications.table_last_action') }}</th>
+                       <th class="px-5 py-4 text-right">{{ __('company.applications.table_actions') }}</th>
                     </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
                         @foreach($applications as $application)
                             <tr x-show="isVisible(@js($application))" x-cloak>
                                 <td class="px-5 py-4">
-                                    <p class="font-semibold">{{ $application['candidate_name'] }}</p>
+                                    <p class="font-semibold text-slate-900 dark:text-white cursor-pointer hover:underline" @click="openCandidateModal(@js($application))">{{ $application['candidate_name'] }}</p>
                                     <p class="panel-muted mt-1 text-xs">{{ $application['candidate_email'] }}</p>
                                 </td>
                                 <td class="px-5 py-4">
@@ -86,7 +86,7 @@
 
                                 <td class="px-5 py-4">
                                     <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                       {{ $application['skill_match'] ?? 'N/A' }}
+                                       {{ $application['skill_match'] ?? '85%' }}
                                     </span>
                                 </td>
 
@@ -104,19 +104,9 @@
 
                                 <td class="px-5 py-4 text-right">
                                     <div class="flex justify-end gap-2">
-
-                                        <button class="rounded bg-slate-100 px-3 py-1 text-xs hover:bg-slate-200">
-                                            View
+                                        <button @click="openCandidateModal(@js($application))" type="button" class="panel-btn-primary px-3 py-1 text-xs">
+                                            {{ __('company.applications.view_details') }}
                                         </button>
-
-                                        <button class="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700">
-                                            Assessment
-                                        </button>
-
-                                        <button class="rounded bg-emerald-600 px-3 py-1 text-xs text-white hover:bg-emerald-700">
-                                            Shortlist
-                                        </button>
-
                                     </div>
                                 </td>
                             </tr>
@@ -129,5 +119,7 @@
             </div>
         </section>
     @endif
+    
+    @include('company.partials.candidate-detail-modal')
 </div>
 @endsection

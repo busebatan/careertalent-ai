@@ -16,16 +16,17 @@ from app.core.company_permissions import (
 from app.core.database import get_db
 from app.core.security import get_current_user, hash_password, verify_password
 from app.models.recruiting import Organization, OrganizationInvitation, OrganizationMembership
-from app.models.company_recruiting import RecruitingApplication, RecruitingPosition, RecruitingApplicationSnapshot
 from app.models.company_recruiting import (
     OrganizationAtsConfiguration,
     RecruitingApplication,
+    RecruitingApplicationSnapshot,
     RecruitingApplicationStageEvent,
     RecruitingAssessment,
     RecruitingPosition,
     RecruitingPositionActivity,
     RecruitingPositionAiAnalysis,
     RecruitingPositionCriteriaVersion,
+    RecruitingPositionQuestion,
     RecruitingShareLink,
     new_public_id,
     new_short_code,
@@ -60,6 +61,9 @@ from app.schemas.company import (
     CompanyCriteriaVersionUpdate,
     CompanyPositionAiAnalysisResponse,
     CompanyPositionMemberResponse,
+    CompanyPositionQuestionCreate,
+    CompanyPositionQuestionResponse,
+    CompanyPositionQuestionUpdate,
     CompanyShareLinkCreate,
     CompanyShareLinkResponse,
     CompanyShareLinkUpdate,
@@ -925,4 +929,113 @@ def get_application_snapshot(
     if snapshot is None:
         raise HTTPException(status_code=404, detail="Application snapshot not found")
     return snapshot.payload
+
+
+@router.get("/positions/{position_id}/questions", response_model=list[CompanyPositionQuestionResponse])
+def get_position_questions(
+    position_id: str,
+    db: DB,
+    context=Depends(_context),
+):
+    _, organization, _ = _require_permission(context, "positions.view")
+    questions = db.scalars(
+        select(RecruitingPositionQuestion)
+        .where(
+            RecruitingPositionQuestion.organization_id == organization.id,
+            RecruitingPositionQuestion.position_id == position_id,
+        )
+        .order_by(RecruitingPositionQuestion.sort_order.asc(), RecruitingPositionQuestion.created_at.asc())
+    ).all()
+    return [CompanyPositionQuestionResponse.model_validate(q, from_attributes=True) for q in questions]
+
+
+@router.post("/positions/{position_id}/questions", response_model=CompanyPositionQuestionResponse, status_code=201)
+def create_position_question(
+    position_id: str,
+    payload: CompanyPositionQuestionCreate,
+    db: DB,
+    context=Depends(_context),
+):
+    _, organization, _ = _require_permission(context, "positions.write")
+    position = db.scalar(
+        select(RecruitingPosition).where(
+            RecruitingPosition.id == position_id,
+            RecruitingPosition.organization_id == organization.id,
+        )
+    )
+    if position is None:
+        raise HTTPException(status_code=404, detail="Position not found")
+    
+    question = RecruitingPositionQuestion(
+        id=str(uuid4()),
+        organization_id=organization.id,
+        position_id=position.id,
+        question_text=payload.question_text.strip(),
+        question_type=payload.question_type,
+        options=payload.options if payload.question_type == "single_choice" else [],
+        is_required=payload.is_required,
+        sort_order=payload.sort_order,
+    )
+    db.add(question)
+    db.commit()
+    db.refresh(question)
+    return CompanyPositionQuestionResponse.model_validate(question, from_attributes=True)
+
+
+@router.put("/positions/{position_id}/questions/{question_id}", response_model=CompanyPositionQuestionResponse)
+def update_position_question(
+    position_id: str,
+    question_id: str,
+    payload: CompanyPositionQuestionUpdate,
+    db: DB,
+    context=Depends(_context),
+):
+    _, organization, _ = _require_permission(context, "positions.write")
+    question = db.scalar(
+        select(RecruitingPositionQuestion).where(
+            RecruitingPositionQuestion.id == question_id,
+            RecruitingPositionQuestion.position_id == position_id,
+            RecruitingPositionQuestion.organization_id == organization.id,
+        )
+    )
+    if question is None:
+        raise HTTPException(status_code=404, detail="Position question not found")
+
+    if payload.question_text is not None:
+        question.question_text = payload.question_text.strip()
+    if payload.question_type is not None:
+        question.question_type = payload.question_type
+    if payload.options is not None:
+        question.options = payload.options if question.question_type == "single_choice" else []
+    if payload.is_required is not None:
+        question.is_required = payload.is_required
+    if payload.sort_order is not None:
+        question.sort_order = payload.sort_order
+
+    db.commit()
+    db.refresh(question)
+    return CompanyPositionQuestionResponse.model_validate(question, from_attributes=True)
+
+
+@router.delete("/positions/{position_id}/questions/{question_id}", status_code=204)
+def delete_position_question(
+    position_id: str,
+    question_id: str,
+    db: DB,
+    context=Depends(_context),
+):
+    _, organization, _ = _require_permission(context, "positions.write")
+    question = db.scalar(
+        select(RecruitingPositionQuestion).where(
+            RecruitingPositionQuestion.id == question_id,
+            RecruitingPositionQuestion.position_id == position_id,
+            RecruitingPositionQuestion.organization_id == organization.id,
+        )
+    )
+    if question is None:
+        raise HTTPException(status_code=404, detail="Position question not found")
+
+    db.delete(question)
+    db.commit()
+    return Response(status_code=204)
 

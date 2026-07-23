@@ -412,6 +412,49 @@ class PublicOrganizationResponse(BaseModel):
     logo_url: str | None
 
 
+QuestionType = Literal["text", "number", "single_choice"]
+
+
+class CompanyPositionQuestionCreate(BaseModel):
+    question_text: str = Field(min_length=2, max_length=1000)
+    question_type: QuestionType = "text"
+    options: list[str] = Field(default_factory=list, max_length=50)
+    is_required: bool = True
+    sort_order: int = Field(default=0, ge=0, le=1000)
+
+    @field_validator("options")
+    @classmethod
+    def normalize_options(cls, value: list[str]) -> list[str]:
+        return list(dict.fromkeys(item.strip() for item in value if item.strip()))
+
+
+class CompanyPositionQuestionUpdate(BaseModel):
+    question_text: str | None = Field(default=None, min_length=2, max_length=1000)
+    question_type: QuestionType | None = None
+    options: list[str] | None = Field(default=None, max_length=50)
+    is_required: bool | None = None
+    sort_order: int | None = Field(default=None, ge=0, le=1000)
+
+    @field_validator("options")
+    @classmethod
+    def normalize_options(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        return list(dict.fromkeys(item.strip() for item in value if item.strip()))
+
+
+class CompanyPositionQuestionResponse(BaseModel):
+    id: str
+    position_id: str
+    question_text: str
+    question_type: QuestionType
+    options: list[str]
+    is_required: bool
+    sort_order: int
+    created_at: datetime
+    updated_at: datetime
+
+
 class PublicPositionResponse(BaseModel):
     id: str
     public_id: str
@@ -431,6 +474,7 @@ class PublicPositionResponse(BaseModel):
     application_open: bool
     estimated_application_minutes: int
     estimated_assessment_minutes: int | None
+    questions: list[CompanyPositionQuestionResponse] = Field(default_factory=list)
 
 
 class PublicPositionPageResponse(BaseModel):
@@ -452,6 +496,7 @@ class CandidatePositionApplicationCreate(BaseModel):
     share_link_code: str | None = Field(default=None, max_length=16)
     consent: dict[str, Any]
     selected_projects: list[dict[str, Any]] = Field(default_factory=list, max_length=20)
+    application_answers: list[dict[str, Any]] = Field(default_factory=list, max_length=50)
 
     @model_validator(mode="after")
     def validate_consent(self):
@@ -479,6 +524,9 @@ class CompanyApplicationResponse(BaseModel):
     first_reviewed_at: datetime | None
     applied_at: datetime
     retention_expires_at: datetime | None
+    cv_document_id: str | None = None
+    application_snapshot: dict[str, Any] = Field(default_factory=dict)
+    analysis_result: dict[str, Any] = Field(default_factory=dict)
 
 
 class CompanyApplicationsResponse(BaseModel):

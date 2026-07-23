@@ -17,6 +17,24 @@ export function companyApplications(config) {
         stageOptions: Array.isArray(config.stageOptions) ? config.stageOptions : [],
         positionOptions: Array.isArray(config.positionOptions) ? config.positionOptions : [],
         labels: config.labels || {},
+        isModalOpen: false,
+        selectedCandidate: null,
+        activeModalTab: 'profile',
+
+        openCandidateModal(candidate) {
+            this.selectedCandidate = candidate;
+            this.activeModalTab = 'profile';
+            this.isModalOpen = true;
+        },
+
+        closeCandidateModal() {
+            this.isModalOpen = false;
+            this.selectedCandidate = null;
+        },
+
+        setModalTab(tabName) {
+            this.activeModalTab = tabName;
+        },
 
         filteredApplications() {
             const needle = this.query.trim().toLowerCase();

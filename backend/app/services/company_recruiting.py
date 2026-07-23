@@ -336,6 +336,9 @@ def applications(
         first_reviewed_at=application.first_reviewed_at,
         applied_at=application.applied_at,
         retention_expires_at=application.retention_expires_at,
+        cv_document_id=application.cv_document_id,
+        application_snapshot=application.application_snapshot or {},
+        analysis_result=application.analysis_result or {},
     ) for application, position_title in rows])
 
 

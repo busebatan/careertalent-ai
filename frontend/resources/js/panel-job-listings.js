@@ -19,6 +19,7 @@ export function panelJobListings(initialItems, labels, initialCvDocuments = [], 
         applicationSubmitting: false,
         applicationError: '',
         applicationSubmitted: false,
+        applicationAnswers: {},
 
         // Route URLs — Blade şablonundan x-init ile set edilecek
         applyUrl: '',
@@ -54,6 +55,7 @@ export function panelJobListings(initialItems, labels, initialCvDocuments = [], 
             this.applicationSubmitting = false;
             this.demoConsent = false;
             this.demoSubmitted = false;
+            this.applicationAnswers = {};
 
             // CV sürümü önceliği: is_main olanı seç, yoksa ilki
             this.selectedVersionId =
@@ -93,11 +95,28 @@ export function panelJobListings(initialItems, labels, initialCvDocuments = [], 
             if (!this.demoConsent) return;
             if (!this.selectedVersionId && !this.selectedCvId) return;
 
+            const job = this.applicationJob;
+            const questions = job?.position?.questions || [];
+
+            // Zorunlu başvuru soruları kontrolü
+            for (const q of questions) {
+                if (q.is_required && (!this.applicationAnswers[q.id] || !String(this.applicationAnswers[q.id]).trim())) {
+                    this.applicationError = 'Lütfen tüm zorunlu soruları yanıtlayınız.';
+                    return;
+                }
+            }
+
             this.applicationSubmitting = true;
             this.applicationError = '';
 
-            const job = this.applicationJob;
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            const formattedAnswers = questions.map((q) => ({
+                question_id: q.id,
+                question_text: q.question_text,
+                question_type: q.question_type,
+                answer: this.applicationAnswers[q.id] || '',
+            }));
 
             try {
                 const response = await fetch(this.applyUrl, {
@@ -113,6 +132,7 @@ export function panelJobListings(initialItems, labels, initialCvDocuments = [], 
                         position_id: job?.position?.public_id || job?.position?.id || null,
                         cv_version_id: this.selectedVersionId || null,
                         cv_document_id: this.selectedCvId || null,
+                        application_answers: formattedAnswers,
                         is_platform_apply: true,
                     }),
                 });
