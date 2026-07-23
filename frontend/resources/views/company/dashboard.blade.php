@@ -73,6 +73,68 @@
                 </div>
             </article>
         </section>
+        
+        <section class="panel-card mt-6 p-6">
+
+            <h2 class="text-lg font-semibold">
+                {{ __('company.dashboard.hiring_pipeline') }}
+            </h2>
+
+            <div class="mt-6 grid gap-4 md:grid-cols-5">
+
+                <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
+                    <div class="panel-muted text-xs uppercase">
+                         Applications
+                    </div>
+
+                    <div class="mt-2 text-2xl font-bold">
+                         {{ $indicators['new_applications'] ?? 0 }}
+                    </div>
+                </div>
+
+            <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
+                <div class="panel-muted text-xs uppercase">
+                    Assessment
+                </div>
+
+                <div class="mt-2 text-2xl font-bold">
+                      {{ $indicators['assessment_pending'] ?? 0 }}
+                </div>
+            </div>
+
+            <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
+                <div class="panel-muted text-xs uppercase">
+                    Technical Review
+                </div>
+
+                <div class="mt-2 text-2xl font-bold">
+                     {{ $indicators['technical_review_pending'] ?? 0 }}
+                </div>
+            </div>
+
+            <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
+                <div class="panel-muted text-xs uppercase">
+                    Shortlisted
+                </div>
+
+                <div class="mt-2 text-2xl font-bold">
+                     {{ $indicators['shortlisted'] ?? 0 }}
+                </div>
+            </div>
+
+            <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
+                <div class="panel-muted text-xs uppercase">
+                     Active Jobs
+                </div>
+
+                <div class="mt-2 text-2xl font-bold">
+                     {{ $indicators['active_positions'] ?? 0 }}
+                 </div>
+            </div>
+
+        </div>
+
+    </section>
 
         <div class="mt-6 grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
             <section class="panel-card p-6">
