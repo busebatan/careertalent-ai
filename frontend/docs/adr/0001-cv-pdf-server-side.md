@@ -1,31 +1,37 @@
 # ADR 0001: CV PDF üretimi (istemci vs sunucu)
 
-**Durum:** Kabul edildi (aşamalı)  
+**Durum:** Uygulandı
 **Tarih:** 2026-06-29
+**Güncelleme:** 2026-07-23
 
 ## Bağlam
 
-Harvard format CV PDF şu an `html2pdf.js` ile tarayıcıda üretiliyor. CDN bağımlılığı kaldırıldı; Vite dynamic import ile `html2pdf` chunk yükleniyor.
+Harvard format CV PDF, `html2pdf.js` ile tarayıcıda raster görsel olarak üretiliyordu. Uzun içerikte canvas sayfa sınırından kesilebildiği için başlık ve satırlar iki sayfa arasında kırılabiliyordu.
 
 ## Karar
 
-1. **Şimdi:** İstemci tarafı `exportHarvardCvPdf` (html2pdf + clone) kullanılmaya devam eder.
-2. **Sonra:** Sunucu tarafı PDF (Dompdf veya Snappy) Sprint 2+ backlog.
+1. PDF, Laravel üzerinden yerel Chrome sürücüsüyle sunucuda A4 olarak üretilir.
+2. Açık önizleme ve indirme aynı PDF blob'unu kullanır.
+3. `html2pdf.js`, `html2canvas` ve jsPDF tabanlı CV export zinciri kaldırılır.
+4. `@page`, `break-after` ve `break-inside` kuralları sunucu PDF şablonunun parçasıdır.
 
 ## Gerekçe (sunucu tarafı hedef)
 
-- ATS uyumlu sabit font/margin (Georgia 11pt Harvard şablonu)
-- html2canvas render farkları ve taşma riski azalır
-- İndirme güvenilirliği (özellikle mobil / düşük RAM)
+- A4 ölçüsü ve 12 mm kenar boşluğu tek renderer tarafından belirlenir.
+- Metin seçilebilir ve aranabilir kalır.
+- Önizleme ile indirilen/arşivlenen dosya aynı binary çıktıdır.
+- html2canvas raster kesim ve tarayıcıya bağlı export farkı ortadan kalkar.
 
 ## Sonuçlar
 
-- Şimdilik bundle ~600KB html2pdf chunk (yalnızca indirme tıklanınca)
-- Dompdf geçişinde: `POST /panel/cv-olustur/pdf` + Blade/HTML şablon paylaşımı
-- PHPUnit feature + Playwright E2E mevcut akışı korur
+- Endpoint: `POST /panel/cv-merkezi/pdf`
+- Renderer: `App\Services\HarvardCvPdfRenderer`
+- Şablon: `resources/views/pdf/harvard-cv.blade.php`
+- Sürücü: `spatie/laravel-pdf` + `chrome-php/chrome`
+- Chrome yolu `LARAVEL_PDF_CHROME_BINARY` ile değiştirilebilir.
 
-## Yapılacaklar (Dompdf fazı)
+## Doğrulama
 
-- [ ] `barryvdh/laravel-dompdf` veya `spatie/browsershot` değerlendirmesi
-- [ ] `resources/views/pdf/harvard-cv.blade.php` (önizleme ile aynı markup)
-- [ ] Feature test: PDF response `Content-Type: application/pdf`
+- Feature test: doğrulama, PDF response, A4/12 mm renderer sözleşmesi
+- JS unit test: sunucu PDF isteği ve content-type kontrolü
+- Gerçek Chrome smoke: A4 sayfa ölçüsü, seçilebilir metin, sayfa sınırı ve son satır kontrolü

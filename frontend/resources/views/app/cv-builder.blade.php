@@ -8,7 +8,7 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl"
-    x-data="cvBuilder({{ Js::from($cvDraft) }}, {{ Js::from($cvLabels) }}, @js(app()->getLocale()), @js($hasCvAnalysis ?? false), @js($cvFileName ?? ''), @js(route('panel.cv.analyze-builder')), @js(route('panel.cv.clear')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), @js(route('panel.cv.archive-generated')), @js($restoredFromHistory ?? false), @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])), @js($analysisStatus ?? ''), @js($analysisId ?? ''), @js(! empty($builderImportDocumentId) ? route('panel.cv.builder-import-notice.dismiss', ['documentId' => $builderImportDocumentId]) : ''))">
+    x-data="cvBuilder({{ Js::from($cvDraft) }}, {{ Js::from($cvLabels) }}, @js(app()->getLocale()), @js($hasCvAnalysis ?? false), @js($cvFileName ?? ''), @js(route('panel.cv.analyze-builder')), @js(route('panel.cv.clear')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), @js(route('panel.cv.archive-generated')), @js($restoredFromHistory ?? false), @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])), @js($analysisStatus ?? ''), @js($analysisId ?? ''), @js(! empty($builderImportDocumentId) ? route('panel.cv.builder-import-notice.dismiss', ['documentId' => $builderImportDocumentId]) : ''), @js(route('panel.cv.pdf')))">
 
     <header class="mb-6">
         <div>

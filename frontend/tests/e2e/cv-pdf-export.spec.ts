@@ -1,14 +1,28 @@
 import { expect, test } from '@playwright/test';
 
+const pdfBody = '%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF';
+
+async function mockPdfEndpoints(page) {
+    await page.route('**/panel/cv-merkezi/pdf', async (route) => {
+        expect(route.request().method()).toBe('POST');
+        expect(route.request().postDataJSON()).toMatchObject({ language: expect.any(String), locales: expect.any(Object) });
+        await route.fulfill({
+            body: pdfBody,
+            contentType: 'application/pdf',
+        });
+    });
+    await page.route('**/panel/cv-merkezi/pdf-arsivle', async (route) => {
+        await route.fulfill({ json: { ok: true } });
+    });
+}
+
 test.describe('CV builder PDF export', () => {
     test('modal disables buttons and shows progress while exporting', async ({ page }) => {
+        await mockPdfEndpoints(page);
         await page.goto('/panel/cv-olustur');
 
         await page.evaluate(() => {
-            window.exportHarvardCvPdf = () =>
-                new Promise((resolve) => {
-                    setTimeout(resolve, 800);
-                });
+            window.downloadPdfBlob = () => {};
         });
 
         await page.getByRole('button', { name: 'PDF indir' }).click();
@@ -26,18 +40,14 @@ test.describe('CV builder PDF export', () => {
         await expect(page.getByRole('dialog')).toBeHidden();
     });
 
-    test('loads html2pdf chunk when export runs', async ({ page }) => {
+    test('preview embeds the exact server-rendered PDF', async ({ page }) => {
+        await mockPdfEndpoints(page);
         await page.goto('/panel/cv-olustur');
 
-        const chunkRequest = page.waitForResponse(
-            (response) =>
-                response.url().includes('/build/assets/html2pdf') && response.status() === 200,
-            { timeout: 15_000 },
-        );
+        await page.getByRole('button', { name: 'Önizleme' }).click();
 
-        await page.getByRole('button', { name: 'PDF indir' }).click();
-        await page.getByRole('button', { name: 'Türkçe PDF indir' }).click();
-
-        await chunkRequest;
+        const preview = page.locator('[data-cv-pdf-preview]');
+        await expect(preview).toBeVisible();
+        await expect(preview).toHaveAttribute('src', /^blob:/);
     });
 });

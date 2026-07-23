@@ -573,6 +573,7 @@ return [
         'pdf_exporting' => 'PDF hazırlanıyor…',
         'pdf_success' => 'PDF indirildi.',
         'pdf_error' => 'PDF indirilemedi. Sayfayı yenileyip tekrar dene.',
+        'pdf_preview_title' => 'PDF önizlemesi',
         'pdf_archive_error' => 'PDF geçmişe kaydedilemedi; indirme başlatılmadı.',
         'pdf_file_name' => 'Dosya adı',
         'pdf_file_name_placeholder' => 'Örn. Trendyol Veri Analisti CV',

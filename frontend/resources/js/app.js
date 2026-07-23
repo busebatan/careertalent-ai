@@ -10,7 +10,7 @@ import {
 import { panelJobMatches } from './panel-job-matches';
 import { panelJobListings } from './panel-job-listings';
 import { WeeklyTasksStore, dashboardWeeklyPlan } from './panel-weekly-tasks';
-import { downloadPdfBlob, exportHarvardCvPdf, renderHarvardCvPdf } from './cv-pdf-export';
+import { downloadPdfBlob, requestServerCvPdf } from './cv-pdf-export';
 import {
     CV_OPTIONAL_SECTION_KEYS,
     createOptionalEntry,
@@ -62,8 +62,7 @@ window.companyShareLinks = companyShareLinks;
 window.panelJobMatches = panelJobMatches;
 window.panelJobListings = panelJobListings;
 window.cvBuilderImport = cvBuilderImport;
-window.exportHarvardCvPdf = exportHarvardCvPdf;
-window.renderHarvardCvPdf = renderHarvardCvPdf;
+window.requestServerCvPdf = requestServerCvPdf;
 window.downloadPdfBlob = downloadPdfBlob;
 window.initCareersWizard = initCareersWizard;
 window.CvOptionalSections = {

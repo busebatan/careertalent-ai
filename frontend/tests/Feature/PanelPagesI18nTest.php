@@ -121,7 +121,7 @@ class PanelPagesI18nTest extends TestCase
     $response->assertDontSee('İstanbul Üniversitesi', false);
     $response->assertDontSee('Ayşe Yılmaz', false);
     $response->assertDontSee('ayse.yilmaz', false);
-    $response->assertSee('renderHarvardCvPdf', false);
+    $response->assertSee('requestServerCvPdf', false);
     $response->assertSee('downloadPdfBlob', false);
     $response->assertSee('editLang', false);
     $response->assertSee('enabledOptional', false);

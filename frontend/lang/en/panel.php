@@ -574,6 +574,7 @@ return [
         'pdf_exporting' => 'Preparing PDF…',
         'pdf_success' => 'PDF downloaded.',
         'pdf_error' => 'Could not download PDF. Refresh the page and try again.',
+        'pdf_preview_title' => 'PDF preview',
         'pdf_archive_error' => 'The PDF could not be archived; download was not started.',
         'pdf_file_name' => 'File name',
         'pdf_file_name_placeholder' => 'Example: Trendyol Data Analyst CV',

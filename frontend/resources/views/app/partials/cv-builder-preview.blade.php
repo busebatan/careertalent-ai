@@ -9,7 +9,7 @@
                 :disabled="saveStatus === 'saving' || !hasUnsavedChanges"
                 x-text="saveStatus === 'saving' ? uiLabels[panelLocale].analyzing : (saveStatus === 'saved' ? uiLabels[panelLocale].saved : uiLabels[panelLocale].save)">
             </button>
-            <button type="button" @click="mode = mode === 'edit' ? 'preview' : 'edit'"
+            <button type="button" @click="togglePreview()"
                 class="rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                 x-text="mode === 'edit' ? uiLabels[panelLocale].preview : uiLabels[panelLocale].edit">
             </button>
@@ -25,16 +25,24 @@
         <p class="text-xs text-slate-500" x-text="uiLabels[panelLocale].preview_note"></p>
         <div data-preview-language-selector x-show="mode === 'preview'" x-cloak class="flex items-center gap-2">
             <span class="text-xs text-slate-500" x-text="uiLabels[panelLocale].preview_lang + ':'"></span>
-            <button type="button" @click="previewLang = 'tr'"
+            <button type="button" @click="setPreviewLanguage('tr')"
                 :class="previewLang === 'tr' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"
                 class="rounded-md px-2 py-1 text-xs font-medium" x-text="uiLabels[panelLocale].tab_tr"></button>
-            <button type="button" @click="previewLang = 'en'"
+            <button type="button" @click="setPreviewLanguage('en')"
                 :class="previewLang === 'en' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'"
                 class="rounded-md px-2 py-1 text-xs font-medium" x-text="uiLabels[panelLocale].tab_en"></button>
         </div>
     </div>
 
-    <div id="harvard-preview" class="harvard-cv rounded-lg border border-slate-300 p-8 shadow-lg">
+    <div x-show="mode === 'preview'" x-cloak class="min-h-[44rem] rounded-lg border border-slate-300 bg-white shadow-lg dark:border-slate-700">
+        <div x-show="pdfPreviewLoading" class="flex min-h-[44rem] items-center justify-center p-8 text-sm text-slate-600 dark:text-slate-300" role="status">
+            <span x-text="uiLabels[panelLocale].pdf_exporting"></span>
+        </div>
+        <p x-show="pdfPreviewError" x-cloak class="m-6 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200" x-text="pdfPreviewError" role="alert"></p>
+        <iframe x-show="pdfPreviewUrl && !pdfPreviewLoading" :src="pdfPreviewUrl" data-cv-pdf-preview :title="uiLabels[panelLocale].pdf_preview_title" class="h-[70rem] w-full rounded-lg" type="application/pdf"></iframe>
+    </div>
+
+    <div x-show="mode !== 'preview'" id="harvard-preview" class="harvard-cv rounded-lg border border-slate-300 p-8 shadow-lg">
         <h1 x-text="locales[previewLang].personal.full_name || uiLabels[previewLang].sections.default_name"></h1>
         <p class="contact">
             <span x-show="locales[previewLang].personal.email" x-text="locales[previewLang].personal.email"></span>
