@@ -73,6 +73,10 @@ def _validate_source_fidelity(source: CvBuilderDraftAI, cv_text: str) -> None:
     comparable_cv = comparable(cv_text)
 
     def validate(value: Any, path: str) -> None:
+        # Skill category is an editor grouping label, not a candidate fact.
+        # The AI may derive "Technical Skills" from an unlabelled SQL/Python list.
+        if path.startswith("draft.skills[") and path.endswith("].category"):
+            return
         if isinstance(value, dict):
             for key, item in value.items():
                 validate(item, f"{path}.{key}")

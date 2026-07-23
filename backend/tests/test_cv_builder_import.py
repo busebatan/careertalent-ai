@@ -358,3 +358,16 @@ def test_import_rejects_source_wording_not_present_in_pdf(db, monkeypatch):
     persisted = db.get(CvDocument, document.id)
     assert persisted.builder_draft_status == "failed"
     assert persisted.builder_data == old_data
+
+
+def test_source_fidelity_allows_ai_to_group_skills_under_a_category():
+    source = _draft(
+        location="Istanbul",
+        summary="Senior data analyst.",
+        title="Senior Data Analyst",
+        bullet="Built SQL dashboards.",
+        skill_category="Technical Skills",
+    )
+    raw_cv_text = _draft_source_text(source).replace("Technical Skills", "")
+
+    service._validate_source_fidelity(source, raw_cv_text)
