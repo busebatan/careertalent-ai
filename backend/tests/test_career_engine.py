@@ -82,6 +82,28 @@ def test_invoke_retries_once_when_first_structured_output_is_invalid(monkeypatch
     assert len(calls) == 2
 
 
+def test_invoke_uses_cv_specific_source_and_translation_system_contracts(monkeypatch):
+    captured = []
+
+    def invoke(messages):
+        captured.append(messages[0].content)
+        return SimpleNamespace(content='{"decision":"revise","confidence":0.6,"feedback":"Keep source facts"}')
+
+    monkeypatch.setattr(career_engine, "ai_configured", lambda: True)
+    monkeypatch.setattr(career_engine, "create_chat_model", lambda: SimpleNamespace(invoke=invoke))
+
+    career_engine._invoke("extract", career_engine.EvidenceReviewAI, language="cv_source")
+    career_engine._invoke("translate", career_engine.EvidenceReviewAI, language="cv_tr")
+    career_engine._invoke("translate", career_engine.EvidenceReviewAI, language="cv_en")
+
+    assert "[CV SOURCE EXTRACTION]" in captured[0]
+    assert "without paraphrasing" in captured[0]
+    assert "[CV TRANSLATION]" in captured[1]
+    assert "in Turkish" in captured[1]
+    assert "in English" in captured[2]
+    assert all("email addresses, phone numbers, and URLs verbatim" in message for message in captured)
+
+
 def test_cv_text_is_authenticated_and_queued(client, monkeypatch):
     register(client)
     monkeypatch.setattr(career_tasks.analyze_cv_task, "delay", lambda _analysis_id: None)

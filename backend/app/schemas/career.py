@@ -297,6 +297,12 @@ class CvBuilderDraftAI(BaseModel):
     certificates: list[CvCertificateDraftAI] = Field(default_factory=list, max_length=20)
 
 
+class CvBuilderSourceDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    source_language: Literal["tr", "en"]
+    draft: CvBuilderDraftAI
+
+
 class JobAnalyzeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     source_url: str | None = Field(default=None, max_length=2048)

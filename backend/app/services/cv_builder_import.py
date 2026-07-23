@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
+import unicodedata
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -10,35 +13,119 @@ from sqlalchemy.orm import Session
 
 from app.models.career_engine import CareerAnalysis
 from app.models.engagement import CvDocument
-from app.schemas.career import CvBuilderDraftAI
+from app.schemas.career import CvBuilderDraftAI, CvBuilderSourceDraftAI
+from app.services.ai_factory import AIOutputError
 from app.services.career_engine import _invoke
+from app.services.cv_parser import extract_text_from_pdf
 
 
 _BUILDER_SECTIONS = ("education", "experience", "skills", "projects", "certificates")
 _PERSONAL_FIELDS = ("full_name", "email", "phone", "location", "linkedin", "summary")
 
 
-def _source_prompt(document: CvDocument, analysis: CareerAnalysis, language: str) -> dict[str, Any]:
+def _source_prompt(document: CvDocument, analysis: CareerAnalysis, cv_text: str) -> dict[str, Any]:
     """Build the extraction contract sent to the career engine."""
 
     return {
-        "purpose": "Dışarıdan yüklenen CV metnini CV Merkezi düzenleyici alanlarına aktar",
-        "output_language": language,
+        "purpose": "Kaynak CV dilini belirle ve metni o dilde CV Merkezi alanlarına birebir aktar",
         "rules": [
+            "source_language değerini CV'nin baskın doğal anlatım diline göre tr veya en seç",
             "Yalnızca kaynak CV metninde açıkça bulunan gerçekleri kullan",
             "Kişi, kurum, tarih, eğitim, deneyim, proje, sertifika, iletişim bilgisi ve beceri uydurma",
             "Kaynakta bulunmayan başarı, sayı, görev, süre, teknoloji veya iletişim bilgisi ekleme",
             "Belirsiz veya eksik alanları boş string, boş liste ya da boş nesne olarak bırak",
             "Kaynakta olmayan bir alanı başka bir alandan tahmin ederek doldurma",
             "Tüm alanları CV Merkezi kutucuklarına uygun şekilde döndür",
-            "tr alanı Türkçe, en alanı İngilizce yaz; özel adları ve teknik terimleri koru",
+            "Kaynak CV'deki doğal dilde yazılmış metinleri çevirmeden, özetlemeden ve yeniden ifade etmeden koru",
+            "Ad, kurum, marka, teknoloji, kısaltma, tarih, e-posta, telefon ve URL değerlerini birebir koru",
         ],
         "source": {
             "file_name": document.original_name or document.display_name,
             "analysis_id": analysis.id,
-            "cv_text": (analysis.cv_text or "")[:30000],
+            "cv_text": cv_text[:30000],
         },
     }
+
+
+def _translation_prompt(source_language: str, target_language: str, source: CvBuilderDraftAI) -> dict[str, Any]:
+    return {
+        "purpose": "Yapılandırılmış kaynak CV'yi karşı dile eksiksiz çevir",
+        "source_language": source_language,
+        "target_language": target_language,
+        "rules": [
+            "Tüm doğal anlatım alanlarını hedef dilde yaz",
+            "Hiçbir gerçek, satır, madde veya alan ekleme, silme, birleştirme ya da yeniden sıralama",
+            "Boş alanları boş bırak; kaynakta olmayan bilgi üretme",
+            "Ad, kurum, marka, teknoloji, kısaltma, tarih, e-posta, telefon ve URL değerlerini birebir koru",
+            "Yalnız doğal dildeki unvan, özet, açıklama, madde ve kategori metinlerini çevir",
+        ],
+        "source_draft": source.model_dump(mode="json"),
+    }
+
+
+def _validate_source_fidelity(source: CvBuilderDraftAI, cv_text: str) -> None:
+    """Ensure the extracted source draft only contains wording present in the PDF."""
+
+    def comparable(value: str) -> str:
+        normalized = unicodedata.normalize("NFKC", value).casefold()
+        return " ".join(re.findall(r"\w+", normalized, flags=re.UNICODE))
+
+    comparable_cv = comparable(cv_text)
+
+    def validate(value: Any, path: str) -> None:
+        if isinstance(value, dict):
+            for key, item in value.items():
+                validate(item, f"{path}.{key}")
+            return
+        if isinstance(value, list):
+            for index, item in enumerate(value):
+                validate(item, f"{path}[{index}]")
+            return
+        if isinstance(value, str) and value.strip() and comparable(value) not in comparable_cv:
+            raise AIOutputError(f"CV kaynak aktarımı metinde olmayan ifade üretti: {path}")
+
+    validate(source.model_dump(mode="json"), "draft")
+
+
+def _validate_translation(source: CvBuilderDraftAI, translated: CvBuilderDraftAI) -> None:
+    """Reject structural drift and identity mutations in the translated draft."""
+
+    source_payload = source.model_dump(mode="json")
+    translated_payload = translated.model_dump(mode="json")
+
+    def validate_shape(source_value: Any, target_value: Any, path: str) -> None:
+        if isinstance(source_value, dict):
+            for key, value in source_value.items():
+                validate_shape(value, target_value.get(key), f"{path}.{key}")
+            return
+        if isinstance(source_value, list):
+            if not isinstance(target_value, list) or len(source_value) != len(target_value):
+                raise AIOutputError(f"CV çevirisi kaynak satır yapısını değiştirdi: {path}")
+            for index, value in enumerate(source_value):
+                validate_shape(value, target_value[index], f"{path}[{index}]")
+            return
+        if isinstance(source_value, str) and not source_value.strip() and target_value:
+            raise AIOutputError(f"CV çevirisi kaynakta olmayan alanı doldurdu: {path}")
+
+    validate_shape(source_payload, translated_payload, "draft")
+
+    identity_fields = ("full_name", "email", "phone", "linkedin")
+    for field in identity_fields:
+        if source_payload["personal"][field] != translated_payload["personal"][field]:
+            raise AIOutputError(f"CV çevirisi kimlik alanını değiştirdi: personal.{field}")
+
+    preserved_by_section = {
+        "education": ("institution", "start", "end"),
+        "experience": ("organization", "start", "end"),
+        "projects": ("name", "link"),
+        "certificates": ("name", "issuer", "date"),
+    }
+    for section, fields in preserved_by_section.items():
+        for index, source_row in enumerate(source_payload[section]):
+            translated_row = translated_payload[section][index]
+            for field in fields:
+                if source_row[field] != translated_row[field]:
+                    raise AIOutputError(f"CV çevirisi sabit alanı değiştirdi: {section}[{index}].{field}")
 
 
 def _normalize_payload(output: CvBuilderDraftAI) -> tuple[dict[str, Any], list[str]]:
@@ -114,22 +201,43 @@ def import_cv_to_builder(
         raise ValueError("CV belgesi ve analiz eşleşmiyor")
 
     try:
+        raw_cv_text = extract_text_from_pdf(Path(document.file_path).read_bytes(), anonymize=False)
+        if not raw_cv_text.strip():
+            raise ValueError("Kaynak PDF metni boş")
+
+        source_output = _invoke(
+            json.dumps(_source_prompt(document, analysis, raw_cv_text), ensure_ascii=False),
+            CvBuilderSourceDraftAI,
+            language="cv_source",
+        )
+        if not isinstance(source_output, CvBuilderSourceDraftAI):
+            source_output = CvBuilderSourceDraftAI.model_validate(source_output)
+        _validate_source_fidelity(source_output.draft, raw_cv_text)
+
+        source_language = source_output.source_language
+        target_language = "en" if source_language == "tr" else "tr"
+        translated_output = _invoke(
+            json.dumps(
+                _translation_prompt(source_language, target_language, source_output.draft),
+                ensure_ascii=False,
+            ),
+            CvBuilderDraftAI,
+            language=f"cv_{target_language}",
+        )
+        if not isinstance(translated_output, CvBuilderDraftAI):
+            translated_output = CvBuilderDraftAI.model_validate(translated_output)
+        _validate_translation(source_output.draft, translated_output)
+
         localized: dict[str, dict[str, Any]] = {}
         missing_fields: dict[str, list[str]] = {}
-        for language in ("tr", "en"):
-            output = _invoke(
-                json.dumps(_source_prompt(document, analysis, language), ensure_ascii=False),
-                CvBuilderDraftAI,
-                language=language,
-            )
-            if not isinstance(output, CvBuilderDraftAI):
-                output = CvBuilderDraftAI.model_validate(output)
-            localized[language], missing_fields[language] = _normalize_payload(output)
+        localized[source_language], missing_fields[source_language] = _normalize_payload(source_output.draft)
+        localized[target_language], missing_fields[target_language] = _normalize_payload(translated_output)
 
         localized["_meta"] = {
             "source_document_id": document.id,
             "source_analysis_id": analysis.id,
             "source_file_name": analysis.file_name or document.original_name or document.display_name,
+            "source_language": source_language,
             "missing_fields": missing_fields,
         }
         document.builder_data = localized

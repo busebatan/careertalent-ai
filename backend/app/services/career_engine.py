@@ -64,13 +64,39 @@ _SYSTEM_MSG_EN = (
     "Then: Produce exactly one JSON object that strictly conforms to the provided JSON Schema. "
     "Do not add markdown, code fences, or any explanation."
 )
+_SYSTEM_MSG_CV_SOURCE = (
+    "[CV SOURCE EXTRACTION] Detect whether the CV's dominant natural language is Turkish or English. "
+    "Copy source facts and wording into the structured draft without paraphrasing, summarizing, or translating them. "
+    "Keep names, organizations, brands, technologies, acronyms, dates, email addresses, phone numbers, and URLs verbatim. "
+    "Produce exactly one JSON object that strictly conforms to the provided JSON Schema. "
+    "Do not add markdown, code fences, or any explanation."
+)
+_SYSTEM_MSG_CV_TR = (
+    "[CV TRANSLATION] Write natural-language CV content in Turkish. "
+    "Keep names, organizations, brands, technologies, acronyms, dates, email addresses, phone numbers, and URLs verbatim. "
+    "Do not add, remove, infer, summarize, or reorder any fact or row. "
+    "Produce exactly one JSON object that strictly conforms to the provided JSON Schema. "
+    "Do not add markdown, code fences, or any explanation."
+)
+_SYSTEM_MSG_CV_EN = (
+    "[CV TRANSLATION] Write natural-language CV content in English. "
+    "Keep names, organizations, brands, technologies, acronyms, dates, email addresses, phone numbers, and URLs verbatim. "
+    "Do not add, remove, infer, summarize, or reorder any fact or row. "
+    "Produce exactly one JSON object that strictly conforms to the provided JSON Schema. "
+    "Do not add markdown, code fences, or any explanation."
+)
 
 
 def _invoke(prompt: str, schema: type[T], language: str = "tr") -> T:
     if not ai_configured():
         raise AIUnavailableError("AI sağlayıcısı yapılandırılmamış")
     try:
-        system_msg = _SYSTEM_MSG_EN if language == "en" else _SYSTEM_MSG_TR
+        system_msg = {
+            "en": _SYSTEM_MSG_EN,
+            "cv_source": _SYSTEM_MSG_CV_SOURCE,
+            "cv_tr": _SYSTEM_MSG_CV_TR,
+            "cv_en": _SYSTEM_MSG_CV_EN,
+        }.get(language, _SYSTEM_MSG_TR)
         contract = prompt + "\n\nZorunlu JSON Schema:\n" + json.dumps(schema.model_json_schema(), ensure_ascii=False)
         messages = [
             SystemMessage(content=system_msg),
