@@ -230,6 +230,15 @@
         </div>
     </div>
 
+    @if (! empty($skillRadar))
+        @include('app.partials.skill-radar-chart', [
+            'skillRadar' => $skillRadar,
+            'cvFileName' => $cvFileName ?? null,
+            'fromApi' => $hasCvAnalysis ?? false,
+            'radarAlignment' => 'intro-centered',
+        ])
+    @endif
+
     <div class="grid gap-8 lg:grid-cols-2">
         @include('app.partials.cv-builder-form')
         @include('app.partials.cv-builder-preview')

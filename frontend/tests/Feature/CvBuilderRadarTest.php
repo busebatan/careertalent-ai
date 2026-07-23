@@ -65,11 +65,14 @@ class CvBuilderRadarTest extends TestCase
             ->assertDontSee('data-cv-current-file', false)
             ->assertSee('Buse Batan CV.pdf', false)
             ->assertSee('%72', false)
-            ->assertSeeInOrder(['data-cv-analysis-upload', 'data-cv-builder-status', 'grid gap-8 lg:grid-cols-2'], false)
+            ->assertSee('id="yetenek-radari"', false)
+            ->assertSee('data-skill-radar-layout="split"', false)
+            ->assertSee('data-skill-radar-alignment="intro-centered"', false)
+            ->assertSeeInOrder(['data-cv-analysis-upload', 'data-cv-builder-status', 'id="yetenek-radari"', 'grid gap-8 lg:grid-cols-2'], false)
             ->assertSeeInOrder([__('panel.skill_radar.view_ladder'), __('panel.skill_radar.clear_cv')], false);
     }
 
-    public function test_cv_builder_shows_only_upload_and_score_link_after_cv_analysis(): void
+    public function test_cv_builder_shows_upload_score_and_full_radar_after_cv_analysis(): void
     {
         Http::fake([
             'http://localhost:8000/health' => Http::response(['status' => 'ok'], 200),
@@ -102,8 +105,11 @@ class CvBuilderRadarTest extends TestCase
             ->assertSee('value="all"', false)
             ->assertDontSee(__('panel.profile.cv_go_roadmap'), false)
             ->assertDontSee(__('panel.profile.remove'), false)
-            ->assertDontSee('id="yetenek-radari"', false)
+            ->assertSee('id="yetenek-radari"', false)
+            ->assertSee('data-skill-radar-layout="split"', false)
+            ->assertSee('data-skill-radar-alignment="intro-centered"', false)
+            ->assertSeeInOrder(['data-cv-analysis-upload', 'data-cv-builder-status', 'id="yetenek-radari"', 'grid gap-8 lg:grid-cols-2'], false)
             ->assertDontSee('@toggle="onRadarToggle($event)"', false)
-            ->assertDontSee('data-skill-radar-layout', false);
+            ->assertSee(__('panel.skill_radar.analysis_cv', ['name' => 'cv']), false);
     }
 }
