@@ -90,12 +90,28 @@ class StudentFeaturesController extends PanelController
     public function createApplication(Request $request, CareerTalentApiClient $api): JsonResponse
     {
         $validated = $request->validate([
-            'company' => ['required', 'string', 'min:2', 'max:160'],
-            'role' => ['required', 'string', 'min:2', 'max:200'],
-            'next_action' => ['nullable', 'string', 'max:300'],
+            'company'            => ['nullable', 'string', 'max:160'],
+            'role'               => ['nullable', 'string', 'max:200'],
+            'next_action'        => ['nullable', 'string', 'max:300'],
+            // Platform başvurusu için ek alanlar
+            'position_id'        => ['nullable', 'string', 'max:80'],
+            'cv_version_id'      => ['nullable', 'string', 'max:36'],
+            'cv_document_id'     => ['nullable', 'string', 'max:64'],
+            'is_platform_apply'  => ['sometimes', 'boolean'],
         ]);
-        return $this->apiJson($api->createCareerApplication($validated));
+
+        $payload = [
+            'company'        => $validated['company'] ?? 'Kurum',
+            'role'           => $validated['role'] ?? 'Pozisyon',
+            'next_action'    => $validated['next_action'] ?? null,
+            'position_id'    => $validated['position_id'] ?? null,
+            'cv_version_id'  => $validated['cv_version_id'] ?? null,
+            'is_platform_apply' => (bool) ($validated['is_platform_apply'] ?? false),
+        ];
+
+        return $this->apiJson($api->createCareerApplication($payload));
     }
+
 
     public function updateApplication(Request $request, string $applicationId, CareerTalentApiClient $api): JsonResponse
     {

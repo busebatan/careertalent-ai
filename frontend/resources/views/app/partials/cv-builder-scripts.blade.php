@@ -44,6 +44,8 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         deleteVersionUrl: @js(route('panel.cv.versions.delete', ['id' => '__ID__'])),
         previewVersionModalOpen: false,
         previewVersionData: null,
+        renamingVersionId: null,
+        renameInput: '',
         _skipLocalesSync: false,
         _versionsInitialized: false,
 
@@ -545,6 +547,52 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         closeVersionPreview() {
             this.previewVersionModalOpen = false;
             this.previewVersionData = null;
+        },
+
+        startRename(version) {
+            this.renamingVersionId = version.id;
+            this.renameInput = version.version_name;
+            this.$nextTick(() => {
+                const el = this.$root.querySelector('#rename-version-input-' + version.id);
+                if (el) el.focus();
+            });
+        },
+
+        cancelRename() {
+            this.renamingVersionId = null;
+            this.renameInput = '';
+        },
+
+        async confirmRename(version) {
+            const name = this.renameInput.trim();
+            if (!name || name === version.version_name) {
+                this.cancelRename();
+                return;
+            }
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const url = this.updateVersionUrl.replace('__ID__', version.id);
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                    },
+                    body: JSON.stringify({
+                        version_name: name
+                    })
+                });
+                if (response.ok) {
+                    this.cancelRename();
+                    await this.fetchVersions();
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'Yeniden adlandırma başarısız');
+                }
+            } catch (err) {
+                alert('Bir hata oluştu');
+            }
         }
     };
 }

@@ -330,8 +330,14 @@ def applications(db: DB, user: CurrentUser):
 @router.post("/applications", status_code=201)
 def create_application(body: ApplicationCreate, db: DB, user: CurrentUser):
     row = JobApplication(id=str(uuid4()), user_id=user.id, company=body.company, role=body.role, next_action=body.next_action)
+    # Platform başvurusu için ek alanları kaydet (model destekliyorsa)
+    if body.position_id and hasattr(row, 'position_id'):
+        row.position_id = body.position_id
+    if body.cv_version_id and hasattr(row, 'cv_version_id'):
+        row.cv_version_id = body.cv_version_id
     db.add(row); db.commit(); db.refresh(row)
     return _serialize_application(row)
+
 
 
 @router.post("/jobs/{job_id}/application", status_code=201)

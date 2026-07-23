@@ -17,12 +17,15 @@ class JobListingsController extends PanelController
                 ->all()
             : [];
         $documents = $api->cvDocuments();
+        $versions  = $api->cvVersions();
 
         return $this->panelView('app.job-listings', [
-            'jobListings' => array_merge([$this->demoListing()], $realItems),
-            'listingsError' => $result['ok'] ? null : ($result['error'] ?? __('panel.job_listings.load_error')),
-            'demoCvDocuments' => $documents['ok'] && is_array($documents['body']) ? $documents['body'] : [],
+            'jobListings'    => array_merge([$this->demoListing()], $realItems),
+            'listingsError'  => $result['ok'] ? null : ($result['error'] ?? __('panel.job_listings.load_error')),
+            'demoCvDocuments'=> $documents['ok'] && is_array($documents['body']) ? $documents['body'] : [],
+            'cvVersions'     => $versions['ok'] && is_array($versions['body']) ? $versions['body'] : [],
         ]);
+
     }
 
     /** @return array<string, mixed> */
