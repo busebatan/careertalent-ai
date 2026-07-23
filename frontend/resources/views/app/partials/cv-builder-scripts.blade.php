@@ -1,5 +1,5 @@
 <script>
-function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFileName = '', analyzeBuilderUrl = '', clearUrl = '', statusUrl = '', archivePdfUrl = '', restoredFromHistory = false, streamUrl = '', serverAnalysisStatus = '', serverAnalysisId = '') {
+function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFileName = '', analyzeBuilderUrl = '', clearUrl = '', statusUrl = '', archivePdfUrl = '', restoredFromHistory = false, streamUrl = '', serverAnalysisStatus = '', serverAnalysisId = '', builderImportNoticeDismissUrl = '') {
     return {
         mode: 'edit',
         locales: initial,
@@ -15,6 +15,9 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         archivePdfUrl,
         restoredFromHistory,
         builderImportNoticeOpen: true,
+        builderImportNoticeBusy: false,
+        builderImportNoticeError: '',
+        builderImportNoticeDismissUrl,
         saveStatus: 'idle',
         builderHydrating: true,
         cleanBuilderSnapshot: '',
@@ -75,6 +78,35 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         markBuilderClean() {
             this.cleanBuilderSnapshot = window.PanelCvStore?.snapshotBuilder(this.locales)
                 ?? JSON.stringify(this.locales || {});
+        },
+
+        async dismissBuilderImportNotice() {
+            if (!this.builderImportNoticeDismissUrl || this.builderImportNoticeBusy) {
+                return;
+            }
+            this.builderImportNoticeBusy = true;
+            this.builderImportNoticeError = '';
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            try {
+                const response = await fetch(this.builderImportNoticeDismissUrl, {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                    },
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok || payload.builder_import_notice_dismissed !== true) {
+                    throw new Error(payload.message || this.uiLabels[this.panelLocale]?.import_notice_close_failed);
+                }
+                this.builderImportNoticeOpen = false;
+            } catch (error) {
+                this.builderImportNoticeError = error?.message
+                    || this.uiLabels[this.panelLocale]?.import_notice_close_failed
+                    || 'Bildirim kapatılamadı.';
+            } finally {
+                this.builderImportNoticeBusy = false;
+            }
         },
 
         async resumePendingAnalysis() {

@@ -158,6 +158,9 @@ class CvDocument(Base):
     )
     builder_draft_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     builder_draft_analysis_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    builder_import_notice_dismissed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     is_current: Mapped[bool] = mapped_column(Boolean, index=True, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
 

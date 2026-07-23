@@ -183,6 +183,65 @@ def test_uploaded_builder_draft_activation_persists_bilingual_versions_idempoten
     assert forbidden.status_code == 404
 
 
+def test_builder_import_notice_dismissal_is_persistent_and_owner_scoped(client):
+    client.post(
+        "/api/v1/auth/register",
+        json={"full_name": "Notice Owner", "email": "notice-owner@example.com", "password": PASSWORD},
+    )
+    owner_token = client.post(
+        "/api/v1/auth/login",
+        data={"username": "notice-owner@example.com", "password": PASSWORD},
+    ).json()["access_token"]
+    owner_headers = {"Authorization": f"Bearer {owner_token}"}
+
+    with next(app.dependency_overrides[get_db]()) as db:
+        owner = db.scalar(select(User).where(User.email == "notice-owner@example.com"))
+        db.add(CvDocument(
+            id="notice-document-1",
+            user_id=owner.id,
+            kind="uploaded",
+            display_name="Notice Owner.pdf",
+            original_name="Notice Owner.pdf",
+            file_path="/tmp/notice-document-1.pdf",
+            file_size=321,
+            builder_draft_status="ready",
+            builder_data={"tr": {}, "en": {}},
+            is_current=True,
+        ))
+        db.commit()
+
+    listed = client.get("/api/v1/cv/documents", headers=owner_headers)
+    assert listed.status_code == 200
+    assert listed.json()[0]["builder_import_notice_dismissed"] is False
+
+    dismiss_url = "/api/v1/cv/documents/notice-document-1/builder-import-notice-dismiss"
+    dismissed = client.post(dismiss_url, headers=owner_headers)
+    assert dismissed.status_code == 200
+    assert dismissed.json()["builder_import_notice_dismissed"] is True
+
+    # Repeating the action is safe and keeps the account state dismissed.
+    repeated = client.post(dismiss_url, headers=owner_headers)
+    assert repeated.status_code == 200
+    assert repeated.json()["builder_import_notice_dismissed"] is True
+    detail = client.get("/api/v1/cv/documents/notice-document-1", headers=owner_headers)
+    assert detail.status_code == 200
+    assert detail.json()["builder_import_notice_dismissed"] is True
+
+    client.post(
+        "/api/v1/auth/register",
+        json={"full_name": "Other Notice User", "email": "notice-other@example.com", "password": PASSWORD},
+    )
+    other_token = client.post(
+        "/api/v1/auth/login",
+        data={"username": "notice-other@example.com", "password": PASSWORD},
+    ).json()["access_token"]
+    forbidden = client.post(
+        dismiss_url,
+        headers={"Authorization": f"Bearer {other_token}"},
+    )
+    assert forbidden.status_code == 404
+
+
 def test_apply_job_creates_snapshot(client, monkeypatch):
     # Setup test user
     client.post(

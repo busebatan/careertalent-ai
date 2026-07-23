@@ -130,6 +130,7 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::get('/cv-merkezi/belgeler/{documentId}/taslak', [CvBuilderController::class, 'builderDraftStatus'])->name('cv.builder-draft.status');
     Route::post('/cv-merkezi/belgeler/{documentId}/taslak', [CvBuilderController::class, 'queueBuilderDraft'])->name('cv.builder-draft.queue');
     Route::post('/cv-merkezi/belgeler/{documentId}/taslak/ac', [CvBuilderController::class, 'activateBuilderDraft'])->name('cv.builder-draft.activate');
+    Route::post('/cv-merkezi/belgeler/{documentId}/taslak-bildirimi/kapat', [CvBuilderController::class, 'dismissBuilderImportNotice'])->name('cv.builder-import-notice.dismiss');
     Route::get('/cv-merkezi/surumler', [CvBuilderController::class, 'listVersions'])->name('cv.versions.list');
     Route::post('/cv-merkezi/surumler', [CvBuilderController::class, 'createVersion'])->name('cv.versions.create');
     Route::put('/cv-merkezi/surumler/{id}', [CvBuilderController::class, 'updateVersion'])->name('cv.versions.update');

@@ -99,6 +99,7 @@ def _serialize_document(
         "builder_draft_status": row.builder_draft_status,
         "builder_draft_error": row.builder_draft_error,
         "builder_draft_analysis_id": row.builder_draft_analysis_id,
+        "builder_import_notice_dismissed": row.builder_import_notice_dismissed,
         "builder_opened": builder_opened,
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
@@ -229,6 +230,20 @@ def get_cv_document(document_id: str, db: DB, user: CurrentUser):
         )
     ) or 0
     return _serialize_document(row, include_builder=True, builder_opened=builder_opened > 0)
+
+
+@router.post("/documents/{document_id}/builder-import-notice-dismiss")
+def dismiss_builder_import_notice(document_id: str, db: DB, user: CurrentUser):
+    row = db.scalar(select(CvDocument).where(
+        CvDocument.id == document_id,
+        CvDocument.user_id == user.id,
+    ))
+    if row is None:
+        raise HTTPException(status_code=404, detail="CV kaydı bulunamadı")
+    row.builder_import_notice_dismissed = True
+    db.commit()
+    db.refresh(row)
+    return _serialize_document(row)
 
 
 @router.post("/documents/{document_id}/builder-draft", status_code=202)

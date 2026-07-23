@@ -511,6 +511,15 @@ class CareerTalentApiClient
         );
     }
 
+    public function dismissCvBuilderImportNotice(string $documentId): array
+    {
+        return $this->postJson(
+            '/api/v1/cv/documents/'.rawurlencode($documentId).'/builder-import-notice-dismiss',
+            [],
+            15,
+        );
+    }
+
     public function archiveGeneratedCv(UploadedFile $file, string $displayName, string $language, string $builderData): array
     {
         try {

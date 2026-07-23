@@ -22,31 +22,27 @@ class CvBuilderController extends PanelController
         $currentCv = collect($documents)->first(
             fn ($item) => is_array($item) && ($item['is_current'] ?? false)
         );
+        $versionsResult = $api->cvVersions();
+        $versions = ($versionsResult['ok'] ?? false) && is_array($versionsResult['body'] ?? null) ? $versionsResult['body'] : [];
 
         $cvDraft = $this->blankCvDraft($profile);
         $restoredFromHistory = false;
         $builderImportMeta = [];
         $builderImportMissingFields = [];
+        $builderImportDocumentId = '';
+        $builderImportDocument = null;
         if ($request->filled('cvDocument')) {
             $document = $api->cvDocument((string) $request->query('cvDocument'));
-            $snapshot = ($document['ok'] ?? false) ? ($document['body']['builder_data'] ?? null) : null;
+            $builderImportDocument = ($document['ok'] ?? false) && is_array($document['body'] ?? null)
+                ? $document['body']
+                : null;
+            $snapshot = is_array($builderImportDocument) ? ($builderImportDocument['builder_data'] ?? null) : null;
             if (is_array($snapshot) && isset($snapshot['tr'], $snapshot['en'])) {
-                $builderImportMeta = is_array($snapshot['_meta'] ?? null) ? $snapshot['_meta'] : [];
-                $missingByLocale = is_array($builderImportMeta['missing_fields'] ?? null) ? $builderImportMeta['missing_fields'] : [];
-                $builderImportMissingFields = collect($missingByLocale)
-                    ->filter(fn ($items) => is_array($items))
-                    ->flatten()
-                    ->filter(fn ($item) => is_string($item) && $item !== '')
-                    ->unique()
-                    ->values()
-                    ->all();
                 unset($snapshot['_meta']);
                 $cvDraft = $snapshot;
                 $restoredFromHistory = true;
             }
         } elseif ($request->filled('cvVersion')) {
-            $versionsResult = $api->cvVersions();
-            $versions = ($versionsResult['ok'] ?? false) && is_array($versionsResult['body'] ?? null) ? $versionsResult['body'] : [];
             $version = collect($versions)->first(
                 fn ($item) => is_array($item) && (string) ($item['id'] ?? '') === (string) $request->query('cvVersion')
             );
@@ -58,11 +54,50 @@ class CvBuilderController extends PanelController
             }
         }
 
+        if (! is_array($builderImportDocument)) {
+            $noticeVersion = $request->filled('cvVersion')
+                ? ($version ?? null)
+                : collect($versions)->first(
+                    fn ($item) => is_array($item) && ($item['is_main'] ?? false) === true
+                );
+            $noticeDocumentId = is_array($noticeVersion)
+                ? trim((string) ($noticeVersion['source_document_id'] ?? ''))
+                : '';
+            if ($noticeDocumentId !== '') {
+                $document = $api->cvDocument($noticeDocumentId);
+                $builderImportDocument = ($document['ok'] ?? false) && is_array($document['body'] ?? null)
+                    ? $document['body']
+                    : null;
+            }
+        }
+
+        if (is_array($builderImportDocument)
+            && ! ($builderImportDocument['builder_import_notice_dismissed'] ?? false)) {
+            $snapshot = $builderImportDocument['builder_data'] ?? null;
+            $builderImportMeta = is_array($snapshot) && is_array($snapshot['_meta'] ?? null)
+                ? $snapshot['_meta']
+                : [];
+            if ($builderImportMeta !== []) {
+                $builderImportDocumentId = trim((string) ($builderImportDocument['id'] ?? ''));
+                $missingByLocale = is_array($builderImportMeta['missing_fields'] ?? null)
+                    ? $builderImportMeta['missing_fields']
+                    : [];
+                $builderImportMissingFields = collect($missingByLocale)
+                    ->filter(fn ($items) => is_array($items))
+                    ->flatten()
+                    ->filter(fn ($item) => is_string($item) && $item !== '')
+                    ->unique()
+                    ->values()
+                    ->all();
+            }
+        }
+
         return $this->panelView('app.cv-builder', [
             'cvDraft' => $cvDraft,
             'restoredFromHistory' => $restoredFromHistory,
             'builderImportMeta' => $builderImportMeta,
             'builderImportMissingFields' => $builderImportMissingFields,
+            'builderImportDocumentId' => $builderImportDocumentId,
             'cvLabels' => $this->cvLabelsForJs(),
             'skillRadar' => $this->skillRadar(
                 $analysis,
@@ -229,6 +264,13 @@ class CvBuilderController extends PanelController
         }
 
         return redirect()->route('panel.cv-builder', ['cvDocument' => $documentId]);
+    }
+
+    public function dismissBuilderImportNotice(
+        string $documentId,
+        CareerTalentApiClient $api,
+    ): JsonResponse {
+        return $this->apiResponse($api->dismissCvBuilderImportNotice($documentId));
     }
 
     private function apiResponse(array $result): JsonResponse

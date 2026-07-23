@@ -8,7 +8,7 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl"
-    x-data="cvBuilder({{ Js::from($cvDraft) }}, {{ Js::from($cvLabels) }}, @js(app()->getLocale()), @js($hasCvAnalysis ?? false), @js($cvFileName ?? ''), @js(route('panel.cv.analyze-builder')), @js(route('panel.cv.clear')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), @js(route('panel.cv.archive-generated')), @js($restoredFromHistory ?? false), @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])), @js($analysisStatus ?? ''), @js($analysisId ?? ''))">
+    x-data="cvBuilder({{ Js::from($cvDraft) }}, {{ Js::from($cvLabels) }}, @js(app()->getLocale()), @js($hasCvAnalysis ?? false), @js($cvFileName ?? ''), @js(route('panel.cv.analyze-builder')), @js(route('panel.cv.clear')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), @js(route('panel.cv.archive-generated')), @js($restoredFromHistory ?? false), @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])), @js($analysisStatus ?? ''), @js($analysisId ?? ''), @js(! empty($builderImportDocumentId) ? route('panel.cv.builder-import-notice.dismiss', ['documentId' => $builderImportDocumentId]) : ''))">
 
     <header class="mb-6">
         <div>
@@ -21,7 +21,8 @@
         <div x-show="builderImportNoticeOpen" x-cloak data-cv-builder-import-notice
             class="relative mb-6 rounded-2xl border border-amber-400/40 bg-amber-50 px-5 py-4 pr-14 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
             <button type="button" data-cv-builder-import-dismiss
-                @click="builderImportNoticeOpen = false"
+                @click="dismissBuilderImportNotice()"
+                :disabled="builderImportNoticeBusy"
                 class="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg text-amber-700 transition hover:bg-amber-200/60 hover:text-amber-950 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:text-amber-200 dark:hover:bg-amber-500/20 dark:hover:text-white"
                 aria-label="{{ __('panel.cv_builder.import_notice_close') }}"
                 title="{{ __('panel.cv_builder.import_notice_close') }}">
@@ -29,6 +30,8 @@
             </button>
             <p class="font-semibold">{{ __('panel.cv_builder.import_notice_title') }}</p>
             <p class="mt-1 text-sm">{{ __('panel.cv_builder.import_source', ['name' => $builderImportMeta['source_file_name'] ?? 'CV']) }}</p>
+            <p x-show="builderImportNoticeError" x-cloak x-text="builderImportNoticeError"
+                class="mt-2 text-sm font-medium text-red-700 dark:text-red-300" role="alert"></p>
             @if (! empty($builderImportMissingFields))
                 <p class="mt-2 text-sm">{{ __('panel.cv_builder.import_notice_desc', ['count' => count($builderImportMissingFields)]) }}</p>
                 <div class="mt-3 flex flex-wrap gap-2">

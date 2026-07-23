@@ -17,7 +17,7 @@ def test_migration_graph_has_one_unambiguous_head() -> None:
 
     script = ScriptDirectory.from_config(config)
 
-    assert script.get_heads() == ["20260723_20"]
+    assert script.get_heads() == ["20260723_21"]
 
 
 def test_builder_import_version_migration_links_source_document(tmp_path) -> None:
@@ -53,6 +53,33 @@ def test_builder_import_version_migration_links_source_document(tmp_path) -> Non
             and item["constrained_columns"] == ["source_document_id"]
             for item in foreign_keys
         )
+
+
+def test_builder_import_notice_migration_defaults_to_visible_and_is_reversible(tmp_path) -> None:
+    backend_dir = Path(__file__).resolve().parents[1]
+    path = backend_dir / "migrations/versions/20260723_21_cv_builder_notice_dismissal.py"
+    spec = spec_from_file_location("builder_import_notice_migration", path)
+    assert spec is not None and spec.loader is not None
+    migration = module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    engine = sa.create_engine(f"sqlite:///{tmp_path / 'builder-import-notice.sqlite'}")
+
+    with engine.begin() as connection:
+        connection.exec_driver_sql("CREATE TABLE cv_documents (id VARCHAR(36) PRIMARY KEY)")
+        migration.op = Operations(MigrationContext.configure(connection))
+        migration.upgrade()
+
+        columns = {item["name"]: item for item in sa.inspect(connection).get_columns("cv_documents")}
+        assert columns["builder_import_notice_dismissed"]["nullable"] is False
+        connection.exec_driver_sql("INSERT INTO cv_documents (id) VALUES ('new-document')")
+        assert connection.exec_driver_sql(
+            "SELECT builder_import_notice_dismissed FROM cv_documents WHERE id = 'new-document'"
+        ).scalar() in (0, False)
+
+        migration.downgrade()
+        assert "builder_import_notice_dismissed" not in {
+            item["name"] for item in sa.inspect(connection).get_columns("cv_documents")
+        }
 
 
 def test_job_analysis_provenance_migration_adds_nullable_snapshot_columns(tmp_path) -> None:

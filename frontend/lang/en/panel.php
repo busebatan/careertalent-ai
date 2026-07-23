@@ -541,6 +541,7 @@ return [
         'upload_desc' => 'Upload a PDF to extract skills automatically and reflect them in your career ladder.',
         'import_notice_title' => 'AI draft prepared from the source CV',
         'import_notice_close' => 'Dismiss AI draft information',
+        'import_notice_close_failed' => 'The AI draft information could not be dismissed. Try again.',
         'import_notice_desc' => ':count fields missing from the source were left blank. Review the listed fields before saving.',
         'import_source' => 'Source CV: :name',
         'import_fields' => [

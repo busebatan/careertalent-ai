@@ -174,9 +174,58 @@ class CvHistoryTest extends TestCase
             ->assertSee('!hasUnsavedChanges', false)
             ->assertSee('markBuilderClean()', false)
             ->assertSee('data-cv-builder-import-dismiss', false)
-            ->assertSee('builderImportNoticeOpen = false', false)
+            ->assertSee('dismissBuilderImportNotice()', false)
+            ->assertDontSee('@click="builderImportNoticeOpen = false"', false)
             ->assertSee(__('panel.cv_builder.import_notice_close'), false)
             ->assertSee('data-cv-builder-import-notice', false);
+    }
+
+    public function test_import_notice_stays_visible_across_builder_visits_until_account_dismissal(): void
+    {
+        $document = [
+            'id' => 'upload-1',
+            'kind' => 'uploaded',
+            'display_name' => 'Ali_Aday.pdf',
+            'builder_draft_status' => 'ready',
+            'builder_import_notice_dismissed' => false,
+            'builder_data' => [
+                'tr' => ['personal' => ['full_name' => 'Ali Aday']],
+                'en' => ['personal' => ['full_name' => 'Ali Candidate']],
+                '_meta' => ['source_file_name' => 'Ali_Aday.pdf', 'missing_fields' => []],
+            ],
+        ];
+        $dismissed = false;
+        Http::fake(function ($request) use (&$dismissed, $document) {
+            if ($request->url() === 'http://localhost:8000/api/v1/cv/versions') {
+                return Http::response([[
+                    'id' => 'version-tr',
+                    'language' => 'tr',
+                    'is_main' => true,
+                    'source_document_id' => 'upload-1',
+                    'payload' => ['personal' => ['full_name' => 'Ali Aday']],
+                ]]);
+            }
+            if ($request->url() === 'http://localhost:8000/api/v1/cv/documents/upload-1') {
+                return Http::response([
+                    ...$document,
+                    'builder_import_notice_dismissed' => $dismissed,
+                ]);
+            }
+
+            return Http::response([]);
+        });
+
+        $visibleResponse = $this->get('/panel/cv-merkezi');
+        Http::assertSent(fn ($request): bool => $request->url() === 'http://localhost:8000/api/v1/cv/documents/upload-1');
+        $visibleResponse->assertOk()
+            ->assertSee('data-cv-builder-import-notice', false)
+            ->assertSee('Ali_Aday.pdf');
+
+        $dismissed = true;
+
+        $this->get('/panel/cv-merkezi')
+            ->assertOk()
+            ->assertDontSee('data-cv-builder-import-notice', false);
     }
 
     public function test_uploaded_cv_builder_draft_status_and_queue_are_account_scoped_proxies(): void
@@ -200,6 +249,23 @@ class CvHistoryTest extends TestCase
 
         Http::assertSent(fn ($request): bool => $request->method() === 'POST'
             && $request->url() === 'http://localhost:8000/api/v1/cv/documents/upload-1/builder-draft');
+    }
+
+    public function test_builder_import_notice_dismissal_is_an_account_scoped_proxy(): void
+    {
+        Http::fake([
+            'http://localhost:8000/api/v1/cv/documents/upload-1/builder-import-notice-dismiss' => Http::response([
+                'id' => 'upload-1',
+                'builder_import_notice_dismissed' => true,
+            ]),
+        ]);
+
+        $this->post('/panel/cv-merkezi/belgeler/upload-1/taslak-bildirimi/kapat')
+            ->assertOk()
+            ->assertJsonPath('builder_import_notice_dismissed', true);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && $request->url() === 'http://localhost:8000/api/v1/cv/documents/upload-1/builder-import-notice-dismiss');
     }
 
     public function test_opening_uploaded_builder_draft_persists_it_before_redirecting(): void
