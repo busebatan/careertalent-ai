@@ -170,7 +170,7 @@
     </div>
 
     {{-- ─── Platform İçi Başvuru Modalı (tüm ilanlar) ─────────────────────────── --}}
-    <div id="application-modal" x-show="demoApplicationOpen" x-cloak
+    <div id="application-modal" data-demo-application x-show="demoApplicationOpen" x-cloak
         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4"
         @keydown.escape.window="closeDemoApplication()"
         role="dialog" aria-modal="true" aria-labelledby="application-modal-title">

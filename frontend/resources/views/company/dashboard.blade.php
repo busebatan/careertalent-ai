@@ -73,7 +73,7 @@
                 </div>
             </article>
         </section>
-        
+
         <section class="panel-card mt-6 p-6">
 
             <h2 class="text-lg font-semibold">
