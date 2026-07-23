@@ -29,6 +29,9 @@ Harvard format CV PDF, `html2pdf.js` ile tarayıcıda raster görsel olarak üre
 - Şablon: `resources/views/pdf/harvard-cv.blade.php`
 - Sürücü: `spatie/laravel-pdf` + `chrome-php/chrome`
 - Chrome yolu `LARAVEL_PDF_CHROME_BINARY` ile değiştirilebilir.
+- Kullanıcı namespace'i kapalı Linux sunucularında
+  `LARAVEL_PDF_CHROME_NO_SANDBOX=true` ayarlanmalıdır; aksi hâlde Chrome
+  `Failed to move to new namespace: Operation not permitted` hatasıyla başlamaz.
 
 ## Doğrulama
 

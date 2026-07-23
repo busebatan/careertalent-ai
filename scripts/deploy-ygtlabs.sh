@@ -66,6 +66,10 @@ if ! grep -Fxq 'VIEW_CHECK_CACHE_TIMESTAMPS=false' "$DEST/frontend/.env"; then
   echo "VIEW_CHECK_CACHE_TIMESTAMPS must be false in $DEST/frontend/.env" >&2
   exit 1
 fi
+if ! grep -Fxq 'LARAVEL_PDF_CHROME_NO_SANDBOX=true' "$DEST/frontend/.env"; then
+  echo "LARAVEL_PDF_CHROME_NO_SANDBOX must be true on this restricted production host" >&2
+  exit 1
+fi
 
 echo "→ rsync $SRC → $DEST"
 rsync -a --delete \
