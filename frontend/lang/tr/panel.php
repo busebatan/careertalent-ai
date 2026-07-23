@@ -539,6 +539,7 @@ return [
         'save_hint' => 'CV içeriği AI ile analiz edilir ve yetenek radarı oluşur.',
         'upload_desc' => 'PDF yüklediğinde yeteneklerin otomatik çıkarılır ve kariyer merdivenine yansır.',
         'import_notice_title' => 'AI taslağı kaynak CV’den hazırlandı',
+        'import_notice_close' => 'AI taslak bilgisini kapat',
         'import_notice_desc' => 'Kaynakta bulunmayan :count alan boş bırakıldı. Kaydetmeden önce listelenen alanları kontrol et.',
         'import_source' => 'Kaynak CV: :name',
         'import_fields' => [

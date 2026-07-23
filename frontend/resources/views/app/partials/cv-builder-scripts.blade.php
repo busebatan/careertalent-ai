@@ -14,6 +14,7 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         pdfFileName: '',
         archivePdfUrl,
         restoredFromHistory,
+        builderImportNoticeOpen: true,
         saveStatus: 'idle',
         builderHydrating: true,
         cleanBuilderSnapshot: '',

@@ -18,8 +18,15 @@
     </header>
 
     @if (! empty($builderImportMeta))
-        <div data-cv-builder-import-notice
-            class="mb-6 rounded-2xl border border-amber-400/40 bg-amber-50 px-5 py-4 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+        <div x-show="builderImportNoticeOpen" x-cloak data-cv-builder-import-notice
+            class="relative mb-6 rounded-2xl border border-amber-400/40 bg-amber-50 px-5 py-4 pr-14 text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+            <button type="button" data-cv-builder-import-dismiss
+                @click="builderImportNoticeOpen = false"
+                class="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg text-amber-700 transition hover:bg-amber-200/60 hover:text-amber-950 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:text-amber-200 dark:hover:bg-amber-500/20 dark:hover:text-white"
+                aria-label="{{ __('panel.cv_builder.import_notice_close') }}"
+                title="{{ __('panel.cv_builder.import_notice_close') }}">
+                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+            </button>
             <p class="font-semibold">{{ __('panel.cv_builder.import_notice_title') }}</p>
             <p class="mt-1 text-sm">{{ __('panel.cv_builder.import_source', ['name' => $builderImportMeta['source_file_name'] ?? 'CV']) }}</p>
             @if (! empty($builderImportMissingFields))
@@ -221,10 +228,14 @@
                     <p x-show="error" x-cloak x-text="error" class="mt-2 text-xs font-medium text-red-700 dark:text-red-300" role="alert"></p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3 text-sm">
-                    <a x-show="ready" x-cloak href="{{ route('panel.cv-builder', ['cvDocument' => $currentCv['id']]) }}"
-                        class="font-medium text-sky-600 hover:underline dark:text-sky-400">
-                        {{ __('panel.profile.cv_builder_import_open') }}
-                    </a>
+                    <form x-show="canOpen" x-cloak method="post"
+                        action="{{ route('panel.cv.builder-draft.activate', ['documentId' => $currentCv['id']]) }}">
+                        @csrf
+                        <input type="hidden" name="language" value="{{ app()->getLocale() === 'en' ? 'en' : 'tr' }}">
+                        <button type="submit" class="font-medium text-sky-600 hover:underline dark:text-sky-400">
+                            {{ __('panel.profile.cv_builder_import_open') }}
+                        </button>
+                    </form>
                     <button x-show="canQueue" x-cloak type="button" @click.stop="queue()" :disabled="busy"
                         class="font-medium text-sky-600 hover:underline disabled:opacity-60 dark:text-sky-400">
                         <span x-text="status === 'failed' ? @js(__('panel.profile.cv_builder_import_retry')) : @js(__('panel.profile.cv_builder_import_create'))"></span>

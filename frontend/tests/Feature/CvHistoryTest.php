@@ -173,6 +173,9 @@ class CvHistoryTest extends TestCase
             ->assertSee('if (!this.restoredFromHistory && !this._versionsInitialized)', false)
             ->assertSee('!hasUnsavedChanges', false)
             ->assertSee('markBuilderClean()', false)
+            ->assertSee('data-cv-builder-import-dismiss', false)
+            ->assertSee('builderImportNoticeOpen = false', false)
+            ->assertSee(__('panel.cv_builder.import_notice_close'), false)
             ->assertSee('data-cv-builder-import-notice', false);
     }
 

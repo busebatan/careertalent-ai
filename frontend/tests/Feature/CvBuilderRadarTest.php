@@ -101,6 +101,8 @@ class CvBuilderRadarTest extends TestCase
             ->assertSee('data-cv-current-file', false)
             ->assertSee(__('panel.profile.cv_builder_import_create'), false)
             ->assertSee(__('panel.profile.cv_builder_import_open'), false)
+            ->assertSee('x-show="canOpen"', false)
+            ->assertDontSee('<a x-show="ready"', false)
             ->assertSee(__('panel.skill_radar.clear_cv'), false)
             ->assertSee(route('panel.career-ladder'), false)
             ->assertSee(__('panel.skill_radar.analysis_cv', ['name' => 'Fatma_Kesici.pdf']), false)
