@@ -275,6 +275,87 @@ def test_generated_builder_draft_save_upserts_one_bilingual_version_group(client
     assert forbidden.status_code == 404
 
 
+def test_generated_builder_draft_reuses_versions_linked_to_uploaded_document(client, monkeypatch, tmp_path):
+    client.post(
+        "/api/v1/auth/register",
+        json={"full_name": "Relink User", "email": "relink@example.com", "password": PASSWORD},
+    )
+    token = client.post(
+        "/api/v1/auth/login",
+        data={"username": "relink@example.com", "password": PASSWORD},
+    ).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    monkeypatch.setattr("app.api.v1.cv.settings.UPLOAD_DIR", str(tmp_path))
+
+    snapshot = {
+        "tr": {"personal": {"full_name": "Bağlanan Kullanıcı"}, "skills": []},
+        "en": {"personal": {"full_name": "Relink User"}, "skills": []},
+    }
+    with next(app.dependency_overrides[get_db]()) as db:
+        user = db.scalar(select(User).where(User.email == "relink@example.com"))
+        db.add(CvDocument(
+            id="uploaded-relink-1",
+            user_id=user.id,
+            kind="uploaded",
+            display_name="Relink User.pdf",
+            original_name="Relink User.pdf",
+            file_path="/tmp/uploaded-relink-1.pdf",
+            file_size=321,
+            language="en",
+            builder_data=snapshot,
+            builder_draft_status="ready",
+            is_current=True,
+        ))
+        db.add_all([
+            CandidateCvVersion(
+                id="uploaded-relink-tr",
+                user_id=user.id,
+                source_document_id="uploaded-relink-1",
+                version_name="Relink User TR",
+                language="tr",
+                is_main=False,
+                payload=snapshot["tr"],
+            ),
+            CandidateCvVersion(
+                id="uploaded-relink-en",
+                user_id=user.id,
+                source_document_id="uploaded-relink-1",
+                version_name="Relink User EN",
+                language="en",
+                is_main=True,
+                payload=snapshot["en"],
+            ),
+        ])
+        db.commit()
+
+    response = client.post(
+        "/api/v1/cv/documents/generated/draft",
+        headers=headers,
+        files={"file": ("relink.pdf", BytesIO(MINIMAL_PDF), "application/pdf")},
+        data={
+            "document_id": "uploaded-relink-1",
+            "active_version_id": "uploaded-relink-en",
+            "display_name": "Relink User.pdf",
+            "language": "tr",
+            "builder_data": json.dumps(snapshot),
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["document"]["kind"] == "generated"
+    assert payload["document"]["id"] != "uploaded-relink-1"
+    assert {item["id"] for item in payload["versions"]} == {
+        "uploaded-relink-tr",
+        "uploaded-relink-en",
+    }
+    assert all(
+        item["source_document_id"] == payload["document"]["id"]
+        for item in payload["versions"]
+    )
+    assert len(client.get("/api/v1/cv/versions", headers=headers).json()) == 2
+
+
 def test_builder_import_notice_dismissal_is_persistent_and_owner_scoped(client):
     client.post(
         "/api/v1/auth/register",

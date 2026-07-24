@@ -90,6 +90,7 @@ def _upsert_bilingual_builder_versions(
     document: CvDocument,
     snapshot: dict,
     main_language: str,
+    reusable_versions: list[CandidateCvVersion] | None = None,
 ) -> list[CandidateCvVersion]:
     localized = {
         language: payload
@@ -113,6 +114,10 @@ def _upsert_bilingual_builder_versions(
             )
         ).all()
     }
+    for version in reusable_versions or []:
+        if version.language in localized and version.language not in existing:
+            version.source_document_id = document.id
+            existing[version.language] = version
     base_name = re.sub(r"\.pdf$", "", document.display_name, flags=re.IGNORECASE).strip() or "CV"
     versions: list[CandidateCvVersion] = []
     for language, payload in localized.items():
@@ -495,9 +500,14 @@ async def save_generated_builder_draft(
 
     document.file_path = _store_pdf(user.id, document.id, data)
     try:
-        for version in versions_to_relink:
-            version.source_document_id = document.id
-        versions = _upsert_bilingual_builder_versions(db, user, document, snapshot, language)
+        versions = _upsert_bilingual_builder_versions(
+            db,
+            user,
+            document,
+            snapshot,
+            language,
+            reusable_versions=versions_to_relink,
+        )
         db.commit()
         db.refresh(document)
         for version in versions:
