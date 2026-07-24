@@ -3,11 +3,11 @@
     <p class="panel-muted mb-3 text-xs font-medium uppercase tracking-wide"
       x-text="uiLabels[panelLocale].content_lang"></p>
     <div class="flex gap-2">
-      <button type="button" @click="editLang = 'tr'"
+      <button type="button" @click="setEditLanguage('tr')"
         :class="editLang === 'tr' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200'"
         class="rounded-lg px-4 py-2 text-sm font-medium"
         x-text="uiLabels[panelLocale].tab_tr"></button>
-      <button type="button" @click="editLang = 'en'"
+      <button type="button" @click="setEditLanguage('en')"
         :class="editLang === 'en' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200'"
         class="rounded-lg px-4 py-2 text-sm font-medium"
         x-text="uiLabels[panelLocale].tab_en"></button>

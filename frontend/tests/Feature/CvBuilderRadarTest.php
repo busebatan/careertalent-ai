@@ -54,6 +54,21 @@ class CvBuilderRadarTest extends TestCase
             ->assertDontSee('data-cv-form-save', false);
     }
 
+    public function test_content_language_buttons_keep_editor_and_preview_languages_in_sync(): void
+    {
+        $this->get(route('panel.cv-builder'))
+            ->assertOk()
+            ->assertSee('@click="setEditLanguage(\'tr\')"', false)
+            ->assertSee('@click="setEditLanguage(\'en\')"', false)
+            ->assertSee('setEditLanguage(language) {', false)
+            ->assertSeeInOrder([
+                'this.editLang = language;',
+                'this.previewLang = language;',
+            ], false)
+            ->assertDontSee('@click="editLang = \'tr\'"', false)
+            ->assertDontSee('@click="editLang = \'en\'"', false);
+    }
+
     public function test_cv_version_manager_uses_panel_cards_and_in_app_action_dialogs(): void
     {
         $this->get(route('panel.cv-builder'))

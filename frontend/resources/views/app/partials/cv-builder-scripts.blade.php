@@ -166,6 +166,14 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
             ['tr', 'en'].forEach((lang) => helper.normalizeLocaleOptional(this.locales[lang], () => this.uid()));
         },
 
+        setEditLanguage(language) {
+            if (!['tr', 'en'].includes(language)) {
+                return;
+            }
+            this.editLang = language;
+            this.previewLang = language;
+        },
+
         optionalSectionLabel(key) {
             return this.uiLabels[this.editLang].sections[key] || key;
         },
