@@ -8,7 +8,7 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl"
-    x-data="cvBuilder({{ Js::from($cvDraft) }}, {{ Js::from($cvLabels) }}, @js(app()->getLocale()), @js($hasCvAnalysis ?? false), @js($cvFileName ?? ''), @js(route('panel.cv.analyze-builder')), @js(route('panel.cv.clear')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), @js(route('panel.cv.archive-generated')), @js($restoredFromHistory ?? false), @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])), @js($analysisStatus ?? ''), @js($analysisId ?? ''), @js(! empty($builderImportDocumentId) ? route('panel.cv.builder-import-notice.dismiss', ['documentId' => $builderImportDocumentId]) : ''), @js(route('panel.cv.pdf')))">
+    x-data="cvBuilder({{ Js::from($cvDraft) }}, {{ Js::from($cvLabels) }}, @js(app()->getLocale()), @js($hasCvAnalysis ?? false), @js($cvFileName ?? ''), @js(route('panel.cv.analyze-builder')), @js(route('panel.cv.clear')), @js(route('panel.cv.analysis-status', ['analysisId' => '__ANALYSIS_ID__'])), @js(route('panel.cv.archive-generated')), @js($restoredFromHistory ?? false), @js(route('panel.cv.analysis-stream', ['analysisId' => '__ANALYSIS_ID__'])), @js($analysisStatus ?? ''), @js($analysisId ?? ''), @js(! empty($builderImportDocumentId) ? route('panel.cv.builder-import-notice.dismiss', ['documentId' => $builderImportDocumentId]) : ''), @js(route('panel.cv.pdf')), @js(route('panel.cv.builder-draft.save')), @js($activeBuilderVersionId ?? ''), @js($builderDocumentId ?? ''))">
 
     <header class="mb-6">
         <div>
@@ -105,7 +105,6 @@
         </div>
     </div>
     @php($currentIsUploaded = is_array($currentCv ?? null) && ($currentCv['kind'] ?? null) === 'uploaded')
-    @php($currentIsGenerated = is_array($currentCv ?? null) && ($currentCv['kind'] ?? null) === 'generated')
 
     @if (empty($skillRadar))
     <section id="cv-analiz-yukle"
@@ -264,37 +263,12 @@
 
     <p x-show="analyzeError" x-cloak class="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200" x-text="analyzeError"></p>
 
-    <div data-cv-builder-status
-        x-show="saveStatus === 'saving' || @js($currentIsGenerated)"
-        @if (! $currentIsGenerated) x-cloak @endif
-        class="mb-4 flex flex-col gap-3 rounded-xl border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-        :class="analysisPending() ? 'border-sky-500/30 bg-sky-500/10' : 'border-emerald-500/30 bg-emerald-500/10'"
+    <div data-cv-builder-status x-show="analysisPending()" x-cloak
+        class="mb-4 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3"
         role="status">
-        <div class="min-w-0">
-            <div x-show="analysisPending()" class="flex items-center gap-2 text-sm text-sky-800 dark:text-sky-200">
-                <i data-lucide="loader-circle" class="h-4 w-4 shrink-0 animate-spin" aria-hidden="true"></i>
-                <span x-text="uiLabels[panelLocale].analyzing"></span>
-            </div>
-            <div x-show="!analysisPending()">
-                <p class="truncate text-sm text-emerald-700 dark:text-emerald-300" x-text="cvFileName"></p>
-                @if ($currentIsGenerated && ! empty($currentCv['created_at']))
-                    <p class="mt-1 text-xs text-slate-500">{{ __('panel.profile.last_upload', ['date' => \Illuminate\Support\Carbon::parse($currentCv['created_at'])->format('d.m.Y H:i')]) }}</p>
-                @endif
-            </div>
-        </div>
-        <div x-show="saveStatus !== 'saving' && hasReadyAnalysis" class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            @if (! empty($skillRadar))
-                <span data-cv-analysis-score class="font-semibold text-emerald-700 dark:text-emerald-300">
-                    {{ __('panel.skill_radar.overall') }} %{{ $skillRadar['overall_match'] }}
-                </span>
-            @endif
-            <a href="{{ route('panel.career-ladder') }}" class="font-medium text-emerald-600 hover:underline dark:text-emerald-400">
-                {{ __('panel.skill_radar.view_ladder') }} →
-            </a>
-            <button type="button" @click.stop="resetOpen = true"
-                class="font-medium text-emerald-600 hover:underline dark:text-emerald-400">
-                {{ __('panel.skill_radar.clear_cv') }}
-            </button>
+        <div class="flex items-center gap-2 text-sm text-sky-800 dark:text-sky-200">
+            <i data-lucide="loader-circle" class="h-4 w-4 shrink-0 animate-spin" aria-hidden="true"></i>
+            <span x-text="uiLabels[panelLocale].analyzing"></span>
         </div>
     </div>
 

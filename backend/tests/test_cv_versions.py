@@ -1,3 +1,6 @@
+import json
+from io import BytesIO
+
 import pytest
 from sqlalchemy import select
 from app.main import app
@@ -13,6 +16,7 @@ from app.models.career_engine import JobOpportunity
 from app.models.recruiting import Organization
 
 PASSWORD = "GucluParola123!"
+MINIMAL_PDF = b"%PDF-1.4\n%%EOF"
 
 
 def test_cv_versions_crud(client):
@@ -179,6 +183,94 @@ def test_uploaded_builder_draft_activation_persists_bilingual_versions_idempoten
         "/api/v1/cv/documents/uploaded-builder-1/builder-activate",
         headers={"Authorization": f"Bearer {other_token}"},
         json={"language": "tr"},
+    )
+    assert forbidden.status_code == 404
+
+
+def test_generated_builder_draft_save_upserts_one_bilingual_version_group(client, monkeypatch, tmp_path):
+    client.post(
+        "/api/v1/auth/register",
+        json={"full_name": "Draft User", "email": "draft@example.com", "password": PASSWORD},
+    )
+    token = client.post(
+        "/api/v1/auth/login",
+        data={"username": "draft@example.com", "password": PASSWORD},
+    ).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    monkeypatch.setattr("app.api.v1.cv.settings.UPLOAD_DIR", str(tmp_path))
+
+    first_snapshot = {
+        "tr": {"personal": {"full_name": "Taslak Kullanıcı"}, "skills": []},
+        "en": {"personal": {"full_name": "Draft User"}, "skills": []},
+    }
+    first = client.post(
+        "/api/v1/cv/documents/generated/draft",
+        headers=headers,
+        files={"file": ("draft.pdf", BytesIO(MINIMAL_PDF), "application/pdf")},
+        data={
+            "display_name": "Taslak CV.pdf",
+            "language": "tr",
+            "builder_data": json.dumps(first_snapshot),
+        },
+    )
+    assert first.status_code == 200
+    first_payload = first.json()
+    assert first_payload["document"]["is_current"] is False
+    assert len(first_payload["versions"]) == 2
+    assert next(item for item in first_payload["versions"] if item["language"] == "tr")["is_main"] is True
+    assert all(
+        item["source_document_id"] == first_payload["document"]["id"]
+        for item in first_payload["versions"]
+    )
+
+    second_snapshot = {
+        **first_snapshot,
+        "en": {"personal": {"full_name": "Updated Draft User"}, "skills": []},
+    }
+    second = client.post(
+        "/api/v1/cv/documents/generated/draft",
+        headers=headers,
+        files={"file": ("draft-updated.pdf", BytesIO(MINIMAL_PDF), "application/pdf")},
+        data={
+            "document_id": first_payload["document"]["id"],
+            "active_version_id": first_payload["main_version_id"],
+            "display_name": "Taslak CV.pdf",
+            "language": "en",
+            "builder_data": json.dumps(second_snapshot),
+        },
+    )
+    assert second.status_code == 200
+    second_payload = second.json()
+    assert second_payload["document"]["id"] == first_payload["document"]["id"]
+    assert {item["id"] for item in second_payload["versions"]} == {
+        item["id"] for item in first_payload["versions"]
+    }
+    assert next(item for item in second_payload["versions"] if item["language"] == "en")["is_main"] is True
+    assert next(item for item in second_payload["versions"] if item["language"] == "en")["payload"] == second_snapshot["en"]
+
+    versions = client.get("/api/v1/cv/versions", headers=headers).json()
+    documents = client.get("/api/v1/cv/documents", headers=headers).json()
+    assert len(versions) == 2
+    assert len(documents) == 1
+
+    client.post(
+        "/api/v1/auth/register",
+        json={"full_name": "Other Draft", "email": "other-draft@example.com", "password": PASSWORD},
+    )
+    other_token = client.post(
+        "/api/v1/auth/login",
+        data={"username": "other-draft@example.com", "password": PASSWORD},
+    ).json()["access_token"]
+    forbidden = client.post(
+        "/api/v1/cv/documents/generated/draft",
+        headers={"Authorization": f"Bearer {other_token}"},
+        files={"file": ("forbidden.pdf", BytesIO(MINIMAL_PDF), "application/pdf")},
+        data={
+            "document_id": first_payload["document"]["id"],
+            "display_name": "Forbidden.pdf",
+            "language": "tr",
+            "builder_data": json.dumps(first_snapshot),
+        },
     )
     assert forbidden.status_code == 404
 

@@ -28,6 +28,7 @@ from app.schemas.cv import (
     CandidateCvVersionCreate,
     CandidateCvVersionResponse,
     CandidateCvVersionUpdate,
+    GeneratedBuilderDraftResponse,
     GeneratedCvQueueResponse,
 )
 from app.services.career_engine import career_evidence_file_paths, create_analysis, remove_career_evidence_files, reset_career_state
@@ -81,6 +82,57 @@ def _generated_snapshot(builder_data: str, language: str) -> dict:
     if not isinstance(snapshot, dict) or language not in {"tr", "en"}:
         raise HTTPException(status_code=422, detail="CV oluşturucu verisi geçersiz")
     return snapshot
+
+
+def _upsert_bilingual_builder_versions(
+    db: Session,
+    user: User,
+    document: CvDocument,
+    snapshot: dict,
+    main_language: str,
+) -> list[CandidateCvVersion]:
+    localized = {
+        language: payload
+        for language in ("tr", "en")
+        if isinstance((payload := snapshot.get(language)), dict)
+    }
+    if main_language not in localized:
+        raise HTTPException(status_code=422, detail="Seçilen dil için CV oluşturucu içeriği bulunamadı")
+
+    db.execute(
+        update(CandidateCvVersion)
+        .where(CandidateCvVersion.user_id == user.id)
+        .values(is_main=False)
+    )
+    existing = {
+        version.language: version
+        for version in db.scalars(
+            select(CandidateCvVersion).where(
+                CandidateCvVersion.user_id == user.id,
+                CandidateCvVersion.source_document_id == document.id,
+            )
+        ).all()
+    }
+    base_name = re.sub(r"\.pdf$", "", document.display_name, flags=re.IGNORECASE).strip() or "CV"
+    versions: list[CandidateCvVersion] = []
+    for language, payload in localized.items():
+        version = existing.get(language)
+        if version is None:
+            version = CandidateCvVersion(
+                id=str(uuid4()),
+                user_id=user.id,
+                source_document_id=document.id,
+                version_name=f"{base_name} {language.upper()}",
+                language=language,
+                is_main=language == main_language,
+                payload=payload,
+            )
+            db.add(version)
+        else:
+            version.payload = payload
+            version.is_main = language == main_language
+        versions.append(version)
+    return versions
 
 
 def _serialize_document(
@@ -309,47 +361,7 @@ def activate_cv_builder_draft(
     if row.builder_draft_status != "ready" or not isinstance(row.builder_data, dict):
         raise HTTPException(status_code=409, detail="CV oluşturucu taslağı henüz hazır değil")
 
-    localized = {
-        language: payload
-        for language in ("tr", "en")
-        if isinstance((payload := row.builder_data.get(language)), dict)
-    }
-    if body.language not in localized:
-        raise HTTPException(status_code=422, detail="Seçilen dil için CV oluşturucu içeriği bulunamadı")
-
-    db.execute(
-        update(CandidateCvVersion)
-        .where(CandidateCvVersion.user_id == user.id)
-        .values(is_main=False)
-    )
-    existing = {
-        version.language: version
-        for version in db.scalars(
-            select(CandidateCvVersion).where(
-                CandidateCvVersion.user_id == user.id,
-                CandidateCvVersion.source_document_id == row.id,
-            )
-        ).all()
-    }
-    base_name = re.sub(r"\.pdf$", "", row.display_name, flags=re.IGNORECASE).strip() or "CV"
-    versions: list[CandidateCvVersion] = []
-    for language, payload in localized.items():
-        version = existing.get(language)
-        if version is None:
-            version = CandidateCvVersion(
-                id=str(uuid4()),
-                user_id=user.id,
-                source_document_id=row.id,
-                version_name=f"{base_name} {language.upper()}",
-                language=language,
-                is_main=language == body.language,
-                payload=payload,
-            )
-            db.add(version)
-        else:
-            version.payload = payload
-            version.is_main = language == body.language
-        versions.append(version)
+    versions = _upsert_bilingual_builder_versions(db, user, row, row.builder_data, body.language)
 
     db.commit()
     for version in versions:
@@ -396,6 +408,114 @@ async def archive_generated_cv(db: DB, user: CurrentUser, file: UploadFile = Fil
     return _serialize_document(row)
 
 
+@router.post(
+    "/documents/generated/draft",
+    response_model=GeneratedBuilderDraftResponse,
+)
+async def save_generated_builder_draft(
+    db: DB,
+    user: CurrentUser,
+    file: UploadFile = File(...),
+    display_name: str = Form(...),
+    language: str = Form(...),
+    builder_data: str = Form(...),
+    document_id: str | None = Form(default=None),
+    active_version_id: str | None = Form(default=None),
+):
+    data = await file.read()
+    if len(data) > _MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Dosya çok büyük")
+    if not data.startswith(b"%PDF"):
+        raise HTTPException(status_code=422, detail="Geçersiz PDF")
+    snapshot = _generated_snapshot(builder_data, language)
+    if not all(isinstance(snapshot.get(locale), dict) for locale in ("tr", "en")):
+        raise HTTPException(status_code=422, detail="Türkçe ve İngilizce CV taslağı birlikte gönderilmelidir")
+    name = _safe_pdf_name(display_name)
+
+    document = None
+    versions_to_relink: list[CandidateCvVersion] = []
+    if document_id:
+        document = db.scalar(select(CvDocument).where(
+            CvDocument.id == document_id,
+            CvDocument.user_id == user.id,
+        ))
+        if document is None:
+            raise HTTPException(status_code=404, detail="CV taslağı bulunamadı")
+        if document.kind != "generated":
+            versions_to_relink = list(db.scalars(select(CandidateCvVersion).where(
+                CandidateCvVersion.user_id == user.id,
+                CandidateCvVersion.source_document_id == document.id,
+            )).all())
+            document = None
+    if active_version_id:
+        active_version = db.scalar(select(CandidateCvVersion).where(
+            CandidateCvVersion.id == active_version_id,
+            CandidateCvVersion.user_id == user.id,
+        ))
+        if active_version is None:
+            raise HTTPException(status_code=404, detail="CV sürümü bulunamadı")
+        if document is not None and active_version.source_document_id != document.id:
+            raise HTTPException(status_code=409, detail="CV taslağı ile sürüm eşleşmiyor")
+        if active_version not in versions_to_relink and (
+            document is None or active_version.source_document_id != document.id
+        ):
+            if active_version.source_document_id:
+                versions_to_relink.extend(db.scalars(select(CandidateCvVersion).where(
+                    CandidateCvVersion.user_id == user.id,
+                    CandidateCvVersion.source_document_id == active_version.source_document_id,
+                )).all())
+            else:
+                versions_to_relink.append(active_version)
+
+    created = document is None
+    if created:
+        document = CvDocument(
+            id=str(uuid4()),
+            user_id=user.id,
+            kind="generated",
+            display_name=name,
+            original_name=name,
+            file_path="",
+            file_size=len(data),
+            language=language,
+            builder_data=snapshot,
+            builder_draft_status="ready",
+            is_current=False,
+        )
+        db.add(document)
+        db.flush()
+    else:
+        document.display_name = name
+        document.original_name = name
+        document.file_size = len(data)
+        document.language = language
+        document.builder_data = snapshot
+        document.builder_draft_status = "ready"
+        document.builder_draft_error = None
+
+    document.file_path = _store_pdf(user.id, document.id, data)
+    try:
+        for version in versions_to_relink:
+            version.source_document_id = document.id
+        versions = _upsert_bilingual_builder_versions(db, user, document, snapshot, language)
+        db.commit()
+        db.refresh(document)
+        for version in versions:
+            db.refresh(version)
+    except Exception:
+        db.rollback()
+        if created:
+            Path(document.file_path).unlink(missing_ok=True)
+        raise
+
+    main_version = next(version for version in versions if version.language == language)
+    return {
+        "document": _serialize_document(document, include_builder=True, builder_opened=True),
+        "main_version_id": main_version.id,
+        "versions": versions,
+    }
+
+
 @router.post("/documents/generated/activate", response_model=GeneratedCvQueueResponse, status_code=202)
 async def archive_and_analyze_generated_cv(
     db: DB,
@@ -405,6 +525,7 @@ async def archive_and_analyze_generated_cv(
     language: str = Form(...),
     builder_data: str = Form(...),
     cv_text: str = Form(...),
+    document_id: str | None = Form(default=None),
 ):
     data = await file.read()
     if len(data) > _MAX_BYTES:
@@ -416,34 +537,54 @@ async def archive_and_analyze_generated_cv(
     if len(normalized_text) < 40 or not has_meaningful_cv_content(normalized_text):
         raise HTTPException(status_code=422, detail="CV'de analiz edilebilir deneyim, eğitim, proje veya yetenek içeriği bulunamadı")
 
-    document_id = str(uuid4())
     name = _safe_pdf_name(display_name)
     evidence_files = career_evidence_file_paths(db, user.id)
-    file_path = _store_pdf(user.id, document_id, data)
-    try:
-        reset_career_state(db, user.id, "all", commit=False)
+    document = None
+    if document_id:
+        document = db.scalar(select(CvDocument).where(
+            CvDocument.id == document_id,
+            CvDocument.user_id == user.id,
+        ))
+        if document is None:
+            raise HTTPException(status_code=404, detail="CV taslağı bulunamadı")
+        if document.kind != "generated":
+            raise HTTPException(status_code=422, detail="Yalnız oluşturucu CV taslağı analiz edilebilir")
+    created = document is None
+    if created:
         document = CvDocument(
-            id=document_id,
+            id=str(uuid4()),
             user_id=user.id,
             kind="generated",
             display_name=name,
             original_name=name,
-            file_path=file_path,
+            file_path="",
             file_size=len(data),
             language=language,
             builder_data=snapshot,
             builder_draft_status="ready",
             is_current=True,
         )
-        db.add(document)
-        db.flush()
+    file_path = _store_pdf(user.id, document.id, data)
+    try:
+        reset_career_state(db, user.id, "all", commit=False)
+        document.display_name = name
+        document.original_name = name
+        document.file_path = file_path
+        document.file_size = len(data)
+        document.language = language
+        document.builder_data = snapshot
+        document.builder_draft_status = "ready"
+        document.is_current = True
+        if created:
+            db.add(document)
+            db.flush()
         analysis = create_analysis(
             db,
             user.id,
             normalized_text,
             "builder",
             name,
-            document_id,
+            document.id,
             commit=False,
         )
         db.commit()
@@ -451,7 +592,8 @@ async def archive_and_analyze_generated_cv(
         db.refresh(analysis)
     except Exception:
         db.rollback()
-        Path(file_path).unlink(missing_ok=True)
+        if created:
+            Path(file_path).unlink(missing_ok=True)
         raise
 
     remove_career_evidence_files(user.id, evidence_files)

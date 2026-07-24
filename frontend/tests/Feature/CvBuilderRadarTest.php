@@ -33,6 +33,8 @@ class CvBuilderRadarTest extends TestCase
             ->assertSee('class="panel-card mb-4 flex min-h-[98px] flex-col gap-3 p-4"', false)
             ->assertSee(':class="mode === \'preview\' ? \'lg:ml-auto lg:w-[calc(50%-1rem)]\' : \'\'"', false)
             ->assertSee('data-cv-preview-actions class="flex flex-nowrap gap-2"', false)
+            ->assertSee('@click="analyzeCv()"', false)
+            ->assertSee('AI ile analiz et', false)
             ->assertSee('class="inline-flex rounded-xl bg-sky-600', false)
             ->assertDontSee('sticky bottom-4 z-20 mb-6 flex justify-center lg:hidden', false)
             ->assertDontSee('hidden rounded-xl bg-sky-600', false)
@@ -51,7 +53,10 @@ class CvBuilderRadarTest extends TestCase
             ->assertDontSee('renderHarvardCvPdf', false)
             ->assertSee('resumePendingAnalysis()', false)
             ->assertDontSee('data-cv-header-actions', false)
-            ->assertDontSee('data-cv-form-save', false);
+            ->assertSee('data-cv-form-save', false)
+            ->assertSee('@click="saveBuilderDraft()"', false)
+            ->assertSee('x-show="analysisPending()"', false)
+            ->assertDontSee('x-show="saveStatus !== \'saving\' && hasReadyAnalysis"', false);
     }
 
     public function test_content_language_buttons_keep_editor_and_preview_languages_in_sync(): void

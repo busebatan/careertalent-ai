@@ -4,10 +4,10 @@
         class="panel-card mb-4 flex min-h-[98px] flex-col gap-3 p-4">
         <p class="panel-muted text-sm" x-text="uiLabels[panelLocale].save_hint"></p>
         <div data-cv-preview-actions class="flex flex-nowrap gap-2">
-            <button type="button" @click="saveCv()"
+            <button type="button" @click="analyzeCv()"
                 class="inline-flex rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-                :disabled="saveStatus === 'saving' || !hasUnsavedChanges"
-                x-text="saveStatus === 'saving' ? uiLabels[panelLocale].analyzing : (saveStatus === 'saved' ? uiLabels[panelLocale].saved : uiLabels[panelLocale].save)">
+                :disabled="analysisPending() || builderSaveStatus === 'saving'"
+                x-text="saveStatus === 'saving' ? uiLabels[panelLocale].analyzing : uiLabels[panelLocale].analyze_action">
             </button>
             <button type="button" @click="togglePreview()"
                 class="rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"

@@ -1,17 +1,28 @@
 <div x-show="mode === 'edit'" class="space-y-4">
   <div class="panel-card p-4">
-    <p class="panel-muted mb-3 text-xs font-medium uppercase tracking-wide"
-      x-text="uiLabels[panelLocale].content_lang"></p>
-    <div class="flex gap-2">
-      <button type="button" @click="setEditLanguage('tr')"
-        :class="editLang === 'tr' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200'"
-        class="rounded-lg px-4 py-2 text-sm font-medium"
-        x-text="uiLabels[panelLocale].tab_tr"></button>
-      <button type="button" @click="setEditLanguage('en')"
-        :class="editLang === 'en' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200'"
-        class="rounded-lg px-4 py-2 text-sm font-medium"
-        x-text="uiLabels[panelLocale].tab_en"></button>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="panel-muted mb-3 text-xs font-medium uppercase tracking-wide"
+          x-text="uiLabels[panelLocale].content_lang"></p>
+        <div class="flex gap-2">
+          <button type="button" @click="setEditLanguage('tr')"
+            :class="editLang === 'tr' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200'"
+            class="rounded-lg px-4 py-2 text-sm font-medium"
+            x-text="uiLabels[panelLocale].tab_tr"></button>
+          <button type="button" @click="setEditLanguage('en')"
+            :class="editLang === 'en' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200'"
+            class="rounded-lg px-4 py-2 text-sm font-medium"
+            x-text="uiLabels[panelLocale].tab_en"></button>
+        </div>
+      </div>
+      <button type="button" data-cv-form-save @click="saveBuilderDraft()"
+        :disabled="builderSaveStatus === 'saving' || analysisPending() || !hasUnsavedChanges"
+        class="inline-flex min-w-28 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+        x-text="builderSaveStatus === 'saving' ? uiLabels[panelLocale].draft_saving : (builderSaveStatus === 'saved' ? uiLabels[panelLocale].draft_saved : uiLabels[panelLocale].save)">
+      </button>
     </div>
+    <p x-show="builderSaveError" x-cloak class="mt-3 text-sm text-red-700 dark:text-red-300"
+      x-text="builderSaveError" role="alert"></p>
   </div>
 
   <details open class="panel-card">

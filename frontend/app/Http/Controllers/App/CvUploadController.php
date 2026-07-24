@@ -101,6 +101,7 @@ class CvUploadController extends PanelController
             'display_name' => ['required', 'string', 'max:250'],
             'language' => ['required', 'string', 'in:tr,en'],
             'locales' => ['required', 'string', 'max:1000000'],
+            'document_id' => ['nullable', 'string', 'max:64'],
         ]);
 
         $locale = $validated['language'];
@@ -129,6 +130,7 @@ class CvUploadController extends PanelController
             $locale,
             $validated['locales'],
             $cvText,
+            $validated['document_id'] ?? null,
         );
 
         if (! ($result['ok'] ?? false)) {
@@ -147,6 +149,41 @@ class CvUploadController extends PanelController
             'career_ladder' => $body['career_ladder'] ?? [],
             'redirect' => ($body['status'] ?? null) === 'ready' ? route('panel.cv-builder') : null,
         ], ($body['status'] ?? null) === 'queued' ? 202 : 200);
+    }
+
+    public function saveBuilderDraft(Request $request, CareerTalentApiClient $api): JsonResponse
+    {
+        $validated = $request->validate([
+            'pdf' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+            'display_name' => ['required', 'string', 'max:250'],
+            'language' => ['required', 'string', 'in:tr,en'],
+            'locales' => ['required', 'string', 'max:1000000'],
+            'document_id' => ['nullable', 'string', 'max:64'],
+            'active_version_id' => ['nullable', 'string', 'max:64'],
+        ]);
+        $locales = json_decode($validated['locales'], true);
+        if (! is_array($locales)
+            || ! is_array($locales['tr'] ?? null)
+            || ! is_array($locales['en'] ?? null)) {
+            return response()->json([
+                'message' => __('panel.cv_builder.draft_save_failed'),
+            ], 422);
+        }
+
+        $result = $api->saveGeneratedBuilderDraft(
+            $request->file('pdf'),
+            $validated['display_name'],
+            $validated['language'],
+            $validated['locales'],
+            $validated['document_id'] ?? null,
+            $validated['active_version_id'] ?? null,
+        );
+
+        return ($result['ok'] ?? false)
+            ? response()->json($result['body'] ?? [])
+            : response()->json([
+                'message' => $result['error'] ?? __('panel.cv_builder.draft_save_failed'),
+            ], $result['status'] ?? 502);
     }
 
     public function clear(Request $request, CareerTalentApiClient $api): JsonResponse

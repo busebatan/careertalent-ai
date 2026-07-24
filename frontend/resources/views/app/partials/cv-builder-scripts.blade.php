@@ -1,5 +1,5 @@
 <script>
-function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFileName = '', analyzeBuilderUrl = '', clearUrl = '', statusUrl = '', archivePdfUrl = '', restoredFromHistory = false, streamUrl = '', serverAnalysisStatus = '', serverAnalysisId = '', builderImportNoticeDismissUrl = '', pdfRenderUrl = '') {
+function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFileName = '', analyzeBuilderUrl = '', clearUrl = '', statusUrl = '', archivePdfUrl = '', restoredFromHistory = false, streamUrl = '', serverAnalysisStatus = '', serverAnalysisId = '', builderImportNoticeDismissUrl = '', pdfRenderUrl = '', builderDraftSaveUrl = '', initialActiveVersionId = '', initialBuilderDocumentId = '') {
     return {
         mode: 'edit',
         locales: initial,
@@ -25,9 +25,12 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         builderImportNoticeError: '',
         builderImportNoticeDismissUrl,
         saveStatus: 'idle',
+        builderSaveStatus: 'idle',
+        builderSaveError: '',
+        builderDraftSaveUrl,
+        builderDocumentId: initialBuilderDocumentId,
         builderHydrating: true,
         cleanBuilderSnapshot: '',
-        hasReadyAnalysis: serverHasCv,
         serverAnalysisStatus,
         serverAnalysisId,
         analyzeError: null,
@@ -41,10 +44,9 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
         resetError: '',
         statusUrl,
         streamUrl,
-        cvFileLabel: @js(__('panel.skill_radar.cv_file', ['name' => ':name'])),
         optionalSectionPick: '',
         cvVersions: [],
-        activeLoadedVersionId: null,
+        activeLoadedVersionId: initialActiveVersionId || null,
         showVersionCreateModal: false,
         newVersionName: '',
         newVersionLang: 'tr',
@@ -232,10 +234,6 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
             return entries.filter((entry) => window.CvOptionalSections?.optionalEntryHasContent(entry, key));
         },
 
-        cvFileDisplay() {
-            return this.cvFileLabel.replace(':name', this.cvFileName || 'cv');
-        },
-
         analysisPending() {
             return this.saveStatus === 'saving' || ['queued', 'running'].includes(this.serverAnalysisStatus);
         },
@@ -333,8 +331,87 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
             }
         },
 
-        async saveCv() {
-            if (!this.analyzeBuilderUrl || !this.hasUnsavedChanges) {
+        async saveBuilderDraft({ force = false } = {}) {
+            if (!this.builderDraftSaveUrl || this.builderSaveStatus === 'saving') {
+                return false;
+            }
+            if (!force && !this.hasUnsavedChanges) {
+                return true;
+            }
+
+            this.builderSaveStatus = 'saving';
+            this.builderSaveError = '';
+            try {
+                const language = this.editLang;
+                const rawName = this.locales[language]?.personal?.full_name || 'CV';
+                const safeName = `${rawName} CV`.trim().replace(/[\/:*?"<>|]/g, '-');
+                const filename = `${safeName || 'CV'}.pdf`;
+                const blob = await this.getServerPdfBlob(language);
+                const form = new FormData();
+                form.append('pdf', blob, filename);
+                form.append('display_name', filename);
+                form.append('language', language);
+                form.append('locales', JSON.stringify(this.locales));
+                if (this.builderDocumentId) {
+                    form.append('document_id', this.builderDocumentId);
+                }
+                if (this.activeLoadedVersionId) {
+                    form.append('active_version_id', this.activeLoadedVersionId);
+                }
+
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const response = await fetch(this.builderDraftSaveUrl, {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                    },
+                    body: form,
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok || !payload.document?.id) {
+                    throw new Error(payload.message || this.uiLabels[this.panelLocale]?.draft_save_failed);
+                }
+
+                this.builderDocumentId = payload.document.id;
+                this.activeLoadedVersionId = payload.main_version_id || this.activeLoadedVersionId;
+                this.cvFileName = payload.document.display_name || filename;
+                if (Array.isArray(payload.versions)) {
+                    const savedIds = new Set(payload.versions.map((version) => version.id));
+                    this.cvVersions = [
+                        ...payload.versions,
+                        ...this.cvVersions.filter((version) => !savedIds.has(version.id)),
+                    ];
+                } else {
+                    await this.fetchVersions();
+                }
+                window.PanelCvStore?.saveBuilder(this.locales, this.panelLocale);
+                this.markBuilderClean();
+                this.builderSaveStatus = 'saved';
+                setTimeout(() => {
+                    if (this.builderSaveStatus === 'saved') {
+                        this.builderSaveStatus = 'idle';
+                    }
+                }, 2000);
+                return true;
+            } catch (error) {
+                this.builderSaveError = error?.message
+                    || this.uiLabels[this.panelLocale]?.draft_save_failed
+                    || 'CV taslağı kaydedilemedi.';
+                this.builderSaveStatus = 'idle';
+                return false;
+            }
+        },
+
+        async analyzeCv() {
+            if (!this.analyzeBuilderUrl || this.analysisPending()) {
+                return;
+            }
+
+            const persisted = await this.saveBuilderDraft({
+                force: !this.builderDocumentId || this.hasUnsavedChanges,
+            });
+            if (!persisted) {
                 return;
             }
 
@@ -351,6 +428,9 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
                 form.append('display_name', filename);
                 form.append('language', language);
                 form.append('locales', JSON.stringify(this.locales));
+                if (this.builderDocumentId) {
+                    form.append('document_id', this.builderDocumentId);
+                }
                 this.cvFileName = filename;
 
                 const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -392,7 +472,6 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
                     window.PanelCvStore?.saveFromAnalysis(payload.file_name, this.panelLocale, radar);
                 }
 
-                this.saveStatus = 'saved';
                 window.location.reload();
             } catch (err) {
                 this.analyzeError = err?.message || 'CV analizi başarısız';
@@ -562,6 +641,7 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
                             this.editLang = mainVersion.language;
                             this.previewLang = mainVersion.language;
                             this.activeLoadedVersionId = mainVersion.id;
+                            this.builderDocumentId = mainVersion.source_document_id || this.builderDocumentId;
                         }
                     } else if (!this._versionsInitialized) {
                         this._versionsInitialized = true;
@@ -684,6 +764,7 @@ function cvBuilder(initial, uiLabels, panelLocale, serverHasCv = false, serverFi
             this.previewLang = version.language;
             // Aktif yüklenen sürümü sadece manuel "Editöre Yükle" ile güncelle
             this.activeLoadedVersionId = version.id;
+            this.builderDocumentId = version.source_document_id || '';
             this.markBuilderClean();
             if (window.PanelCvStore) {
                 window.PanelCvStore.saveBuilder(this.locales, this.panelLocale);

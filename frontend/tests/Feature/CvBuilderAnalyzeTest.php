@@ -43,6 +43,7 @@ class CvBuilderAnalyzeTest extends TestCase
             'display_name' => 'Test Candidate CV.pdf',
             'language' => 'tr',
             'locales' => json_encode($this->careerDraft(), JSON_UNESCAPED_UNICODE),
+            'document_id' => 'generated-1',
         ]);
 
         $response->assertAccepted()
@@ -51,7 +52,52 @@ class CvBuilderAnalyzeTest extends TestCase
 
         $this->assertNull(session('cv_analysis'));
         Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/cv/documents/generated/activate'
-             && $request->method() === 'POST');
+             && $request->method() === 'POST'
+             && str_contains((string) $request->body(), 'generated-1'));
+    }
+
+    public function test_builder_draft_save_persists_both_languages_without_starting_analysis(): void
+    {
+        $this->withoutMiddleware();
+
+        Http::fake([
+            'http://localhost:8000/api/v1/cv/documents/generated/draft' => Http::response([
+                'document' => ['id' => 'draft-document-1', 'display_name' => 'Test Candidate CV.pdf'],
+                'main_version_id' => 'version-tr',
+                'versions' => [
+                    ['id' => 'version-tr', 'language' => 'tr', 'is_main' => true],
+                    ['id' => 'version-en', 'language' => 'en', 'is_main' => false],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->post(route('panel.cv.builder-draft.save'), [
+            'pdf' => UploadedFile::fake()->createWithContent('Test Candidate CV.pdf', "%PDF-1.4\n%%EOF"),
+            'display_name' => 'Test Candidate CV.pdf',
+            'language' => 'tr',
+            'active_version_id' => 'version-tr',
+            'locales' => json_encode([
+                ...$this->careerDraft(),
+                'en' => [
+                    'personal' => ['full_name' => 'Test Candidate'],
+                    'experience' => [],
+                    'education' => [],
+                    'skills' => [],
+                    'projects' => [],
+                    'certificates' => [],
+                ],
+            ], JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('document.id', 'draft-document-1')
+            ->assertJsonPath('main_version_id', 'version-tr');
+
+        Http::assertSentCount(1);
+        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8000/api/v1/cv/documents/generated/draft'
+            && $request->method() === 'POST'
+            && str_contains((string) $request->body(), 'Test Candidate')
+            && str_contains((string) $request->body(), 'version-tr'));
     }
 
     /** @return array<string, array<string, mixed>> */

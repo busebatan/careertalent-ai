@@ -31,6 +31,7 @@ class CvBuilderController extends PanelController
         $builderImportMissingFields = [];
         $builderImportDocumentId = '';
         $builderImportDocument = null;
+        $activeBuilderVersionId = '';
         if ($request->filled('cvDocument')) {
             $document = $api->cvDocument((string) $request->query('cvDocument'));
             $builderImportDocument = ($document['ok'] ?? false) && is_array($document['body'] ?? null)
@@ -51,6 +52,7 @@ class CvBuilderController extends PanelController
             if (in_array($language, ['tr', 'en'], true) && is_array($payload)) {
                 $cvDraft[$language] = $payload;
                 $restoredFromHistory = true;
+                $activeBuilderVersionId = (string) ($version['id'] ?? '');
             }
         }
 
@@ -98,6 +100,10 @@ class CvBuilderController extends PanelController
             'builderImportMeta' => $builderImportMeta,
             'builderImportMissingFields' => $builderImportMissingFields,
             'builderImportDocumentId' => $builderImportDocumentId,
+            'builderDocumentId' => is_array($builderImportDocument)
+                ? (string) ($builderImportDocument['id'] ?? '')
+                : '',
+            'activeBuilderVersionId' => $activeBuilderVersionId,
             'cvLabels' => $this->cvLabelsForJs(),
             'skillRadar' => $this->skillRadar(
                 $analysis,

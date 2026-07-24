@@ -469,6 +469,47 @@ def test_builder_save_atomically_replaces_active_cv_and_career_state(client, mon
     assert evidence_path.exists() is False
 
 
+def test_builder_analysis_reuses_saved_generated_draft_document(client, monkeypatch, tmp_path):
+    client.post("/api/v1/auth/register", json={"full_name": "Saved Draft", "email": "saved-draft@example.com", "password": "GucluParola123!"})
+    token = client.post("/api/v1/auth/login", data={"username": "saved-draft@example.com", "password": "GucluParola123!"}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    monkeypatch.setattr("app.api.v1.cv.settings.UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr("app.api.v1.cv.analyze_cv_task.delay", lambda _analysis_id: None)
+
+    builder_data = '{"tr":{"personal":{"full_name":"Saved Draft","summary":"SQL Python veri analizi uzmanı"},"experience":[{"title":"Veri Analisti","bullets":["SQL Python ile raporlama"]}],"skills":[{"category":"Teknik","items":"SQL Python Excel"}]},"en":{"personal":{"full_name":"Saved Draft"},"experience":[],"skills":[]}}'
+    saved = client.post(
+        "/api/v1/cv/documents/generated/draft",
+        headers=headers,
+        files={"file": ("saved-draft.pdf", BytesIO(_MINIMAL_PDF), "application/pdf")},
+        data={
+            "display_name": "Saved Draft CV.pdf",
+            "language": "tr",
+            "builder_data": builder_data,
+        },
+    )
+    assert saved.status_code == 200
+    document_id = saved.json()["document"]["id"]
+
+    analyzed = client.post(
+        "/api/v1/cv/documents/generated/activate",
+        headers=headers,
+        files={"file": ("saved-draft.pdf", BytesIO(_MINIMAL_PDF), "application/pdf")},
+        data={
+            "document_id": document_id,
+            "display_name": "Saved Draft CV.pdf",
+            "language": "tr",
+            "builder_data": builder_data,
+            "cv_text": "Saved Draft SQL Python Excel ile veri analizi ve raporlama deneyimi",
+        },
+    )
+    assert analyzed.status_code == 202
+    assert analyzed.json()["cv_document_id"] == document_id
+    documents = client.get("/api/v1/cv/documents", headers=headers).json()
+    assert len(documents) == 1
+    assert documents[0]["id"] == document_id
+    assert documents[0]["is_current"] is True
+
+
 def test_invalid_builder_save_keeps_existing_active_state(client, monkeypatch, tmp_path):
     client.post("/api/v1/auth/register", json={"full_name": "Safe Owner", "email": "safe-builder@example.com", "password": "GucluParola123!"})
     token = client.post("/api/v1/auth/login", data={"username": "safe-builder@example.com", "password": "GucluParola123!"}).json()["access_token"]

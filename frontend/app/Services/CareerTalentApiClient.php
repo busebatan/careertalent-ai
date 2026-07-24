@@ -541,17 +541,50 @@ class CareerTalentApiClient
         }
     }
 
-    public function activateGeneratedCv(UploadedFile $file, string $displayName, string $language, string $builderData, string $cvText): array
+    public function saveGeneratedBuilderDraft(
+        UploadedFile $file,
+        string $displayName,
+        string $language,
+        string $builderData,
+        ?string $documentId = null,
+        ?string $activeVersionId = null,
+    ): array {
+        try {
+            $response = $this->request(120)
+                ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+                ->post($this->baseUrl().'/api/v1/cv/documents/generated/draft', array_filter([
+                    'display_name' => $displayName,
+                    'language' => $language,
+                    'builder_data' => $builderData,
+                    'document_id' => $documentId,
+                    'active_version_id' => $activeVersionId,
+                ], static fn ($value) => $value !== null && $value !== ''));
+
+            return $this->normalizeResponse($response);
+        } catch (ConnectionException $exception) {
+            return $this->connectionError($exception);
+        }
+    }
+
+    public function activateGeneratedCv(
+        UploadedFile $file,
+        string $displayName,
+        string $language,
+        string $builderData,
+        string $cvText,
+        ?string $documentId = null,
+    ): array
     {
         try {
             $response = $this->request(120)
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
-                ->post($this->baseUrl().'/api/v1/cv/documents/generated/activate', [
+                ->post($this->baseUrl().'/api/v1/cv/documents/generated/activate', array_filter([
                     'display_name' => $displayName,
                     'language' => $language,
                     'builder_data' => $builderData,
                     'cv_text' => $cvText,
-                ]);
+                    'document_id' => $documentId,
+                ], static fn ($value) => $value !== null && $value !== ''));
 
             return $this->normalizeResponse($response);
         } catch (ConnectionException $exception) {

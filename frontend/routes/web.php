@@ -124,6 +124,7 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::get('/cv-merkezi', [CvBuilderController::class, 'show'])->name('cv-builder');
     Route::post('/cv-merkezi/analiz', [CvUploadController::class, 'analyze'])->name('cv.analyze');
     Route::post('/cv-merkezi/analiz-olusturucu', [CvUploadController::class, 'analyzeBuilder'])->name('cv.analyze-builder');
+    Route::post('/cv-merkezi/taslak-kaydet', [CvUploadController::class, 'saveBuilderDraft'])->name('cv.builder-draft.save');
     Route::get('/cv-merkezi/analiz/{analysisId}', [CvUploadController::class, 'status'])->name('cv.analysis-status');
     Route::get('/cv-merkezi/analiz/{analysisId}/akis', [CvUploadController::class, 'stream'])->name('cv.analysis-stream');
     Route::post('/cv-merkezi/temizle', [CvUploadController::class, 'clear'])->name('cv.clear');

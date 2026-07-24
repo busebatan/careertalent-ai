@@ -369,6 +369,7 @@ class CvHistoryTest extends TestCase
         Http::fake([
             'http://localhost:8000/api/v1/cv/versions' => Http::response([[
                 'id' => 'version-ai', 'version_name' => 'Data Analyst için CV', 'language' => 'tr', 'is_main' => false,
+                'source_document_id' => 'generated-ai-source',
                 'payload' => ['personal' => ['full_name' => 'AI Draft User', 'summary' => 'İlana özel özet'], 'education' => [], 'experience' => [], 'skills' => [], 'projects' => [], 'certificates' => [], 'enabledOptional' => [], 'optional' => []],
             ]]),
             'http://localhost:8000/*' => Http::response([]),
@@ -378,6 +379,7 @@ class CvHistoryTest extends TestCase
             ->assertOk()
             ->assertSee('AI Draft User')
             ->assertSee('İlana özel özet')
+            ->assertSee('version-ai')
             ->assertSee('restoredFromHistory', false);
     }
 

@@ -55,3 +55,9 @@ class ActivateBuilderDraftResponse(BaseModel):
     document_id: str
     main_version_id: str
     versions: list[CandidateCvVersionResponse]
+
+
+class GeneratedBuilderDraftResponse(BaseModel):
+    document: dict
+    main_version_id: str
+    versions: list[CandidateCvVersionResponse]
