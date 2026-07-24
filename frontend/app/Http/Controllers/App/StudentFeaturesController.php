@@ -166,13 +166,4 @@ class StudentFeaturesController extends PanelController
             : response()->json(['message' => $result['error'] ?? 'İşlem tamamlanamadı'], $result['status'] ?? 502);
     }
 
-    public function mentors()
-    {
-        return $this->panelView('app.mentors', [
-            'mentors' => [
-                'packages' => [],
-                'experts' => [],
-            ],
-        ]);
-    }
 }

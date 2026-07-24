@@ -66,7 +66,6 @@ def test_panel_feature_endpoints():
             }
         },
         "/api/v1/panel/job-radar": {"radar": {"roles": [], "sources": [], "alerts": []}},
-        "/api/v1/panel/mentors": {"mentors": {"packages": [], "experts": []}},
         "/api/v1/panel/chat": {"assistant": {"prompts": []}},
         "/api/v1/panel/career-ladder": {"career_ladder": [], "career_tier_meta": {}},
         "/api/v1/panel/job-matches": {"seed_jobs": [], "user_skills": [], "readiness": 0},
@@ -78,6 +77,12 @@ def test_panel_feature_endpoints():
         assert response.json() == expected, path
 
 
+def test_removed_expert_support_endpoint_is_not_routable():
+    response = client.get("/api/v1/panel/mentors")
+
+    assert response.status_code == 404
+
+
 def test_panel_openapi_exports_response_models():
     response = client.get("/openapi.json")
 
@@ -85,6 +90,8 @@ def test_panel_openapi_exports_response_models():
     schema = response.json()
     dashboard_schema = schema["paths"]["/api/v1/panel/dashboard"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
     assert dashboard_schema["$ref"].endswith("/DashboardResponse")
+    assert "/api/v1/panel/mentors" not in schema["paths"]
+    assert "MentorsResponse" not in schema["components"]["schemas"]
     assert "/api/v1/panel/job-matches/analyze" not in schema["paths"]
     assert "/api/v1/panel/target" not in schema["paths"]
     assert schema["components"]["schemas"]["PanelStats"]["properties"]["readiness"]["maximum"] == 100

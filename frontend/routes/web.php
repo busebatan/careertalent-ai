@@ -159,7 +159,6 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::get('/mulakat-hazirligi/gecmis/{interviewId}', [StudentFeaturesController::class, 'interviewDetail'])->name('interview.detail');
     Route::post('/mulakat-hazirligi/{interviewId}/tekrar', [StudentFeaturesController::class, 'retryInterview'])->name('interview.retry');
     Route::post('/mulakat-hazirligi/{interviewId}/cevap', [StudentFeaturesController::class, 'scoreInterview'])->name('interview.score');
-    Route::get('/uzmanlardan-destek', [StudentFeaturesController::class, 'mentors'])->name('mentors');
     Route::get('/hesap', [ProfileController::class, 'account'])->name('account');
     Route::post('/hesap/cv-gecmisi/{documentId}/arsivle', [ProfileController::class, 'archiveCurrent'])->name('cv-history.archive-current');
     Route::post('/hesap/cv-gecmisi/{documentId}/analiz', [ProfileController::class, 'analyzeCv'])->name('cv-history.analyze');
@@ -190,8 +189,6 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::delete('/yetenek-pasaportu/kanit', [StudentFeaturesController::class, 'clearSkillEvidence'])->name('skill-passport.evidence.clear');
     Route::redirect('/kariyer-profilim/yetenekler', '/panel/yetenek-pasaportu');
     Route::get('/ilan-analizi/radar', fn () => redirect()->route('panel.job-matches'))->name('job-radar');
-    Route::redirect('/kariyer-rotam/mentor', '/panel/uzmanlardan-destek');
-
     Route::redirect('/profil', '/panel/hesap');
     Route::redirect('/cv-olustur', '/panel/cv-merkezi');
     Route::redirect('/kariyer-merdiveni', '/panel/kariyer-rotam/kariyer-merdiveni');
@@ -201,7 +198,6 @@ Route::prefix('panel')->name('panel.')->middleware(['auth.api', 'auth.api.candid
     Route::redirect('/is-radari', '/panel/ilan-analizi/radar');
     Route::redirect('/basvuru-takibi', '/panel/basvurularim');
     Route::redirect('/mulakat-simulasyonu', '/panel/mulakat-hazirligi');
-    Route::redirect('/mentor-degerlendirme', '/panel/uzmanlardan-destek');
     Route::redirect('/gorevlerim', '/panel/kariyer-rotam/gorevler');
     Route::redirect('/sohbet', '/panel/ai-yardimcisi');
     Route::get('/locale/{locale}', [PanelLocaleController::class, 'switch'])->name('locale');

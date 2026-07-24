@@ -17,7 +17,6 @@
         ]],
         ['label' => 'panel.nav_groups.support', 'items' => [
             ['route' => 'panel.interview', 'match' => 'panel.interview', 'label' => 'panel.nav.interview', 'icon' => 'interview'],
-            ['route' => 'panel.mentors', 'match' => 'panel.mentors', 'label' => 'panel.nav.mentors', 'icon' => 'mentors'],
         ]],
         ['label' => 'panel.nav_groups.account', 'items' => [
             ['route' => 'panel.account', 'match' => 'panel.account', 'label' => 'panel.nav.account', 'icon' => 'profile'],

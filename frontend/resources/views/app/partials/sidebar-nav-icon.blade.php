@@ -11,7 +11,6 @@
         'applications' => 'files',
         'passport' => 'book-user',
         'interview' => 'messages-square',
-        'mentors' => 'users-round',
         'cohorts' => 'graduation-cap',
         'settings' => 'settings',
         'tasks' => 'list-checks',

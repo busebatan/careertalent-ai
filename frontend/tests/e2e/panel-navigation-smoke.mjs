@@ -13,7 +13,6 @@ const panelPages = [
   { path: '/panel/basvuru-takibi', text: 'Başvuru Takibi' },
   { path: '/panel/yetenek-pasaportu', text: 'Yetenek Pasaportu' },
   { path: '/panel/mulakat-simulasyonu', text: 'Mülakat Simülasyonu' },
-  { path: '/panel/mentor-degerlendirme', text: 'Mentor Değerlendirme' },
   { path: '/panel/kariyer-merdiveni', text: 'Kariyer merdiveni' },
   { path: '/panel/profil', text: 'Profil bilgileri' },
   { path: '/panel/cv-olustur', text: 'CV Oluştur' },

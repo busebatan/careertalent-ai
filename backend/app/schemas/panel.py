@@ -167,30 +167,6 @@ class JobRadarResponse(BaseModel):
     radar: JobRadar
 
 
-class MentorPackage(BaseModel):
-    name: str
-    price: str
-    delivery: str
-
-
-class MentorExpert(BaseModel):
-    name: str
-    title: str
-    company: str
-    rating: float = Field(..., ge=0, le=5)
-    focus: str
-    slots: str
-
-
-class MentorMarketplace(BaseModel):
-    packages: list[MentorPackage]
-    experts: list[MentorExpert]
-
-
-class MentorsResponse(BaseModel):
-    mentors: MentorMarketplace
-
-
 class ChatPrompt(BaseModel):
     q: str
     a: str

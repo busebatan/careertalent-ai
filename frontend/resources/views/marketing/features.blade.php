@@ -241,11 +241,10 @@
       'gorevlerim' => 'M9 6.75h9M9 12h9M9 17.25h9M4.5 6.75h.008v.008H4.5V6.75Zm0 5.25h.008v.008H4.5V12Zm0 5.25h.008v.008H4.5v-.008Z',
       'basvurularim' => 'M3.75 6.75h16.5M3.75 6.75v10.5A1.5 1.5 0 0 0 5.25 18.75h13.5a1.5 1.5 0 0 0 1.5-1.5V6.75M3.75 6.75 6 3.75h12l2.25 3M9.75 11.25h4.5',
       'mulakat_hazirligi' => 'M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm-6-3a6 6 0 0 0 12 0M12 18v3m-3 0h6',
-      'uzmanlardan_destek' => 'M15 19.5a3 3 0 0 0-6 0M8.25 9a2.625 2.625 0 1 1 5.25 0 2.625 2.625 0 0 1-5.25 0Zm7.5 1.5a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Zm1.902 5.298A3.75 3.75 0 0 0 15.75 15M4.098 15.798A3.75 3.75 0 0 1 8.25 15',
     ];
   @endphp
 
-  <div class="relative grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="relative grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
     @foreach($secondary as $key => $path)
       @php $item = __('features.items.'.$key); @endphp
       <div class="ct-glow-card rounded-2xl border border-white/8 bg-white/[.02] p-6 backdrop-blur-md">

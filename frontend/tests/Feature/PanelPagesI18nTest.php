@@ -208,10 +208,11 @@ class PanelPagesI18nTest extends TestCase
     $response = $this->withSession(['panel_locale' => 'tr'])->get('/panel');
 
     $response->assertOk();
-    foreach (['Ana Sayfa', 'KARİYERİM', 'CV Merkezi', 'Kariyer Rotam', 'Görevlerim', 'Yetenek Pasaportu', 'FIRSATLAR', 'İş İlanları', 'İlan Analizi', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'] as $label) {
+    foreach (['Ana Sayfa', 'KARİYERİM', 'CV Merkezi', 'Kariyer Rotam', 'Görevlerim', 'Yetenek Pasaportu', 'FIRSATLAR', 'İş İlanları', 'İlan Analizi', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'HESAP', 'Hesap'] as $label) {
       $response->assertSee($label, false);
     }
-    $response->assertSeeInOrder(['Ana Sayfa', 'Kariyer Asistanı', 'KARİYERİM', 'CV Merkezi', 'Kariyer Rotam', 'Görevlerim', 'Yetenek Pasaportu', 'FIRSATLAR', 'İş İlanları', 'İlan Analizi', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'Uzmanlardan Destek', 'HESAP', 'Hesap'], false);
+    $response->assertSeeInOrder(['Ana Sayfa', 'Kariyer Asistanı', 'KARİYERİM', 'CV Merkezi', 'Kariyer Rotam', 'Görevlerim', 'Yetenek Pasaportu', 'FIRSATLAR', 'İş İlanları', 'İlan Analizi', 'Başvurularım', 'HAZIRLIK VE DESTEK', 'Mülakat Hazırlığı', 'HESAP', 'Hesap'], false);
+    $response->assertDontSee('Uzmanlardan Destek', false);
     $response->assertDontSee('Kariyer Profilim', false);
     $this->assertStringNotContainsString('Hesap, Paket ve Gizlilik', $response->getContent());
     $this->assertStringContainsString('notifications: []', $response->getContent());
@@ -239,15 +240,15 @@ class PanelPagesI18nTest extends TestCase
       ->assertDontSee('DB kaydı oluşturulmadı', false);
   }
 
-  public function test_mentors_page_uses_an_empty_state_instead_of_demo_people_and_packages(): void
+  public function test_student_expert_support_page_and_legacy_aliases_are_removed(): void
   {
-    $this->withSession(['panel_locale' => 'tr'])
-      ->get('/panel/uzmanlardan-destek')
-      ->assertOk()
-      ->assertSee('data-mentors-empty', false)
-      ->assertDontSee('Ece Kara', false)
-      ->assertDontSee('Mert Aydın', false)
-      ->assertDontSee('₺299', false);
+    foreach ([
+      '/panel/uzmanlardan-destek',
+      '/panel/kariyer-rotam/mentor',
+      '/panel/mentor-degerlendirme',
+    ] as $removedUrl) {
+      $this->get($removedUrl)->assertNotFound();
+    }
   }
 
   public function test_student_panel_loads_the_livewire_alpine_runtime(): void

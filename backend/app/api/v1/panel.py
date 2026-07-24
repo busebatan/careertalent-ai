@@ -14,7 +14,6 @@ from app.schemas.panel import (
     JobMatchesResponse,
     JobRadarResponse,
     LearningResponse,
-    MentorsResponse,
     RoadmapResponse,
     SkillPassportResponse,
     TasksResponse,
@@ -93,11 +92,6 @@ def applications() -> dict:
 @router.get("/job-radar", response_model=JobRadarResponse)
 def job_radar() -> dict:
     return {"radar": {"roles": [], "sources": [], "alerts": []}}
-
-
-@router.get("/mentors", response_model=MentorsResponse)
-def mentors() -> dict:
-    return {"mentors": {"packages": [], "experts": []}}
 
 
 @router.get("/chat", response_model=ChatResponse)

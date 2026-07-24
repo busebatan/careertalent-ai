@@ -54,16 +54,12 @@ return [
             'name' => 'Mülakat Hazırlığı',
             'desc' => 'Sektörüne özel gerçek sorularla, AI karşında canlı bir mülakat provası yapmanı sağlar.',
         ],
-        'uzmanlardan_destek' => [
-            'name' => 'Uzmanlardan Destek',
-            'desc' => 'Sektöründeki deneyimli uzmanlardan birebir CV ve kariyer değerlendirmesi al.',
-        ],
     ],
 
     'more' => [
         'eyebrow' => 'PAKETE DAHİL',
         'title' => 'İşi bitirmek için gereken her şey.',
-        'desc' => 'Beş çekirdek aracın ötesinde, süreci baştan sona tamamlayan dört modül daha.',
+        'desc' => 'Beş çekirdek aracın ötesinde, süreci baştan sona tamamlayan üç modül daha.',
     ],
 
     'chat' => [
@@ -103,10 +99,6 @@ return [
             [
                 'q' => 'CV Oluşturucu hangi dilleri destekliyor?',
                 'a' => 'Şu an Türkçe ve İngilizce olarak, aynı veriden iki ayrı ATS uyumlu CV üretebiliyorsun.',
-            ],
-            [
-                'q' => 'Uzman desteği abonelik ücretine dahil mi?',
-                'a' => 'Platformun temel araçları abonelikle sınırsız kullanılır; birebir uzman görüşmeleri ayrı bir seans olarak satın alınır.',
             ],
             [
                 'q' => 'Mülakat provası gerçek sorular mı içeriyor?',

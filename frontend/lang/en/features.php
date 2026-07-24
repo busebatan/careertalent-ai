@@ -54,16 +54,12 @@ return [
             'name' => 'Interview Prep',
             'desc' => 'Run a live mock interview against the AI, with real questions specific to your industry.',
         ],
-        'uzmanlardan_destek' => [
-            'name' => 'Expert Support',
-            'desc' => 'Get a one-on-one CV and career review from an experienced expert in your field.',
-        ],
     ],
 
     'more' => [
         'eyebrow' => 'ALSO INCLUDED',
         'title' => 'Everything else it takes to close the loop.',
-        'desc' => 'Beyond the five flagship tools, four more modules that carry the process through to the end.',
+        'desc' => 'Beyond the five flagship tools, three more modules that carry the process through to the end.',
     ],
 
     'chat' => [
@@ -103,10 +99,6 @@ return [
             [
                 'q' => 'Which languages does the CV Builder support?',
                 'a' => 'Right now you can generate two separate, ATS-friendly CVs, in Turkish and English, from the same data.',
-            ],
-            [
-                'q' => 'Is expert support included in the subscription?',
-                'a' => 'The core toolkit is unlimited on the subscription; one-on-one expert sessions are purchased separately.',
             ],
             [
                 'q' => 'Are the mock interview questions real?',

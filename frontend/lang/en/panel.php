@@ -23,7 +23,6 @@ return [
         'applications' => 'Applications',
         'skill_passport' => 'Skill Passport',
         'interview' => 'Interview Preparation',
-        'mentors' => 'Expert Support',
         'tasks' => 'My Tasks',
         'chat' => 'Career Assistant',
         'account' => 'Account',
@@ -363,14 +362,6 @@ return [
         'stage_offer' => 'Offer',
         'stage_rejected' => 'Rejected',
         'failed' => 'Application could not be saved.',
-    ],
-    'mentors' => [
-        'title' => 'Expert Support',
-        'subtitle' => 'Choose expert feedback for your CV, portfolio, and interviews.',
-        'focus' => 'Focus',
-        'next_slot' => 'Next slot',
-        'empty_title' => 'No expert support available yet',
-        'empty_description' => 'New experts and support packages will appear here when published.',
     ],
     'career_ladder' => [
         'title' => 'Career ladder',

@@ -167,7 +167,13 @@ class MarketingPagesTest extends TestCase
 
     public function test_ozellikler_sayfasi_acilir(): void
     {
-        $this->get('/ozellikler')->assertStatus(200)->assertSee('Özellikler');
+        $this->get('/ozellikler')
+            ->assertStatus(200)
+            ->assertSee('Özellikler')
+            ->assertDontSee('Uzmanlardan Destek')
+            ->assertDontSee('Expert Support')
+            ->assertDontSee('Uzman desteği')
+            ->assertDontSee('expert support');
     }
 
     public function test_panel_ozet_sayfasi_acilir(): void

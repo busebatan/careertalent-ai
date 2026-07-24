@@ -23,7 +23,6 @@ return [
         'applications' => 'Başvurularım',
         'skill_passport' => 'Yetenek Pasaportu',
         'interview' => 'Mülakat Hazırlığı',
-        'mentors' => 'Uzmanlardan Destek',
         'tasks' => 'Görevlerim',
         'chat' => 'Kariyer Asistanı',
         'account' => 'Hesap',
@@ -362,14 +361,6 @@ return [
         'stage_offer' => 'Teklif',
         'stage_rejected' => 'Olumsuz',
         'failed' => 'Başvuru kaydedilemedi.',
-    ],
-    'mentors' => [
-        'title' => 'Uzmanlardan Destek',
-        'subtitle' => 'CV, portfolyo ve mülakat için uzman geri bildirimi seç.',
-        'focus' => 'Odak',
-        'next_slot' => 'Sıradaki slot',
-        'empty_title' => 'Henüz uzman desteği bulunmuyor',
-        'empty_description' => 'Yeni uzman ve destek paketleri yayınlandığında burada görünecek.',
     ],
     'career_ladder' => [
         'title' => 'Kariyer merdiveni',
