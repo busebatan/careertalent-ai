@@ -448,7 +448,9 @@ def test_interview_snapshots_cv_archives_previous_and_retries_original_context(c
         current_role="Data Analyst", profile={"summary": "İlk bağlam"},
         skills=[{"name": "SQL", "score": 80}], radar=[], career_ladder=[],
     )
-    db.add_all([document, analysis])
+    db.add(document)
+    db.flush()
+    db.add(analysis)
     db.commit()
     db.close()
     invoke_count = 0

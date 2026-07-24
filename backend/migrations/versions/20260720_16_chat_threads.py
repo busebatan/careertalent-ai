@@ -40,7 +40,6 @@ def upgrade() -> None:
         ["user_id"],
         unique=True,
         postgresql_where=sa.text("is_active = true"),
-        sqlite_where=sa.text("is_active = 1"),
     )
 
     with op.batch_alter_table("career_chat_messages") as batch_op:

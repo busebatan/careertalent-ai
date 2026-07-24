@@ -2,13 +2,12 @@ from collections.abc import Generator
 import json
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from app.core.database import Base
 from app.models.career_engine import CareerAnalysis
 from app.models.engagement import CvDocument
+from app.models.user import User
 from app.schemas.career import (
     CvBuilderDraftAI,
     CvBuilderSourceDraftAI,
@@ -19,18 +18,29 @@ from app.services import cv_builder_import as service
 
 
 @pytest.fixture()
-def db() -> Generator[Session, None, None]:
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    Base.metadata.create_all(engine)
-    session = sessionmaker(bind=engine)()
+def db(postgres_engine: Engine) -> Generator[Session, None, None]:
+    connection = postgres_engine.connect()
+    transaction = connection.begin()
+    session = sessionmaker(
+        bind=connection,
+        join_transaction_mode="create_savepoint",
+    )()
     try:
         yield session
     finally:
         session.close()
-        Base.metadata.drop_all(engine)
+        transaction.rollback()
+        connection.close()
 
 
 def _source(db: Session) -> tuple[CvDocument, CareerAnalysis]:
+    db.add(User(
+        id=1,
+        full_name="CV Import Test",
+        email="cv-import-test@example.com",
+        hashed_password="not-used",
+    ))
+    db.flush()
     document = CvDocument(
         id="uploaded-cv-1",
         user_id=1,
@@ -41,6 +51,8 @@ def _source(db: Session) -> tuple[CvDocument, CareerAnalysis]:
         file_size=123,
         is_current=True,
     )
+    db.add(document)
+    db.flush()
     analysis = CareerAnalysis(
         id="analysis-1",
         user_id=1,
@@ -50,7 +62,7 @@ def _source(db: Session) -> tuple[CvDocument, CareerAnalysis]:
         file_name=document.original_name,
         cv_text="Buse Batan; Veri Analisti; SQL ve Python; İstanbul.",
     )
-    db.add_all([document, analysis])
+    db.add(analysis)
     db.commit()
     return document, analysis
 

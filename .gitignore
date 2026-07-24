@@ -33,8 +33,6 @@ frontend/public/storage
 frontend/storage/*.key
 frontend/storage/pail
 frontend/.phpunit.result.cache
-frontend/database/database.sqlite
-
 # Legacy root Laravel artifacts (if any)
 /node_modules
 /vendor

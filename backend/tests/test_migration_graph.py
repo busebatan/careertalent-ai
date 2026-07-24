@@ -10,6 +10,10 @@ from alembic.operations import Operations
 from alembic.script import ScriptDirectory
 
 
+def _json_value(value):
+    return json.loads(value) if isinstance(value, str) else value
+
+
 def test_migration_graph_has_one_unambiguous_head() -> None:
     backend_dir = Path(__file__).resolve().parents[1]
     config = Config(str(backend_dir / "alembic.ini"))
@@ -20,14 +24,14 @@ def test_migration_graph_has_one_unambiguous_head() -> None:
     assert script.get_heads() == ["20260723_21"]
 
 
-def test_builder_import_version_migration_links_source_document(tmp_path) -> None:
+def test_builder_import_version_migration_links_source_document(postgres_migration_engine) -> None:
     backend_dir = Path(__file__).resolve().parents[1]
     path = backend_dir / "migrations/versions/20260723_20_builder_import_versions.py"
     spec = spec_from_file_location("builder_import_version_migration", path)
     assert spec is not None and spec.loader is not None
     migration = module_from_spec(spec)
     spec.loader.exec_module(migration)
-    engine = sa.create_engine(f"sqlite:///{tmp_path / 'builder-import-version.sqlite'}")
+    engine = postgres_migration_engine
 
     with engine.begin() as connection:
         connection.exec_driver_sql("CREATE TABLE cv_documents (id VARCHAR(36) PRIMARY KEY)")
@@ -36,7 +40,7 @@ def test_builder_import_version_migration_links_source_document(tmp_path) -> Non
             "id VARCHAR(36) PRIMARY KEY, user_id INTEGER NOT NULL, "
             "version_name VARCHAR(160) NOT NULL, language VARCHAR(8) NOT NULL, "
             "is_main BOOLEAN NOT NULL, payload JSON NOT NULL, "
-            "created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL)"
+            "created_at TIMESTAMP NOT NULL, updated_at TIMESTAMP NOT NULL)"
         )
         migration.op = Operations(MigrationContext.configure(connection))
         migration.upgrade()
@@ -55,14 +59,14 @@ def test_builder_import_version_migration_links_source_document(tmp_path) -> Non
         )
 
 
-def test_builder_import_notice_migration_defaults_to_visible_and_is_reversible(tmp_path) -> None:
+def test_builder_import_notice_migration_defaults_to_visible_and_is_reversible(postgres_migration_engine) -> None:
     backend_dir = Path(__file__).resolve().parents[1]
     path = backend_dir / "migrations/versions/20260723_21_cv_builder_notice_dismissal.py"
     spec = spec_from_file_location("builder_import_notice_migration", path)
     assert spec is not None and spec.loader is not None
     migration = module_from_spec(spec)
     spec.loader.exec_module(migration)
-    engine = sa.create_engine(f"sqlite:///{tmp_path / 'builder-import-notice.sqlite'}")
+    engine = postgres_migration_engine
 
     with engine.begin() as connection:
         connection.exec_driver_sql("CREATE TABLE cv_documents (id VARCHAR(36) PRIMARY KEY)")
@@ -82,14 +86,14 @@ def test_builder_import_notice_migration_defaults_to_visible_and_is_reversible(t
         }
 
 
-def test_job_analysis_provenance_migration_adds_nullable_snapshot_columns(tmp_path) -> None:
+def test_job_analysis_provenance_migration_adds_nullable_snapshot_columns(postgres_migration_engine) -> None:
     backend_dir = Path(__file__).resolve().parents[1]
     path = backend_dir / "migrations/versions/20260721_18_job_analysis_provenance.py"
     spec = spec_from_file_location("job_analysis_provenance_migration", path)
     assert spec is not None and spec.loader is not None
     migration = module_from_spec(spec)
     spec.loader.exec_module(migration)
-    engine = sa.create_engine(f"sqlite:///{tmp_path / 'job-analysis-provenance.sqlite'}")
+    engine = postgres_migration_engine
 
     with engine.begin() as connection:
         connection.exec_driver_sql("CREATE TABLE job_opportunities (id VARCHAR(36) PRIMARY KEY)")
@@ -103,14 +107,14 @@ def test_job_analysis_provenance_migration_adds_nullable_snapshot_columns(tmp_pa
         assert columns["source_cv_file_name"]["type"].length == 255
 
 
-def test_company_permission_migration_backfills_existing_role_behavior() -> None:
+def test_company_permission_migration_backfills_existing_role_behavior(postgres_migration_engine) -> None:
     backend_dir = Path(__file__).resolve().parents[1]
     path = backend_dir / "migrations/versions/20260719_12_company_membership_permissions.py"
     spec = spec_from_file_location("company_permission_migration", path)
     assert spec is not None and spec.loader is not None
     migration = module_from_spec(spec)
     spec.loader.exec_module(migration)
-    engine = sa.create_engine("sqlite://")
+    engine = postgres_migration_engine
 
     with engine.begin() as connection:
         for table in ("organization_memberships", "organization_invitations"):
@@ -130,26 +134,26 @@ def test_company_permission_migration_backfills_existing_role_behavior() -> None
                     f"SELECT role, permissions FROM {table} ORDER BY role"
                 ).all()
             )
-            assert json.loads(rows["owner"]) == migration._ALL
-            assert json.loads(rows["admin"]) == migration._ALL
-            assert json.loads(rows["viewer"]) == migration._MEMBERS_VIEW
+            assert _json_value(rows["owner"]) == migration._ALL
+            assert _json_value(rows["admin"]) == migration._ALL
+            assert _json_value(rows["viewer"]) == migration._MEMBERS_VIEW
 
 
-def test_chat_thread_migration_backfills_existing_messages(tmp_path) -> None:
+def test_chat_thread_migration_backfills_existing_messages(postgres_migration_engine) -> None:
     backend_dir = Path(__file__).resolve().parents[1]
     path = backend_dir / "migrations/versions/20260720_16_chat_threads.py"
     spec = spec_from_file_location("chat_thread_migration", path)
     assert spec is not None and spec.loader is not None
     migration = module_from_spec(spec)
     spec.loader.exec_module(migration)
-    engine = sa.create_engine(f"sqlite:///{tmp_path / 'chat-migration.sqlite'}")
+    engine = postgres_migration_engine
 
     with engine.begin() as connection:
         connection.exec_driver_sql("CREATE TABLE users (id INTEGER PRIMARY KEY)")
         connection.exec_driver_sql(
             "CREATE TABLE career_chat_messages ("
             "id VARCHAR(36) PRIMARY KEY, user_id INTEGER NOT NULL, role VARCHAR(20) NOT NULL, "
-            "content TEXT NOT NULL, meta JSON NOT NULL, created_at DATETIME NOT NULL, "
+            "content TEXT NOT NULL, meta JSON NOT NULL, created_at TIMESTAMP NOT NULL, "
             "FOREIGN KEY(user_id) REFERENCES users(id))"
         )
         connection.exec_driver_sql("INSERT INTO users (id) VALUES (7)")
@@ -175,14 +179,14 @@ def test_chat_thread_migration_backfills_existing_messages(tmp_path) -> None:
         }
 
 
-def test_interview_lifecycle_migration_archives_active_rows_and_deduplicates_answers(tmp_path) -> None:
+def test_interview_lifecycle_migration_archives_active_rows_and_deduplicates_answers(postgres_migration_engine) -> None:
     backend_dir = Path(__file__).resolve().parents[1]
     path = backend_dir / "migrations/versions/20260721_17_interview_lifecycle.py"
     spec = spec_from_file_location("interview_lifecycle_migration", path)
     assert spec is not None and spec.loader is not None
     migration = module_from_spec(spec)
     spec.loader.exec_module(migration)
-    engine = sa.create_engine(f"sqlite:///{tmp_path / 'interview-migration.sqlite'}")
+    engine = postgres_migration_engine
 
     with engine.begin() as connection:
         connection.exec_driver_sql("CREATE TABLE users (id INTEGER PRIMARY KEY)")
@@ -192,7 +196,7 @@ def test_interview_lifecycle_migration_archives_active_rows_and_deduplicates_ans
             "CREATE TABLE career_interviews ("
             "id VARCHAR(36) PRIMARY KEY, user_id INTEGER NOT NULL, target_role VARCHAR(160) NOT NULL, "
             "status VARCHAR(24) NOT NULL, language VARCHAR(8) NOT NULL DEFAULT 'tr', questions JSON NOT NULL, "
-            "created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, "
+            "created_at TIMESTAMP NOT NULL, updated_at TIMESTAMP NOT NULL, "
             "FOREIGN KEY(user_id) REFERENCES users(id))"
         )
         connection.exec_driver_sql(
@@ -200,7 +204,7 @@ def test_interview_lifecycle_migration_archives_active_rows_and_deduplicates_ans
             "id VARCHAR(36) PRIMARY KEY, interview_id VARCHAR(36) NOT NULL, user_id INTEGER NOT NULL, "
             "question_id VARCHAR(80) NOT NULL, answer TEXT NOT NULL, score INTEGER NOT NULL, "
             "feedback TEXT NOT NULL, strengths JSON NOT NULL, improvements JSON NOT NULL, "
-            "created_at DATETIME NOT NULL, FOREIGN KEY(interview_id) REFERENCES career_interviews(id), "
+            "created_at TIMESTAMP NOT NULL, FOREIGN KEY(interview_id) REFERENCES career_interviews(id), "
             "FOREIGN KEY(user_id) REFERENCES users(id))"
         )
         connection.exec_driver_sql("INSERT INTO users (id) VALUES (7)")

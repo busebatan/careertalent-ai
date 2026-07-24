@@ -141,7 +141,9 @@ def request_position_analysis(db, position, membership):
     criteria=RecruitingPositionCriteriaVersion(id=str(uuid4()),organization_id=position.organization_id,position_id=position.id,version_number=number,status="draft",criteria={},ai_suggestions={},created_by_membership_id=membership.id)
     snapshot={"title":position.title,"department":position.department,"level":position.level,"description":position.description,"responsibilities":position.responsibilities,"must_have_skills":position.must_have_skills or [],"preferred_skills":position.preferred_skills or [],"learnable_skills":position.learnable_skills or [],"experience_expectation":position.experience_expectation,"language_work_authorization":position.language_work_authorization,"source_text":position.source_text,"ats":effective_ats_config(db,position).model_dump(mode="json")}
     analysis=RecruitingPositionAiAnalysis(id=str(uuid4()),organization_id=position.organization_id,position_id=position.id,criteria_version_id=criteria.id,status="queued",input_snapshot=snapshot,result={},requested_by_membership_id=membership.id)
-    db.add_all([criteria,analysis]); add_activity(db,position,"position.ai_analysis_requested",membership_id=membership.id,entity_type="ai_analysis",entity_id=analysis.id,details={"criteria_version":number}); db.flush(); return analysis
+    db.add(criteria); db.flush()
+    db.add(analysis); db.flush()
+    add_activity(db,position,"position.ai_analysis_requested",membership_id=membership.id,entity_type="ai_analysis",entity_id=analysis.id,details={"criteria_version":number}); db.flush(); return analysis
 
 
 def analyze_position(db, analysis, *, outbox_id: str | None = None, outbox_lock_token: str | None = None):

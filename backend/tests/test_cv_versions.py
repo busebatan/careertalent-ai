@@ -306,6 +306,7 @@ def test_generated_builder_draft_reuses_versions_linked_to_uploaded_document(cli
             builder_draft_status="ready",
             is_current=True,
         ))
+        db.flush()
         db.add_all([
             CandidateCvVersion(
                 id="uploaded-relink-tr",
@@ -440,6 +441,7 @@ def test_apply_job_creates_snapshot(client, monkeypatch):
             billing_email="billing@test.org",
         )
         db.add(org)
+        db.flush()
 
         # Create position (B2B RecruitingPosition)
         pos = RecruitingPosition(
@@ -452,6 +454,7 @@ def test_apply_job_creates_snapshot(client, monkeypatch):
             description="Test description",
         )
         db.add(pos)
+        db.flush()
 
         # Create candidate's JobOpportunity matching that position
         job_opp = JobOpportunity(

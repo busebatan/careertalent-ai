@@ -56,7 +56,11 @@ def test_company_application_cv_preview(client: TestClient):
                 }
             }
         )
-        db.add_all([stored, org, membership, position, application])
+        db.add(org)
+        db.flush()
+        db.add_all([membership, position])
+        db.flush()
+        db.add(application)
         db.commit()
 
     login_res = client.post("/api/v1/auth/login", data={"username": "cv_preview_user@example.com", "password": PASSWORD})

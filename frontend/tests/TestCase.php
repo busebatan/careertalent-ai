@@ -7,10 +7,13 @@ use App\Http\Middleware\EnsureApiAuthenticated;
 use App\Http\Middleware\EnsureApiCandidate;
 use App\Http\Middleware\EnsureApiCompany;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Config;
 
 abstract class TestCase extends BaseTestCase
 {
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();

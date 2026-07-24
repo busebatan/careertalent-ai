@@ -185,18 +185,18 @@ def test_dashboard_queues_summary_and_usage_are_derived_from_tenant_events(clien
             retention_expires_at=now + timedelta(days=7),
         )
         db.add(application)
-        db.add(
-            RecruitingAssessment(
-                id="assessment-1",
-                organization_id=organization_id,
-                application_id=application.id,
-                required=True,
-                status="completed",
-                assigned_at=now - timedelta(days=3),
-                completed_at=now - timedelta(days=2),
-            )
+        db.flush()
+        assessment = RecruitingAssessment(
+            id="assessment-1",
+            organization_id=organization_id,
+            application_id=application.id,
+            required=True,
+            status="completed",
+            assigned_at=now - timedelta(days=3),
+            completed_at=now - timedelta(days=2),
         )
-        db.add(
+        db.add_all([
+            assessment,
             RecruitingScorecard(
                 id="scorecard-1",
                 organization_id=organization_id,
@@ -205,8 +205,9 @@ def test_dashboard_queues_summary_and_usage_are_derived_from_tenant_events(clien
                 scorecard_type="technical",
                 status="pending",
                 requested_at=now - timedelta(days=2),
-            )
-        )
+            ),
+        ])
+        db.flush()
         db.add_all([
             RecruitingApplicationStageEvent(
                 id="event-assessment",

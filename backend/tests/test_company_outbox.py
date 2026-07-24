@@ -1,15 +1,20 @@
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import create_engine, func, select
+from sqlalchemy import func, select
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from app.core.database import Base
 from app.celery_app import celery_app
 from app.core.config import settings
-from app.models.company_recruiting import CompanyTaskOutbox, RecruitingPositionAiAnalysis
+from app.models.company_recruiting import (
+    CompanyTaskOutbox,
+    RecruitingPosition,
+    RecruitingPositionAiAnalysis,
+    RecruitingPositionCriteriaVersion,
+)
+from app.models.recruiting import Organization
 from app.services.company_outbox import (
     POSITION_ANALYSIS_TASK,
     DELIVERY_LEASE,
@@ -24,14 +29,33 @@ from app.services.company_outbox import (
 
 
 @pytest.fixture()
-def outbox_sessions():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
+def outbox_sessions(postgres_engine: Engine):
+    connection = postgres_engine.connect()
+    transaction = connection.begin()
+    factory = sessionmaker(
+        bind=connection,
+        expire_on_commit=False,
+        join_transaction_mode="create_savepoint",
     )
-    Base.metadata.create_all(engine)
-    return sessionmaker(bind=engine, expire_on_commit=False)
+    with factory() as db:
+        for organization_id in ("org-outbox-test", "org-a", "org-b"):
+            db.add(Organization(
+                id=organization_id,
+                name=organization_id,
+                slug=organization_id,
+                organization_type="employer",
+                size_band="smb",
+                status="active",
+                plan_code="pilot",
+                billing_email=f"{organization_id}@example.com",
+                settings={},
+            ))
+        db.commit()
+    try:
+        yield factory
+    finally:
+        transaction.rollback()
+        connection.close()
 
 
 def _enqueue(
@@ -225,6 +249,30 @@ def test_cross_tenant_delivery_is_dead_lettered(outbox_sessions):
 
 def test_retry_exhaustion_fails_outbox_and_tenant_matched_target(outbox_sessions):
     with outbox_sessions() as db:
+        db.add(RecruitingPosition(
+            id="position-retry-exhausted",
+            organization_id="org-outbox-test",
+            title="Retry Test",
+            slug="retry-test",
+            description="Retry test position",
+            must_have_skills=[],
+            preferred_skills=[],
+            learnable_skills=[],
+            ats_terms=[],
+            evaluation_config={},
+            status="draft",
+        ))
+        db.flush()
+        db.add(RecruitingPositionCriteriaVersion(
+            id="criteria-retry-exhausted",
+            organization_id="org-outbox-test",
+            position_id="position-retry-exhausted",
+            version_number=1,
+            status="draft",
+            criteria={},
+            ai_suggestions={},
+        ))
+        db.flush()
         db.add(RecruitingPositionAiAnalysis(
             id="analysis-retry-exhausted",
             organization_id="org-outbox-test",

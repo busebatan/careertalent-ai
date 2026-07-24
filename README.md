@@ -280,8 +280,8 @@ Detay: [sprint-3-son-sprint.md](docs/sprintler/sprint-3-son-sprint.md)
 | Backend (API) | `backend/` | FastAPI, SQLAlchemy, Celery |
 | Yapay zeka | `backend/` | LangChain, Gemini API |
 | ML / benzerlik | `backend/` | NumPy, Scikit-learn (cosine similarity) |
-| Veritabanı | `backend/` | PostgreSQL (+ Redis kuyruk) |
-| Oturum (UI) | `frontend/` | SQLite (yalnızca session/cache) |
+| Veritabanı | `backend/` + `frontend/` | Ortak PostgreSQL (+ Redis kuyruk) |
+| Oturum (UI) | `frontend/` | PostgreSQL (`sessions` / `cache`) |
 
 ### Mimari
 
@@ -314,6 +314,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 # backend/.env içine GEMINI_API_KEY=... ekleyin
+sudo -u postgres createdb -O careertalent careertalent_test
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -326,11 +327,13 @@ cd frontend
 cp .env.example .env
 composer install
 php artisan key:generate
-touch database/database.sqlite
 php artisan migrate
 npm install && npm run build
 php artisan serve --port=8080
 ```
+
+Backend pytest ve frontend PHPUnit aynı PostgreSQL sunucusundaki
+`careertalent_test` veritabanını transaction ile izole kullanır.
 
 - Tanıtım (lokal): http://localhost:8080
 - Panel (lokal): http://localhost:8080/panel

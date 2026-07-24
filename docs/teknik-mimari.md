@@ -97,10 +97,10 @@ Kullanıcı (tarayıcı)
 | Yapay zeka | LangChain + Gemini API |
 | Frontend | Laravel 13, Blade, Livewire 3, Tailwind (Vite) |
 | Panel layout | **A** — sidebar + tek sayfa (özet, CV, yol haritası, eğitim önerileri) |
-| Frontend oturum | SQLite (yalnızca session/cache) |
-| Veritabanı (iş verisi) | PostgreSQL (prod) / SQLite (lokal backend) |
+| Frontend oturum | PostgreSQL (`sessions` / `cache`) |
+| Veritabanı | PostgreSQL (local, test ve production) |
 | Auth | JWT (FastAPI) — Sprint 1; Laravel session + token |
-| Test | pytest (backend), PHPUnit (frontend) |
+| Test | pytest + PHPUnit; ortak PostgreSQL `careertalent_test`, transaction izolasyonu |
 
 ---
 
@@ -204,7 +204,8 @@ Controller ince kalır; hesaplama FastAPI Service'te olur.
 | `chat_sessions` / `chat_messages` | Sohbet |
 | `job_postings` / `job_matches` | Faz 2 |
 
-Laravel SQLite yalnızca oturum ve cache içindir; iş verisi FastAPI PostgreSQL'de tutulur.
+Laravel ve FastAPI aynı PostgreSQL veritabanını kullanır. Alembic iş tablolarının,
+Laravel migrationları yalnız runtime tablolarının (`sessions`, `cache`, `jobs`) sahibidir.
 
 ---
 
@@ -323,7 +324,7 @@ uvicorn app.main:app --reload --port 8000
 # Frontend (ayrı terminal)
 cd frontend && cp .env.example .env
 composer install && php artisan key:generate
-touch database/database.sqlite && php artisan migrate
+php artisan migrate
 npm install && npm run build
 php artisan serve --port=8080
 ```

@@ -333,7 +333,7 @@ class RecruitingPositionCriteriaVersion(Base):
     __table_args__ = (
         CheckConstraint("status IN ('draft', 'approved', 'superseded')", name="ck_recruiting_position_criteria_status"),
         UniqueConstraint("organization_id", "position_id", "version_number", name="uq_recruiting_position_criteria_version"),
-        Index("uq_recruiting_position_criteria_active", "organization_id", "position_id", unique=True, postgresql_where=text("status = 'approved'"), sqlite_where=text("status = 'approved'")),
+        Index("uq_recruiting_position_criteria_active", "organization_id", "position_id", unique=True, postgresql_where=text("status = 'approved'")),
         ForeignKeyConstraint(["position_id", "organization_id"], ["recruiting_positions.id", "recruiting_positions.organization_id"], name="fk_recruiting_position_criteria_position_tenant", ondelete="CASCADE"),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
@@ -450,7 +450,6 @@ class CompanyTaskOutbox(Base):
             "available_at",
             "id",
             postgresql_where=text("status = 'pending'"),
-            sqlite_where=text("status = 'pending'"),
         ),
     )
 

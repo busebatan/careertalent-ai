@@ -35,7 +35,9 @@ def test_position_questions_crud(client: TestClient):
         position = RecruitingPosition(
             id="pos-q-1", organization_id=org.id, title="Frontend Dev", slug="frontend-dev", public_id="FE100", status="published"
         )
-        db.add_all([stored, org, membership, position])
+        db.add(org)
+        db.flush()
+        db.add_all([membership, position])
         db.commit()
 
     # Login
@@ -151,4 +153,3 @@ def test_create_position_with_questions(client: TestClient):
     q_items = res_q.json()
     assert len(q_items) == 2
     assert q_items[0]["question_text"] == "Kaç yıl Python/FastAPI tecrübeniz var?"
-

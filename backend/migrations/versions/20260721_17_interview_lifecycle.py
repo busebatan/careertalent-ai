@@ -83,7 +83,6 @@ def upgrade() -> None:
         ["user_id"],
         unique=True,
         postgresql_where=sa.text("status = 'active'"),
-        sqlite_where=sa.text("status = 'active'"),
     )
     op.create_index(
         "uq_career_interview_answers_interview_question",

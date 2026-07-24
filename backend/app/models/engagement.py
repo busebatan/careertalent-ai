@@ -29,7 +29,6 @@ class CareerChatThread(Base):
             "user_id",
             unique=True,
             postgresql_where=text("is_active = true"),
-            sqlite_where=text("is_active = 1"),
         ),
     )
 
@@ -63,7 +62,6 @@ class CareerInterview(Base):
             "user_id",
             unique=True,
             postgresql_where=text("status = 'active'"),
-            sqlite_where=text("status = 'active'"),
         ),
     )
 

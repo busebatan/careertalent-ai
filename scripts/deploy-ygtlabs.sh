@@ -85,7 +85,6 @@ rsync -a --delete \
   --exclude 'frontend/node_modules' \
   --exclude 'frontend/vendor' \
   --exclude 'frontend/.env' \
-  --exclude 'frontend/database/database.sqlite' \
   --exclude 'frontend/storage' \
   --exclude 'frontend/bootstrap/cache/*.php' \
   --exclude 'backend/.env' \
@@ -131,9 +130,9 @@ mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
 normalize_frontend_runtime_permissions
 
 echo "→ Laravel runtime schema check"
-# FastAPI/Alembic owns the shared PostgreSQL business schema. Laravel only
-# consumes the existing users/career tables and needs its session/cache tables.
-sudo -u yigit php artisan tinker --execute="foreach (['sessions', 'cache', 'cache_locks'] as \$table) { if (! Illuminate\\Support\\Facades\\Schema::hasTable(\$table)) { throw new RuntimeException('Missing Laravel runtime table: '.\$table); } }"
+# FastAPI/Alembic owns business tables; Laravel migrations own runtime tables.
+sudo -u yigit php artisan migrate --force --no-interaction
+sudo -u yigit php artisan tinker --execute="foreach (['sessions', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs'] as \$table) { if (! Illuminate\\Support\\Facades\\Schema::hasTable(\$table)) { throw new RuntimeException('Missing Laravel runtime table: '.\$table); } }"
 
 echo "→ Livewire assets (Alpine panel UI)"
 mkdir -p public/vendor/livewire

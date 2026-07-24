@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "dev-secret-change-me"
 
     DATABASE_URL: str = "postgresql+psycopg2://careertalent:careertalent@127.0.0.1:5432/careertalent"
+    TEST_DATABASE_URL: str = "postgresql+psycopg2://careertalent:careertalent@127.0.0.1:5432/careertalent_test"
     REDIS_URL: str = "redis://localhost:6379/0"
     CELERY_TASK_ALWAYS_EAGER: bool = False
 
