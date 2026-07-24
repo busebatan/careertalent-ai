@@ -17,6 +17,7 @@ echo "→ Vite build (CSS/JS)"
 npm run build --silent 2>/dev/null || npm run build
 
 echo "→ Blade → landing/ export"
+php artisan view:clear --no-interaction
 php artisan marketing:export-landing --output="$LANDING"
 
 echo "→ Tamam: $LANDING"
