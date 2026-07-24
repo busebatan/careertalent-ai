@@ -64,8 +64,8 @@ def _translation_prompt(source_language: str, target_language: str, source: CvBu
     }
 
 
-def _validate_source_fidelity(source: CvBuilderDraftAI, cv_text: str) -> None:
-    """Ensure the extracted source draft only contains wording present in the PDF."""
+def _sanitize_source_fidelity(source: CvBuilderDraftAI, cv_text: str) -> CvBuilderDraftAI:
+    """Clear AI-inferred source values while keeping the rest of the draft usable."""
 
     def comparable(value: str) -> str:
         normalized = unicodedata.normalize("NFKC", value).casefold()
@@ -73,23 +73,34 @@ def _validate_source_fidelity(source: CvBuilderDraftAI, cv_text: str) -> None:
 
     comparable_cv = comparable(cv_text)
 
-    def validate(value: Any, path: str) -> None:
+    def sanitize(value: Any, path: str) -> Any:
         # Skill category is an editor grouping label, not a candidate fact.
         # The AI may derive "Technical Skills" from an unlabelled SQL/Python list.
         if path.startswith("draft.skills[") and path.endswith("].category"):
-            return
+            return value
         if isinstance(value, dict):
-            for key, item in value.items():
-                validate(item, f"{path}.{key}")
-            return
+            return {key: sanitize(item, f"{path}.{key}") for key, item in value.items()}
         if isinstance(value, list):
-            for index, item in enumerate(value):
-                validate(item, f"{path}[{index}]")
-            return
+            items = [sanitize(item, f"{path}[{index}]") for index, item in enumerate(value)]
+            return [item for item in items if item != ""]
         if isinstance(value, str) and value.strip() and comparable(value) not in comparable_cv:
-            raise AIOutputError(f"CV kaynak aktarımı metinde olmayan ifade üretti: {path}")
+            return ""
+        return value
 
-    validate(source.model_dump(mode="json"), "draft")
+    payload = sanitize(source.model_dump(mode="json"), "draft")
+    meaningful_fields = {
+        "education": ("institution", "degree", "details"),
+        "experience": ("organization", "title", "bullets"),
+        "skills": ("items",),
+        "projects": ("name", "link", "description"),
+        "certificates": ("name", "issuer"),
+    }
+    for section, fields in meaningful_fields.items():
+        payload[section] = [
+            row for row in payload[section]
+            if any(row.get(field) for field in fields)
+        ]
+    return CvBuilderDraftAI.model_validate(payload)
 
 
 def _validate_translation(source: CvBuilderDraftAI, translated: CvBuilderDraftAI) -> None:
@@ -217,13 +228,13 @@ def import_cv_to_builder(
         )
         if not isinstance(source_output, CvBuilderSourceDraftAI):
             source_output = CvBuilderSourceDraftAI.model_validate(source_output)
-        _validate_source_fidelity(source_output.draft, raw_cv_text)
+        source_draft = _sanitize_source_fidelity(source_output.draft, raw_cv_text)
 
         source_language = source_output.source_language
         target_language = "en" if source_language == "tr" else "tr"
         translated_output = _invoke(
             json.dumps(
-                _translation_prompt(source_language, target_language, source_output.draft),
+                _translation_prompt(source_language, target_language, source_draft),
                 ensure_ascii=False,
             ),
             CvBuilderDraftAI,
@@ -231,11 +242,11 @@ def import_cv_to_builder(
         )
         if not isinstance(translated_output, CvBuilderDraftAI):
             translated_output = CvBuilderDraftAI.model_validate(translated_output)
-        _validate_translation(source_output.draft, translated_output)
+        _validate_translation(source_draft, translated_output)
 
         localized: dict[str, dict[str, Any]] = {}
         missing_fields: dict[str, list[str]] = {}
-        localized[source_language], missing_fields[source_language] = _normalize_payload(source_output.draft)
+        localized[source_language], missing_fields[source_language] = _normalize_payload(source_draft)
         localized[target_language], missing_fields[target_language] = _normalize_payload(translated_output)
 
         localized["_meta"] = {

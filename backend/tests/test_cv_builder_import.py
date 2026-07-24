@@ -327,11 +327,7 @@ def test_import_rejects_translation_that_changes_identity_data(db, monkeypatch):
     assert persisted.is_current is True
 
 
-def test_import_rejects_source_wording_not_present_in_pdf(db, monkeypatch):
-    document, analysis = _source(db)
-    old_data = {"legacy": "keep"}
-    document.builder_data = old_data
-    db.commit()
+def test_source_fidelity_clears_wording_not_present_in_pdf():
     source = _draft(
         location="Istanbul",
         summary="Invented executive summary.",
@@ -339,30 +335,18 @@ def test_import_rejects_source_wording_not_present_in_pdf(db, monkeypatch):
         bullet="Built SQL dashboards.",
         skill_category="Technical",
     )
-    calls = []
-    raw_cv_text = _draft_source_text(source).replace(source.personal.summary, "")
-
-    monkeypatch.setattr(service.Path, "read_bytes", lambda _path: b"%PDF")
-    monkeypatch.setattr(
-        service,
-        "extract_text_from_pdf",
-        lambda _data, anonymize=True: raw_cv_text,
+    raw_cv_text = (
+        _draft_source_text(source)
+        .replace(source.personal.summary, "")
+        .replace(source.personal.location, "")
     )
 
-    def fake_invoke(_prompt, schema, language="tr"):
-        calls.append(schema)
-        return CvBuilderSourceDraftAI(source_language="en", draft=source)
+    sanitized = service._sanitize_source_fidelity(source, raw_cv_text)
 
-    monkeypatch.setattr(service, "_invoke", fake_invoke)
-
-    with pytest.raises(service.AIOutputError, match="draft\\.personal\\.summary"):
-        service.import_cv_to_builder(db, document, analysis)
-
-    assert calls == [CvBuilderSourceDraftAI]
-    db.expire_all()
-    persisted = db.get(CvDocument, document.id)
-    assert persisted.builder_draft_status == "failed"
-    assert persisted.builder_data == old_data
+    assert sanitized.personal.summary == ""
+    assert sanitized.personal.location == ""
+    assert sanitized.personal.full_name == "Jane Doe"
+    assert sanitized.experience[0].title == "Senior Data Analyst"
 
 
 def test_source_fidelity_allows_ai_to_group_skills_under_a_category():
@@ -375,7 +359,10 @@ def test_source_fidelity_allows_ai_to_group_skills_under_a_category():
     )
     raw_cv_text = _draft_source_text(source).replace("Technical Skills", "")
 
-    service._validate_source_fidelity(source, raw_cv_text)
+    sanitized = service._sanitize_source_fidelity(source, raw_cv_text)
+
+    assert sanitized.skills[0].category == "Technical Skills"
+    assert sanitized.skills[0].items == "SQL, Python"
 
 
 def test_translation_allows_natural_language_project_and_certificate_names():
