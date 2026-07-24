@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
+from collections import Counter
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -20,7 +21,98 @@ from app.services.cv_parser import extract_text_from_pdf
 
 
 _BUILDER_SECTIONS = ("education", "experience", "skills", "projects", "certificates")
+_OPTIONAL_SECTIONS = (
+    "awards",
+    "volunteer",
+    "publications",
+    "courses",
+    "languages",
+    "leadership",
+    "affiliations",
+    "references",
+    "interests",
+    "research",
+    "additional",
+)
 _PERSONAL_FIELDS = ("full_name", "email", "phone", "location", "linkedin", "summary")
+_SECTION_HEADING_TOKENS = {
+    "about",
+    "additional",
+    "affiliations",
+    "awards",
+    "certificates",
+    "certifications",
+    "contact",
+    "courses",
+    "education",
+    "egitim",
+    "ek",
+    "experience",
+    "gonullu",
+    "hakkimda",
+    "ilgi",
+    "interests",
+    "is",
+    "languages",
+    "leadership",
+    "me",
+    "oduller",
+    "ozet",
+    "projeler",
+    "projects",
+    "publications",
+    "referanslar",
+    "references",
+    "research",
+    "sertifikalar",
+    "skills",
+    "summary",
+    "yayinlar",
+    "yetenekler",
+}
+_OPTIONAL_MEANINGFUL_FIELDS = {
+    "awards": ("title", "issuer", "date", "details"),
+    "volunteer": ("organization", "role", "location", "start", "end", "bullets"),
+    "publications": ("title", "publisher", "date", "link", "description"),
+    "courses": ("name", "institution", "date", "description"),
+    "languages": ("language", "level"),
+    "leadership": ("organization", "role", "location", "start", "end", "bullets"),
+    "affiliations": ("name", "role", "start", "end"),
+    "references": ("name", "title", "organization", "contact"),
+    "interests": ("items",),
+    "research": ("title", "institution", "start", "end", "description"),
+    "additional": ("body",),
+}
+
+
+def _comparable_tokens(value: str) -> list[str]:
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    return re.findall(r"\w+", normalized, flags=re.UNICODE)
+
+
+def _contains_ordered_tokens(
+    haystack: list[str],
+    needle: list[str],
+    *,
+    max_gap: int = 40,
+) -> bool:
+    """Match text even when another PDF column interrupts its token sequence."""
+
+    if not needle:
+        return True
+    for start in (index for index, token in enumerate(haystack) if token == needle[0]):
+        cursor = start + 1
+        matched = True
+        for token in needle[1:]:
+            stop = min(len(haystack), cursor + max_gap + 1)
+            try:
+                cursor = haystack.index(token, cursor, stop) + 1
+            except ValueError:
+                matched = False
+                break
+        if matched:
+            return True
+    return False
 
 
 def _source_prompt(document: CvDocument, analysis: CareerAnalysis, cv_text: str) -> dict[str, Any]:
@@ -36,6 +128,19 @@ def _source_prompt(document: CvDocument, analysis: CareerAnalysis, cv_text: str)
             "Belirsiz veya eksik alanları boş string, boş liste ya da boş nesne olarak bırak",
             "Kaynakta olmayan bir alanı başka bir alandan tahmin ederek doldurma",
             "Tüm alanları CV Merkezi kutucuklarına uygun şekilde döndür",
+            (
+                "İki veya daha fazla kolonlu sayfalarda yatay boşlukları kolon sınırı olarak kullan; "
+                "farklı kolonları tek cümle gibi birleştirme"
+            ),
+            (
+                "Kaynak CV'deki her bilgiyi tam bir kez aktar; hiçbir başlık, madde, açıklama "
+                "veya iletişim bilgisini atlama"
+            ),
+            (
+                "Ödül, gönüllülük, yayın, kurs, dil, liderlik, üyelik, referans, ilgi alanı "
+                "ve araştırma bilgilerini optional altındaki uygun bölüme aktar"
+            ),
+            "Güvenle eşleştiremediğin kaynak bilgisini özgün haliyle optional.additional içine koy; bilgiyi silme",
             "Kaynak CV'deki doğal dilde yazılmış metinleri çevirmeden, özetlemeden ve yeniden ifade etmeden koru",
             "Ad, kurum, marka, teknoloji, kısaltma, tarih, e-posta, telefon ve URL değerlerini birebir koru",
         ],
@@ -58,6 +163,7 @@ def _translation_prompt(source_language: str, target_language: str, source: CvBu
             "Boş alanları boş bırak; kaynakta olmayan bilgi üretme",
             "Ad, kurum, marka, teknoloji, kısaltma, tarih, e-posta, telefon ve URL değerlerini birebir koru",
             "Doğal dildeki unvan, özet, açıklama, madde, kategori, proje ve sertifika adlarını çevir",
+            "Optional bölümlerdeki doğal anlatımları da eksiksiz çevir; bölüm ve satır yapısını koru",
             "Tescilli ürün, proje veya sertifika adlarını özel ad olarak koru",
         ],
         "source_draft": source.model_dump(mode="json"),
@@ -67,11 +173,7 @@ def _translation_prompt(source_language: str, target_language: str, source: CvBu
 def _sanitize_source_fidelity(source: CvBuilderDraftAI, cv_text: str) -> CvBuilderDraftAI:
     """Clear AI-inferred source values while keeping the rest of the draft usable."""
 
-    def comparable(value: str) -> str:
-        normalized = unicodedata.normalize("NFKC", value).casefold()
-        return " ".join(re.findall(r"\w+", normalized, flags=re.UNICODE))
-
-    comparable_cv = comparable(cv_text)
+    comparable_cv = _comparable_tokens(cv_text)
 
     def sanitize(value: Any, path: str) -> Any:
         # Skill category is an editor grouping label, not a candidate fact.
@@ -83,7 +185,11 @@ def _sanitize_source_fidelity(source: CvBuilderDraftAI, cv_text: str) -> CvBuild
         if isinstance(value, list):
             items = [sanitize(item, f"{path}[{index}]") for index, item in enumerate(value)]
             return [item for item in items if item != ""]
-        if isinstance(value, str) and value.strip() and comparable(value) not in comparable_cv:
+        if (
+            isinstance(value, str)
+            and value.strip()
+            and not _contains_ordered_tokens(comparable_cv, _comparable_tokens(value))
+        ):
             return ""
         return value
 
@@ -100,6 +206,65 @@ def _sanitize_source_fidelity(source: CvBuilderDraftAI, cv_text: str) -> CvBuild
             row for row in payload[section]
             if any(row.get(field) for field in fields)
         ]
+    optional = payload.get("optional", {})
+    for section, fields in _OPTIONAL_MEANINGFUL_FIELDS.items():
+        rows = optional.get(section, [])
+        optional[section] = [
+            row for row in rows
+            if any(row.get(field) for field in fields)
+        ]
+    return CvBuilderDraftAI.model_validate(payload)
+
+
+def _append_unmapped_content(source: CvBuilderDraftAI, cv_text: str) -> CvBuilderDraftAI:
+    """Keep source lines omitted by structured extraction in Additional."""
+
+    draft_tokens: Counter[str] = Counter()
+
+    def collect(value: Any) -> None:
+        if isinstance(value, dict):
+            for item in value.values():
+                collect(item)
+        elif isinstance(value, list):
+            for item in value:
+                collect(item)
+        elif isinstance(value, str):
+            draft_tokens.update(_comparable_tokens(value))
+
+    payload = source.model_dump(mode="json")
+    collect(payload)
+
+    uncovered: list[str] = []
+    seen: set[str] = set()
+    for raw_line in cv_text.splitlines():
+        line = " ".join(raw_line.split()).strip()
+        tokens = _comparable_tokens(line)
+        meaningful_tokens = [token for token in tokens if token not in _SECTION_HEADING_TOKENS]
+        if not meaningful_tokens:
+            continue
+        normalized_line = " ".join(tokens)
+        if normalized_line in seen:
+            continue
+        seen.add(normalized_line)
+        line_counts = Counter(meaningful_tokens)
+        if all(draft_tokens[token] >= count for token, count in line_counts.items()):
+            continue
+        uncovered.append(line)
+
+    if not uncovered:
+        return source
+
+    additional = payload["optional"]["additional"]
+    chunk = ""
+    for line in uncovered:
+        candidate = f"{chunk}\n{line}".strip()
+        if len(candidate) > 9000 and chunk:
+            additional.append({"body": chunk})
+            chunk = line
+        else:
+            chunk = candidate
+    if chunk:
+        additional.append({"body": chunk})
     return CvBuilderDraftAI.model_validate(payload)
 
 
@@ -143,6 +308,26 @@ def _validate_translation(source: CvBuilderDraftAI, translated: CvBuilderDraftAI
                 if source_row[field] != translated_row[field]:
                     raise AIOutputError(f"CV çevirisi sabit alanı değiştirdi: {section}[{index}].{field}")
 
+    preserved_by_optional = {
+        "awards": ("issuer", "date"),
+        "volunteer": ("organization", "location", "start", "end"),
+        "publications": ("publisher", "date", "link"),
+        "courses": ("institution", "date"),
+        "languages": ("level",),
+        "leadership": ("organization", "location", "start", "end"),
+        "affiliations": ("name", "start", "end"),
+        "references": ("name", "organization", "contact"),
+        "research": ("institution", "start", "end"),
+    }
+    for section, fields in preserved_by_optional.items():
+        for index, source_row in enumerate(source_payload["optional"][section]):
+            translated_row = translated_payload["optional"][section][index]
+            for field in fields:
+                if source_row[field] != translated_row[field]:
+                    raise AIOutputError(
+                        f"CV çevirisi sabit alanı değiştirdi: optional.{section}[{index}].{field}"
+                    )
+
 
 def _normalize_payload(output: CvBuilderDraftAI) -> tuple[dict[str, Any], list[str]]:
     payload = output.model_dump(mode="json")
@@ -157,8 +342,24 @@ def _normalize_payload(output: CvBuilderDraftAI) -> tuple[dict[str, Any], list[s
                 row["id"] = str(uuid4())
         payload[section] = rows
 
-    payload["enabledOptional"] = []
-    payload["optional"] = {}
+    optional = payload.get("optional")
+    if not isinstance(optional, dict):
+        optional = {}
+    normalized_optional: dict[str, list[dict[str, Any]]] = {}
+    enabled_optional: list[str] = []
+    for section in _OPTIONAL_SECTIONS:
+        rows = optional.get(section)
+        if not isinstance(rows, list):
+            rows = []
+        for row in rows:
+            if isinstance(row, dict):
+                row["id"] = str(uuid4())
+        rows = [row for row in rows if isinstance(row, dict)]
+        if rows:
+            enabled_optional.append(section)
+            normalized_optional[section] = rows
+    payload["enabledOptional"] = enabled_optional
+    payload["optional"] = normalized_optional
 
     missing: list[str] = []
     personal = payload.get("personal")
@@ -217,7 +418,11 @@ def import_cv_to_builder(
         raise ValueError("CV belgesi ve analiz eşleşmiyor")
 
     try:
-        raw_cv_text = extract_text_from_pdf(Path(document.file_path).read_bytes(), anonymize=False)
+        raw_cv_text = extract_text_from_pdf(
+            Path(document.file_path).read_bytes(),
+            anonymize=False,
+            layout=True,
+        )
         if not raw_cv_text.strip():
             raise ValueError("Kaynak PDF metni boş")
 
@@ -229,6 +434,7 @@ def import_cv_to_builder(
         if not isinstance(source_output, CvBuilderSourceDraftAI):
             source_output = CvBuilderSourceDraftAI.model_validate(source_output)
         source_draft = _sanitize_source_fidelity(source_output.draft, raw_cv_text)
+        source_draft = _append_unmapped_content(source_draft, raw_cv_text)
 
         source_language = source_output.source_language
         target_language = "en" if source_language == "tr" else "tr"

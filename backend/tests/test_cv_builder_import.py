@@ -155,12 +155,12 @@ def test_import_preserves_source_locale_and_translates_opposite_locale(
 ):
     document, analysis = _source(db)
     raw_cv_text = _draft_source_text(source_draft)
-    extraction_calls: list[bool] = []
+    extraction_calls: list[tuple[bool, bool]] = []
     calls: list[tuple[dict, type, str]] = []
 
-    def fake_extract(data, anonymize=True):
+    def fake_extract(data, anonymize=True, layout=False):
         assert data == b"%PDF raw source"
-        extraction_calls.append(anonymize)
+        extraction_calls.append((anonymize, layout))
         return raw_cv_text
 
     def fake_invoke(prompt, schema, language="tr"):
@@ -177,7 +177,7 @@ def test_import_preserves_source_locale_and_translates_opposite_locale(
 
     result = service.import_cv_to_builder(db, document, analysis)
 
-    assert extraction_calls == [False]
+    assert extraction_calls == [(False, True)]
     assert [call[2] for call in calls] == ["cv_source", f"cv_{target_language}"]
     assert calls[0][0]["source"]["cv_text"] == raw_cv_text
     assert calls[1][0]["source_language"] == source_language
@@ -231,7 +231,7 @@ def test_import_preserves_empty_values_and_rows_are_independently_identified(db,
     monkeypatch.setattr(
         service,
         "extract_text_from_pdf",
-        lambda _data, anonymize=True: _draft_source_text(source),
+        lambda _data, anonymize=True, layout=False: _draft_source_text(source),
     )
     monkeypatch.setattr(
         service,
@@ -264,7 +264,11 @@ def test_import_failure_marks_draft_failed_without_touching_uploaded_document(db
         raise RuntimeError("provider unavailable")
 
     monkeypatch.setattr(service.Path, "read_bytes", lambda _path: b"%PDF")
-    monkeypatch.setattr(service, "extract_text_from_pdf", lambda _data, anonymize=True: "Source CV text")
+    monkeypatch.setattr(
+        service,
+        "extract_text_from_pdf",
+        lambda _data, anonymize=True, layout=False: "Source CV text",
+    )
     monkeypatch.setattr(service, "_invoke", unavailable)
 
     with pytest.raises(RuntimeError, match="provider unavailable"):
@@ -304,7 +308,7 @@ def test_import_rejects_translation_that_changes_identity_data(db, monkeypatch):
     monkeypatch.setattr(
         service,
         "extract_text_from_pdf",
-        lambda _data, anonymize=True: _draft_source_text(source),
+        lambda _data, anonymize=True, layout=False: _draft_source_text(source),
     )
     monkeypatch.setattr(
         service,
@@ -363,6 +367,133 @@ def test_source_fidelity_allows_ai_to_group_skills_under_a_category():
 
     assert sanitized.skills[0].category == "Technical Skills"
     assert sanitized.skills[0].items == "SQL, Python"
+
+
+def test_source_fidelity_preserves_text_split_by_another_pdf_column():
+    source = _draft(
+        location="Istanbul",
+        summary="Senior data analyst.",
+        title="Senior Data Analyst",
+        bullet="I plan health tourism projects",
+        skill_category="Technical Skills",
+    )
+    raw_cv_text = _draft_source_text(source).replace(
+        source.experience[0].bullets[0],
+        "I plan Contact phone health tourism projects",
+    )
+
+    sanitized = service._sanitize_source_fidelity(source, raw_cv_text)
+
+    assert sanitized.experience[0].bullets == ["I plan health tourism projects"]
+
+
+def test_source_fidelity_rejects_words_scattered_across_unrelated_sections():
+    source = _draft(
+        location="Istanbul",
+        summary="Invented distant claim",
+        title="Senior Data Analyst",
+        bullet="Built SQL dashboards.",
+        skill_category="Technical Skills",
+    )
+    unrelated = " ".join(f"source{i}" for i in range(80))
+    raw_cv_text = _draft_source_text(source).replace(
+        source.personal.summary,
+        f"Invented {unrelated} distant claim",
+    )
+
+    sanitized = service._sanitize_source_fidelity(source, raw_cv_text)
+
+    assert sanitized.personal.summary == ""
+
+
+def test_normalize_payload_keeps_all_optional_sections_and_assigns_ids():
+    source = CvBuilderDraftAI.model_validate({
+        **_draft(
+            location="Istanbul",
+            summary="Senior data analyst.",
+            title="Senior Data Analyst",
+            bullet="Built SQL dashboards.",
+            skill_category="Technical Skills",
+        ).model_dump(mode="json"),
+        "optional": {
+            "awards": [{"title": "Innovation Award", "issuer": "YGT", "date": "2024", "details": "First place"}],
+            "volunteer": [{"organization": "Red Cross", "role": "Volunteer", "location": "Istanbul", "start": "2020", "end": "2021", "bullets": ["Supported events"]}],
+            "publications": [{"title": "AI Study", "publisher": "Tech Journal", "date": "2023", "link": "https://example.com/study", "description": "Research paper"}],
+            "courses": [{"name": "Leadership", "institution": "ITU", "date": "2022", "description": "Executive course"}],
+            "languages": [{"language": "English", "level": "B1"}],
+            "leadership": [{"organization": "Student Club", "role": "President", "location": "Istanbul", "start": "2019", "end": "2020", "bullets": ["Led 20 members"]}],
+            "affiliations": [{"name": "PMI", "role": "Member", "start": "2021", "end": "Present"}],
+            "references": [{"name": "Ada Lovelace", "title": "Director", "organization": "YGT", "contact": "ada@example.com"}],
+            "interests": [{"items": "Artificial intelligence, sailing"}],
+            "research": [{"title": "Health AI", "institution": "ITU", "start": "2022", "end": "2023", "description": "Clinical AI research"}],
+            "additional": [{"body": "Driving License: Class B"}],
+        },
+    })
+
+    payload, _missing = service._normalize_payload(source)
+
+    assert payload["enabledOptional"] == [
+        "awards",
+        "volunteer",
+        "publications",
+        "courses",
+        "languages",
+        "leadership",
+        "affiliations",
+        "references",
+        "interests",
+        "research",
+        "additional",
+    ]
+    assert set(payload["optional"]) == set(payload["enabledOptional"])
+    assert all(
+        row["id"]
+        for key in payload["enabledOptional"]
+        for row in payload["optional"][key]
+    )
+    assert payload["optional"]["references"][0]["contact"] == "ada@example.com"
+
+
+def test_unmapped_source_content_is_kept_in_additional_section():
+    source = _draft(
+        location="Istanbul",
+        summary="Senior data analyst.",
+        title="Senior Data Analyst",
+        bullet="Built SQL dashboards.",
+        skill_category="Technical Skills",
+    )
+    raw_cv_text = f"{_draft_source_text(source)}\nDriving License: Class B"
+
+    enriched = service._append_unmapped_content(source, raw_cv_text)
+
+    assert enriched.optional.additional[0].body == "Driving License: Class B"
+    assert "Jane Doe" not in enriched.optional.additional[0].body
+
+
+def test_translation_rejects_changed_reference_contact():
+    payload = {
+        **_draft(
+            location="Istanbul",
+            summary="Senior data analyst.",
+            title="Senior Data Analyst",
+            bullet="Built SQL dashboards.",
+            skill_category="Technical Skills",
+        ).model_dump(mode="json"),
+        "optional": {
+            "references": [{
+                "name": "Ada Lovelace",
+                "title": "Director",
+                "organization": "YGT",
+                "contact": "ada@example.com",
+            }],
+        },
+    }
+    source = CvBuilderDraftAI.model_validate(payload)
+    translated = source.model_copy(deep=True)
+    translated.optional.references[0].contact = "invented@example.com"
+
+    with pytest.raises(service.AIOutputError, match="optional\\.references\\[0\\]\\.contact"):
+        service._validate_translation(source, translated)
 
 
 def test_translation_allows_natural_language_project_and_certificate_names():

@@ -287,6 +287,100 @@ class CvCertificateDraftAI(BaseModel):
     date: str = Field(default="", max_length=80)
 
 
+class CvAwardDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    title: str = Field(default="", max_length=240)
+    issuer: str = Field(default="", max_length=240)
+    date: str = Field(default="", max_length=80)
+    details: str = Field(default="", max_length=2000)
+
+
+class CvVolunteerDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    organization: str = Field(default="", max_length=240)
+    role: str = Field(default="", max_length=240)
+    location: str = Field(default="", max_length=160)
+    start: str = Field(default="", max_length=80)
+    end: str = Field(default="", max_length=80)
+    bullets: list[str] = Field(default_factory=list, max_length=20)
+
+
+class CvPublicationDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    title: str = Field(default="", max_length=240)
+    publisher: str = Field(default="", max_length=240)
+    date: str = Field(default="", max_length=80)
+    link: str = Field(default="", max_length=2048)
+    description: str = Field(default="", max_length=2000)
+
+
+class CvCourseDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    name: str = Field(default="", max_length=240)
+    institution: str = Field(default="", max_length=240)
+    date: str = Field(default="", max_length=80)
+    description: str = Field(default="", max_length=2000)
+
+
+class CvLanguageDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    language: str = Field(default="", max_length=160)
+    level: str = Field(default="", max_length=160)
+
+
+class CvAffiliationDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    name: str = Field(default="", max_length=240)
+    role: str = Field(default="", max_length=240)
+    start: str = Field(default="", max_length=80)
+    end: str = Field(default="", max_length=80)
+
+
+class CvReferenceDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    name: str = Field(default="", max_length=240)
+    title: str = Field(default="", max_length=240)
+    organization: str = Field(default="", max_length=240)
+    contact: str = Field(default="", max_length=1000)
+
+
+class CvInterestDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    items: str = Field(default="", max_length=2000)
+
+
+class CvResearchDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    title: str = Field(default="", max_length=240)
+    institution: str = Field(default="", max_length=240)
+    start: str = Field(default="", max_length=80)
+    end: str = Field(default="", max_length=80)
+    description: str = Field(default="", max_length=3000)
+
+
+class CvAdditionalDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    body: str = Field(default="", max_length=10000)
+
+
+class CvBuilderOptionalDraftAI(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    awards: list[CvAwardDraftAI] = Field(default_factory=list, max_length=20)
+    volunteer: list[CvVolunteerDraftAI] = Field(default_factory=list, max_length=20)
+    publications: list[CvPublicationDraftAI] = Field(
+        default_factory=list,
+        max_length=20,
+    )
+    courses: list[CvCourseDraftAI] = Field(default_factory=list, max_length=30)
+    languages: list[CvLanguageDraftAI] = Field(default_factory=list, max_length=20)
+    leadership: list[CvVolunteerDraftAI] = Field(default_factory=list, max_length=20)
+    affiliations: list[CvAffiliationDraftAI] = Field(default_factory=list, max_length=20)
+    references: list[CvReferenceDraftAI] = Field(default_factory=list, max_length=20)
+    interests: list[CvInterestDraftAI] = Field(default_factory=list, max_length=20)
+    research: list[CvResearchDraftAI] = Field(default_factory=list, max_length=20)
+    additional: list[CvAdditionalDraftAI] = Field(default_factory=list, max_length=20)
+
+
 class CvBuilderDraftAI(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     personal: CvPersonalDraftAI
@@ -295,6 +389,7 @@ class CvBuilderDraftAI(BaseModel):
     skills: list[CvSkillDraftAI] = Field(default_factory=list, max_length=30)
     projects: list[CvProjectDraftAI] = Field(default_factory=list, max_length=20)
     certificates: list[CvCertificateDraftAI] = Field(default_factory=list, max_length=20)
+    optional: CvBuilderOptionalDraftAI = Field(default_factory=CvBuilderOptionalDraftAI)
 
 
 class CvBuilderSourceDraftAI(BaseModel):

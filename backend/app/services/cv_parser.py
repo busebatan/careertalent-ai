@@ -8,12 +8,12 @@ import pdfplumber
 
 from app.services.anonymizer import anonymize_cv_text
 
-def extract_text_from_pdf(data: bytes, anonymize: bool = True) -> str:
+def extract_text_from_pdf(data: bytes, anonymize: bool = True, layout: bool = False) -> str:
     chunks: list[str] = []
 
     with pdfplumber.open(io.BytesIO(data)) as pdf:
         for page in pdf.pages:
-            text = page.extract_text() or ""
+            text = page.extract_text(layout=layout) or ""
             if text.strip():
                 chunks.append(text.strip())
 
